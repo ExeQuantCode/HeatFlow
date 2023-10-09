@@ -11,9 +11,8 @@ PROGRAM HEATFLOW_V0_1
   implicit none
   
 TYPE(heatblock), dimension(nx,ny,nz) :: grid
-real(real12), dimension(nx, ny,nz) :: T,TN, Told
-integer(int12), parameter :: e = nx*ny*nz
-real(real12), dimension(e):: T_matrix, TN_matrix, Told_matrix
+real(real12), dimension(nx, ny,nz) :: T,T0, T00
+real(real12), dimension(NA):: T, TP, TPP
 integer(int12) :: i,it,ix,iy,iz
 real(real12), dimension(nx) :: cellengthx
 real(real12), dimension(ny) :: cellengthy
@@ -37,7 +36,7 @@ do it=1,ntime
       print*, 'Evolving system, timestep = ', it
    end if
   
-   CALL evolve(grid,T_matrix, TN_matrix, Told_matrix, it)
+   CALL evolve(grid,T, TP, TPP)
 
    CALL plot(it,TN_matrix,grid)
    

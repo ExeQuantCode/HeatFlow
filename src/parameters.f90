@@ -93,6 +93,19 @@ MODULE PARAMETERS
 
   !Choice for AC (1 = yes)
   integer(int12),parameter :: ACon = 0
+
+!!---------------
+!SPH NEW BLOCK FOR TIDY
+
+integer, parameter  :: NA=NX*NY*NZ
+!KEEP T_BATH
+
+!Do we have cattaneo on?
+integer :: ICAT=0
+
+
+
+
 end MODULE PARAMETERS
 
 ! mcmodel = medium
