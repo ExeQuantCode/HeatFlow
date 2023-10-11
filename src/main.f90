@@ -28,7 +28,12 @@ call cpu_time(rstart)
 ! call fspak90('factor',ija)
 
 Print*, 'Setup initialising'
-
+grid%imaterial_type=1
+grid%length=dx
+grid%area=dx*dx
+grid%volume=dx*dx*dx
+grid%heater=0
+grid%heater(nx/2,ny/2,nz/2)=1
 
 Print*, 'Setup complete, running simulation'
 do it=1,ntime
