@@ -8,8 +8,9 @@ MODULE PARAMETERS
   integer(int12), parameter :: inx=2 ,iny=2 ,inz=2 !33x33x33 hard limit for banded matrix (cube)
   integer(int12), parameter :: scale = 1
   integer(int12), parameter :: nx = inx*scale,ny=iny*scale,nz=inz*scale
-
+   
   real(real12), parameter :: room = 293.0
+real(real12) :: dx=1e-6
 
   !!!Verbosity of output, IVERB=1, verbose but slow, IVERB=0, no outputs!
   integer, parameter :: IVERB=1
