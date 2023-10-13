@@ -1,3 +1,7 @@
+!##############################################################################################################
+! This calculates the temperature gradient between a system and its boundary.
+! The boundary conditions can be selected by assigning correct value to iboundary in inputs.txt
+!##############################################################################################################
 MODULE DeT
   use constants
   use parameters
@@ -8,9 +12,8 @@ contains
 
   subroutine Delta_T(T,DeT,ix,iy,iz)
     !this subroutine does two things:
-!1)averages properties over adjacent cells 
+    !1)averages properties over adjacent cells 
     !2) It selects the boundary conditions (three types, discussed in entry)
-    !3)
     TYPE(heatblock), dimension(nx,ny,nz) :: grid
     real(real12), dimension(nx,ny,nz) :: T
     real(real12), dimension(3,2) :: DeT, kap, h_con, L_c
@@ -108,8 +111,8 @@ contains
           DeT(3,2)=0.0
        end if
        
-    case(4)
-       !Boundary type 4, Periodic over Z axis
+    case(101)
+       !Boundary type 101, Periodic over Z axis
        !temperature=T_bath
        
        

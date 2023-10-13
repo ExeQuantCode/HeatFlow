@@ -1,67 +1,71 @@
+!##############################################################################################################
+! A library of different heating cases, selected by giving desired heating case value to iheater in inputs file
+!##############################################################################################################
 module Heating
   use constants
-  use parameters
-
+  use inputs
+  implicit none
 
 contains
-
+   
 
   !!Simple heat source implemented
   subroutine heater(ix,iy,iz,it,imaterial,QQ)
 
-
+    ! define dtypes for variables
     integer(int12) :: i
-    integer(int12), intent(in) :: ix,iy,iz,it,imaterial
-    !integer(int12) :: cutoff
-    integer(int12), parameter :: e = nx*ny*nz
-    !  real(real12), dimension(e) :: QQ
-    real(real12) :: r, R_spot,area, time, time_Switch
-    
-    !    real(real12), dimension(nx,ny,nz) :: QQ
-    real(real12) :: QQ
-    real(real12) :: AC
-    !QQ = 0.0
+    integer(int12), intent(in) :: ix,iy,iz,it,imaterial ! values passed into the subroutine, ix,iy,iz,it refer to current state of the simulation i.e what cell is currently being looked at. imaterial is the cells material
+    integer(int12) :: e !used to allocate arrays later
+    real(real12), dimension(nx,ny,nz) :: QQ ! the heat density of a cell
+    real(real12) :: AC ! is the simualtion simulating heating with AC!
+    real(real12) :: r, R_spot,area, time, time_Switch, tl, tt
+    real(real12) :: om
+    real(real12), parameter :: room = 293.0   !universal constant
+    !allocate arrays
 
-
-    select case(iheater)        
+    om = 2*pi*freq
+    select case(iheater) 
+    case(0)
+         QQ = 0
 
     case(1)
        !        do i=1,e
        if (ix.le.(nx) .and. iy .le.(ny) .and. iz .le. nz)  then
           ! if (iy.eq.(ny/2)) then
           !    if (iz.eq.nz) then
-          QQ = power_in
-          print*, QQ !'heating'
+          QQ(ix, iy, iz) = power_in
+          !print*, QQ !'heating'
        else
-          QQ = 0.0
+          QQ(ix,iy,iz) = 0.0
 
        end if
        !             end do
 
 
     case(2)
-       t=real(it)*time_step*2.0*pi/T_Period
-       if (ix.eq.(nx/2))  then
-          if (iy.eq.(ny/2)) then
+       tl=real(it)*time_step*2.0*pi/T_Period
+       if (ix.eq.int(nx/2))  then
+          if (iy.eq.int(ny/2)) then
              if (iz.eq.1) then
-                QQ=sin(t)*sin(t)*power_in
+                QQ(ix,iy,iz)=sin(tl)*sin(tl)*power_in
                 !  print*, 'heating'
              end if
           end if
        end if
+
     case(3)
        if (it.le.10) then
           if (ix.eq.((nx+1)/2))  then
              if (iy.eq.((ny+1)/2)) then
                 if (iz.eq.1) then
-                   QQ=1.0
+                   QQ(ix,iy,iz)=1.0
                    print*, 'heating'
                    !print*, QQ
                 end if
              end if
           end if
        else 
-          QQ=0.0
+          QQ(ix,iy,iz)=0.0
           !print*, QQ
        end if
 
@@ -78,7 +82,7 @@ contains
           if (iz.eq.(nz/4)) then
 
              if (r.lt.r_spot) then
-                QQ=power_in/area
+                QQ(ix,iy,iz)=power_in/area
              end if
           end if
        end if
@@ -90,16 +94,16 @@ contains
 
        if (ix.eq.(nx/4)) then
           if (time.le.time_switch) then
-             QQ=power_in
+             QQ(ix,iy,iz)=power_in
           end if
        end if
 
 
     case(10)
        if (imaterial.eq.2000) then
-          QQ=1.0
+          QQ(ix,iy,iz)=1.0
        else 
-          QQ=0.0
+          QQ(ix,iy,iz)=0.0
        end if
        !     if (it.gt.(ntime/2)) then
        !        QQ=0.0
@@ -117,7 +121,7 @@ contains
                 !else
                 !AC = 1
                 !end if
-                QQ=power_in !*AC
+                QQ(ix,iy,iz)=power_in !*AC
                 print*, 'heating'
              end if
           end if
@@ -131,7 +135,7 @@ contains
           if (iy.le.(52) .and. iy.ge.(49)) then !52,49 : 26,25
              !if (iz.le.(1012) .and. iz.ge.(1011)) then !1012,1011
              if (iz.eq.(506)) then
-                QQ=power_in
+                QQ(ix,iy,iz)=power_in
                 print*, 'heating'
              end if
           end if
@@ -148,7 +152,7 @@ contains
                    !else
                    !AC = 1
                    !end if
-                   QQ=power_in*AC
+                   QQ(ix,iy,iz)=power_in*AC
                    print*, 'heating'
                 end if
              end if
@@ -157,6 +161,14 @@ contains
           QQ = 0.0
        end if
 
+      
+    case(14) !Centre of System heating
+       tl=real(it)*time_step*2.0*pi/T_Period
+       if (((ix.eq.2) .and.  (iy.eq.2)) .and. (iz.eq.2)) then
+         QQ(ix,iy,iz)=sin(tl)*sin(tl)*power_in
+       else
+         QQ(ix,iy,iz) = 0 
+       end if
 
     case(20)
        tt = time_step*it
@@ -170,14 +182,14 @@ contains
           end if
           !if(ix.eq.nx.and.iy.eq.ny.and.iz.eq.nz) then
              !QQ(ix,iy,iz) = power_in
-             QQ = power_in*AC
+             QQ(ix,iy,iz) = power_in*AC
              !print*, QQ, ix,iy,iz
              !print*, 'heating'
           !else
              !QQ = 0.0
           !end if
        else
-          QQ = 0.0
+          QQ(ix,iy,iz) = 0.0
        end if
 
 
@@ -193,12 +205,12 @@ contains
              AC = 1
           end if
           if(ix.ge.18 .and. ix.le.22) then 
-             QQ = power_in*AC
+             QQ(ix,iy,iz) = power_in*AC
           else
-             QQ = 0.0
+             QQ(ix,iy,iz) = 0.0
           end if
        else
-          QQ = 0.0
+          QQ(ix,iy,iz) = 0.0
        end if
 
        

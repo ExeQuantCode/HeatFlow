@@ -1,9 +1,11 @@
-
+!##############################################################################################################
+! This section makes the grid array based on the input, cellengths and GridMaterials.
+!##############################################################################################################
 module setup
   use constants
-  use parameters
   use constructions
-  use SET_GRID_UP
+  use inputs
+  use readtxt
   
   implicit none
   
@@ -11,29 +13,23 @@ contains
 
 subroutine Initiate(grid, cellengthx, cellengthy, cellengthz)
 
-  TYPE(heatblock), dimension(nx,ny,nz) :: grid
-
+  TYPE(heatblock) :: grid(nx,ny,nz)
+  !define dtypes for variables
+  real(real12) :: pa,pb,A,L
+  integer(int12) :: ii,jj,kk
   integer(int12) :: ix,iy,iz,itime,i,it,j,k
- ! integer, parameter :: e = nx*ny*nz
+   character(len=8192):: string
 
+  !read arrays from txtfile
   real(real12), dimension(nx) :: cellengthx
   real(real12), dimension(ny) :: cellengthy
   real(real12), dimension(nz) :: cellengthz
-!  real(real12) :: cellengthx, cellengthy, cellengthz
-
-  real(real12) :: pa,pb,A,L
-  integer(int12) :: ii,jj,kk
-  character(len=8192):: string
+   call readparameters(cellengthx,cellengthy,cellengthz)
+   !Needed to deal as looped in the main, and without leads to allocation errors
 
 
-! if (it.eq.1) then  
-!   T=T_bath
-!   Told=T_bath
-!   TN=T_bath
-! end if
-
-
-CALL set_gridReadFromTxt(grid,cellengthx,cellengthy,cellengthz)
+   ! calls the materials txt
+   CALL set_gridReadFromTxt(grid)
 
 
 
