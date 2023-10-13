@@ -1,3 +1,6 @@
+!##############################################################################################################
+! This code solves the heat equation using sparce matrix solvers. Currently under construction
+!##############################################################################################################
 module MATRIX_INVERSION
   use constants
   implicit none
@@ -168,8 +171,62 @@ contains
 !    deallocate(A)
     deallocate(dIPIV)
 !    deallocate(work)
-1   format(76f10.4)
+!   format(76f10.4)
     
-    return
   end subroutine matinv1
+! This subroutine implements the Conjugate Gradient method to solve the system of linear equations Ax = b.
+SUBROUTINE conjugate_gradient(n, A, x, b, tol, itmax, iter)
+    IMPLICIT NONE
+    INTEGER(int12) :: n        ! Size of the system
+    INTEGER(int12) :: i, itmax, iter               ! Maximum number of iterations and current iteration counter
+    REAL(real12), DIMENSION(n, n) :: A           ! System matrix
+    REAL(real12), DIMENSION(n) :: x, b           ! Solution vector and right-hand side
+    REAL(real12), DIMENSION(n) :: r, p, Ap       ! Residual, direction, and product of A and p
+    REAL(real12) :: tol, rsold, rsnew, alpha, dot
+
+    ! Calculate initial residual. This is the difference between b and Ax.
+    r = b - MATMUL(A, x)
+   
+    ! Initially, the direction vector is set to the residual.
+    p = r
+   
+    ! Calculate the square of the norm of the residual. This will be used to test for convergence.
+    rsold = DOT_PRODUCT(r, r)
+
+    ! Initialize the iteration counter to 0.
+    iter = 0
+   
+    ! Main loop: iterate until the number of iterations reaches itmax or the norm of the residual falls below tol.
+    DO WHILE (iter < itmax .AND. SQRT(rsold) > tol)
+        iter = iter + 1
+       
+        ! Calculate the product of A and the direction vector.
+        Ap = MATMUL(A, p)
+       
+        ! Calculate the dot product of p and Ap.
+        dot = DOT_PRODUCT(p, Ap)
+       
+        ! Calculate the step size.
+        alpha = rsold / dot
+
+        ! Update the solution vector.
+        x = x + alpha * p
+       
+        ! Update the residual.
+        r = r - alpha * Ap
+
+        ! Calculate the square of the norm of the new residual.
+        rsnew = DOT_PRODUCT(r, r)
+       
+        ! If the norm of the new residual falls below tol, terminate the loop.
+        IF (SQRT(rsnew) < tol) EXIT
+
+        ! Update the direction vector using a combination of the new residual and the old direction.
+        p = r + (rsnew/rsold) * p
+       
+        ! Update rsold to be the square of the norm of the new residual.
+        rsold = rsnew
+    ENDDO
+END SUBROUTINE conjugate_gradient
+
 end module MATRIX_INVERSION

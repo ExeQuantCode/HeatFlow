@@ -1,54 +1,53 @@
+!##############################################################################################################
+! This is the main program for HeatFlow
+!##############################################################################################################
 PROGRAM HEATFLOW_V0_1
   
   use constants
-  use parameters
   use constructions
   use setup
   use simulator
   use matrix_inversion
   use output
-  
+  use inputs
+
   implicit none
-  
-TYPE(heatblock), dimension(nx,ny,nz) :: grid
-real(real12), dimension(nx, ny,nz) :: T,TN, Told
-integer(int12), parameter :: e = nx*ny*nz
-real(real12), dimension(e):: T_matrix, TN_matrix, Told_matrix
-integer(int12) :: i,it,ix,iy,iz
-real(real12), dimension(nx) :: cellengthx
-real(real12), dimension(ny) :: cellengthy
-real(real12), dimension(nz) :: cellengthz
+   real(real12) :: rstart, rend, rprogress
+   integer(int12) :: it
+   real(real12), allocatable :: T(:,:,:), TN(:,:,:), Told(:,:,:) 
+   TYPE(heatblock), allocatable :: grid(:, :, :)
 
-real(real12) :: rstart, rend, rprogress
-
-!write(*,*) "I WILL END"
-!stop 0
-
-call cpu_time(rstart)
-
-! call fspak90('factor',ija)
-
-Print*, 'Setup initialising'
+   call cpu_time(rstart) ! starts timer 
 
 
-Print*, 'Setup complete, running simulation'
-do it=1,ntime
-   if (iverb.eq.1) then
-      print*, 'Evolving system, timestep = ', it
-   end if
-  
-   CALL evolve(grid,T_matrix, TN_matrix, Told_matrix, it)
+   Print*, 'Setup initialising' ! indication that the model is runnning
+   ! Read parameters from inputs file, located in inputs.f90
+   open(unit = newunit, file = 'Inputs.txt')
+   call readINPUT(unit)
+   close(unit)
+   allocate(grid(nx, ny, nz))
+   allocate(TN(nx, ny, nz))
+   allocate(T(nx, ny, nz))
+   allocate(Told(nx, ny, nz))
 
-   CALL plot(it,TN_matrix,grid)
-   
-   
-end do
+   Print*, 'Setup complete, running simulation' ! indication that inputs have been read
+   do it=1,ntime ! run simulation for 'ntime' time steps
+      if (iverb.eq.1) then
+         print*, 'Evolving system, timestep = ', it
+      end if
 
-call cpu_time(rend)
+      CALL evolve(grid, T, TN, Told, it) !run the simulation, located in Matrix4.f90
 
-print*, 'time=', rend-rstart
+      CALL plot(it,TN,grid) ! Write result to an output file, located in output.f90
 
-print*, 'all done'
+      
+   end do
+
+   call cpu_time(rend) !ends timer so we can see how long the simulation took to run
+
+   print*, 'time=', rend-rstart
+
+   print*, 'all done'
 
 
 

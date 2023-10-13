@@ -1,69 +1,118 @@
+!##############################################################################################################
+! This code is forms the heat equation for the system that we want to solve
+!##############################################################################################################
 MODULE simulator
 
   use constants
-  use parameters
   use constructions
   use heating
   use materials
   use setup
-  ! use DeT
   use DeA
+  use readtxt
   use matrix_inversion
+  use inputs
 
-  !  use mymkl
-
-  !  include 'mkl.fi'
-
-  implicit none
-
-contains  
+  contains  
 
 
 
-  subroutine evolve(grid,T, TN, Told, it)
+  subroutine evolve(grid, T, TN, Told, it)
     implicit none
-    TYPE(heatblock), dimension(nx,ny,nz):: grid
+
+    ! Define dtypes for variables
     integer(int12) :: ix,iy,iz,itime,it,ii,ij,ixm1,jj,iflag, flag, imaterial, counter, a_counter, e_prime, off_prime
     !integer(int12) :: kx,ky,kz
     integer(int12) :: equ
-    integer(int12), parameter :: e=nx*ny*nz
-    integer(int12), parameter :: dis = nx*ny
-    integer(int12), parameter :: cen = (2*dis)+1
-    integer(int12), parameter :: off = (3*dis)+1
-    integer(int12), parameter :: m = 4*nx*ny*nz - ny*nz - nx*nz - nx*ny
-    integer(int12), parameter :: endz = (nx*ny)*(nz-1)
+    integer(int12) :: e
+    integer(int12) :: dis
+    integer(int12) :: cen
+    integer(int12) :: off
+    integer(int12) :: m
+    integer(int12) :: endz
     integer(int12) :: i,j,k,h,kk
-
-    !    real (real12), dimension(e,e) :: a,SI           TOO BIG
-    real (real12), dimension(e,off) :: small
-    !real(real12), dimension(10,e) :: small
-    real (real12), dimension(off,e) :: small_transpose
-    real(real12), dimension(3,2) :: kap,h_con,l_c
-    real(real12) :: pa,pb,L,rho_C,cv_C,Q,Pin,kap11,Delta_Temp
-    real(real12), dimension(nx,ny,nz) :: T, TN, Told, b_temp, QQ
-    real(real12), dimension(nx,ny,nz) :: alpha, beta
-    real(real12), dimension(e) :: T_matrix, TN_matrix, Told_matrix, heat, b
-    real(real12), dimension(nx) :: cellengthx, gammax
-    real(real12), dimension(ny) :: cellengthy, gammay
-    real(real12), dimension(nz) :: cellengthz, gammaz
-    real(real12), dimension(3,3) :: kappa3D
-    real(real12) :: Qp
-    real(real12), dimension(e,1) :: b_prime
     integer(int12), parameter :: tolp = 8
-    real(real12), parameter :: tol = 1e-8  !CHANGE AS APPROPRIATE
-
-    real(real12), dimension(m) :: a1
-    integer(int12), dimension(m+1) :: ia
-
-    integer(int12), dimension(7) :: idiag 
-
+    real(real12), parameter :: tol = 1e-8
     character:: uplo, no
     character(len=20) :: fmt_string
-
-
-
+    real(real12) :: pa,pb,L,rho_C,cv_C,Q,Pin,kap11,Delta_Temp
     real(real12) :: h_conv, heat_capacity, HC, sound_speed, rho, volume, RC                                                     
-    real(real12) :: RTerm, qdot, kappa, tau, tdx, tdy, tdz!, altpow
+    real(real12) :: RTerm, qdot, kappa, tau, tdx, tdy, tdz
+    
+    ! define allocatable arrays
+    integer(int12), dimension(7) :: idiag 
+    real(real12), allocatable :: small(:,:)
+    real(real12), allocatable :: small_transpose(:, :)
+    real(real12), dimension(3,2) :: l_c, h_con, kap
+
+    real(real12), allocatable :: b_temp(:,:,:)
+    real(real12), dimension(nx,ny,nz) :: QQ(nx,ny,nz)
+    real(real12), allocatable :: alpha(:,:,:)
+    real(real12), allocatable :: beta(:,:,:)
+
+    real(real12), allocatable :: T_matrix(:)
+    real(real12), allocatable :: TN_matrix(:)
+    real(real12), allocatable :: Told_matrix(:)
+    real(real12), allocatable :: heat(:)
+    real(real12), allocatable :: b(:)
+
+    real(real12), allocatable ::  gammax(:)
+    real(real12), allocatable :: gammay(:)
+    real(real12), allocatable :: gammaz(:)
+    real(real12), dimension(3,3) :: kappa3D
+    real(real12), allocatable :: b_prime(:,:)
+
+    real(real12), dimension(nx,ny,nz):: T, TN, Told
+    TYPE(heatblock), dimension(nx,ny,nz) :: grid
+    real(real12), allocatable:: a1(:)
+    integer(int12), allocatable :: ia(:)
+
+    ! heating bath in x,y,z variables
+    real(real12) :: T_bath_1x
+    real(real12) :: T_bath_nx
+    real(real12) :: T_bath_1y
+    real(real12) :: T_bath_ny
+    real(real12) :: T_bath_1z
+    real(real12) :: T_bath_nz
+   
+    !For congujate gradient
+    integer(int12) :: iter, itmax
+    !real(real12) :: tol 
+    INTEGER(int12) :: n 
+
+    ! Read parameters from txt file and use them to allocate the local variables and arrays
+    real(real12), dimension(nx) :: cellengthx
+    real(real12), dimension(ny) :: cellengthy
+    real(real12), dimension(nz) :: cellengthz
+    call readparameters(cellengthx,cellengthy,cellengthz)
+    e = nx*ny*nz
+    dis = nx*ny
+    cen = (2*dis)+1
+    off = (3*dis)+1
+    m = 4*nx*ny*nz - ny*nz - nx*nz - nx*ny
+    endz = (nx*ny)*(nz-1)
+    
+    ! Allocate arrays
+    allocate(small(e,off))
+    allocate(small_transpose(off, e))
+
+    allocate(b_temp(nx,ny,nz))
+    allocate(alpha(nx,ny,nz))
+    allocate(beta(nx,ny,nz))
+
+    allocate(T_matrix(e))
+    allocate(TN_matrix(e))
+    allocate(Told_matrix(e))
+    allocate(heat(e))
+    allocate(b(e))
+
+    allocate(gammax(nx))
+    allocate(gammay(ny))
+    allocate(gammaz(nz))
+
+    allocate(b_prime(e,1))
+    allocate(a1(m))
+    allocate(ia(m+1))
 
     !write(*,*) T_bath
     no = 'n'   
@@ -76,24 +125,30 @@ contains
     Small = 0
     !    SI= 0
 
-
     if (it.eq.1) then
        T=T_bath
        Told=T_bath
        TN=T_bath
     end if
-!!! WHY INITIALISE GRID EVERY TIME STEP?
+      !!! WHY INITIALISE GRID EVERY TIME STEP?
     call initiate(grid, cellengthx, cellengthy, cellengthz)
 
 
-    !    call heater(ix,iy,iz,it,grid(ix,iy,iz)%imaterial_type,QQ) !Commented out for now (wrong place?)
-
-
+ 
+    T_bath_1x = T_Bath
+    T_bath_nx = T_Bath
+    T_bath_1y = T_Bath
+    T_bath_ny = T_Bath
+    T_bath_1z = T_Bath
+    T_bath_nz = T_Bath
     !print*, room
 
     print*, nx,ny,nz
-
-    !LOOP THROUGH THE CELLS
+      !################################
+      ! Heat equation is of form
+      ! Small*TN = b_temp
+      !################################
+    !LOOP THROUGH THE CELLS Issues with this its not averaging cells that are different and has issue with infinity
     do ix=1,nx
        do iy=1,ny
           do iz=1,nz
@@ -101,11 +156,9 @@ contains
              ! It doesn't change anything
              !print*, ix,iy,iz
              CALL DELTA_ave(T,Kap,l_c,H_con,ix,iy,iz,grid)
-             call material(grid(ix,iy,iz)%imaterial_type,T,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
-             call heater(ix,iy,iz,it,grid(ix,iy,iz)%imaterial_type,Qp)
-             !print*, Qp
-             QQ(ix,iy,iz)= Qp
-             !print*, ix,iy,iz
+             call material(grid(ix,iy,iz)%imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+             call heater(ix,iy,iz,it,grid(ix,iy,iz)%imaterial_type,QQ)
+               !write(*,*) 'QQ', QQ
              !delta_ave needs to be converted from 1st order to second order
              ! make matrices for gamma !
 
@@ -117,10 +170,10 @@ contains
              tdy = (kap(2,1)+kap(2,2)/2)/(rho*heat_capacity)
              tdz = (kap(3,1)+kap(3,2)/2)/(rho*heat_capacity)
              
-             gammax(ix) = 0!(((kap(1,1)+kap(1,2))/2)*time_step*time_step)/(rho*heat_capacity*cellengthx(ix) &
-                  !*cellengthx(ix)*(tau+time_step))
-             gammay(iy) = 0!(((kap(2,1)+kap(2,2))/2)*time_step*time_step)/(rho*heat_capacity*cellengthy(iy) &
-                  !*cellengthy(iy)*(tau+time_step))
+             gammax(ix) = (((kap(1,1)+kap(1,2))/2)*time_step*time_step)/(rho*heat_capacity*cellengthx(ix) &
+                  *cellengthx(ix)*(tau+time_step))
+             gammay(iy) = (((kap(2,1)+kap(2,2))/2)*time_step*time_step)/(rho*heat_capacity*cellengthy(iy) &
+                  *cellengthy(iy)*(tau+time_step))
              gammaz(iz) = (((kap(3,1)+kap(3,2))/2)*time_step*time_step)/(rho*heat_capacity*cellengthz(iz) &
                   *cellengthz(iz)*(tau+time_step))
              !print*, rho*heat_capacity*cellengthz(iz)*cellengthz(iz)*(tau+time_step) 
@@ -130,41 +183,18 @@ contains
              !print*, time_step
              
              !print*, 'ALPHA =', alpha
-             beta(ix,iy,iz) = ((tau)/(time_step*time_step))/alpha(ix,iy,iz)
+             beta(ix,iy,iz) = ((tau)/(time_step*time_step))!/alpha(ix,iy,iz)
              !print*, 'BETA =', beta
 
              !Change qq to include material properties
              !QQ(ix,iy,iz) = QQ(ix,iy,iz) *(cellengthx(ix)*cellengthy(iy)*cellengthz(iz))!/ &
              !     (sum(cellengthx)*sum(cellengthy)*sum(cellengthz))
              QQ(ix,iy,iz) = QQ(ix,iy,iz)/(rho*heat_capacity)
+ 
           end do
        end do
     end do
-    !print*, QQ
-    !print*, gammax, gammay, gammaz
-    !    print*, kappa
-    !    print*, ''
-    !    print*, time_step
-    !    print*, ''
-    !    print*, tau
-    !    print*, ''
-    !    print*, rho
-    !    print*, ''
-    !    print*, heat_capacity
-    !    print*, ''
-    !    print*, cellengthx
-    !    print*, ''
-    !    print*, cellengthy
-    !    print*, ''
-    !    print*, cellengthz
-    !    
-    !    print*, 'gammax =',gammax, 'STOP'
-    !    print*, 'gammay =',gammay, 'STOP'
-    !    print*, 'gammaz =',gammaz, 'STOP'
-    !
-    !    print*, alpha
-    !    print*, beta
-    
+
 
 
     ! MAKE THE B_TEMP MATRIX !
@@ -182,7 +212,7 @@ contains
                       b_temp(i,j,k)=QQ(i,j,k)/alpha(i,j,k)+(1+beta(i,j,k))*T(i,j,k) &
                            -beta(i,j,k)*Told(i,j,k)+gammax(i)*T_bath_1x+gammay(j)*T_bath_1y &
                            +gammaz(k)*T_bath_1z
-                      print*, gammax(i)*T_bath_1x+gammay(j)*T_bath_1y+gammaz(k)*T_bath_1z
+                      !print*, gammax(i)*T_bath_1x+gammay(j)*T_bath_1y+gammaz(k)*T_bath_1z
                    else if (k.eq.nz) then
                       b_temp(i,j,k)=QQ(i,j,k)/alpha(i,j,k)+(1+beta(i,j,k))*T(i,j,k) &
                            -beta(i,j,k)*Told(i,j,k)+gammax(i)*T_bath_1x+gammay(j)*T_bath_1y &
@@ -295,7 +325,7 @@ contains
                    end if
                 end if
              end if
-             print*, b_temp(i,j,k)
+             !print*, b_temp(i,j,k)
           end do
        end do
     end do
@@ -333,21 +363,7 @@ contains
                    small(j,cen+nx) = -gammay(iy)
                 end if
              end do
-             !if (small(1,cen+nx).eq.0) then
-             !   do j=1,(e-1)
-             !      !print*, 'FGHGF',i,  j, small(:,cen+nx)
-             !      small(j,cen+nx)=small(j+1,cen+nx)
-             !      print*, 'FGHGF',i,  j, small(:,cen+nx)
-             !   end do
-             !   small(e,cen+nx)=0
-             !   print*, 'FGHGF',i,  j, small(:,cen+nx)
-             !end if
-             !if (small(1,cen-nx).eq.0) then
-             !   do j=1,(e-1)
-             !      small(j,cen-nx)=small(j+1,cen-nx)
-             !   end do
-             !   small(e,cen-nx)=0
-             !end if
+
              if (nz.gt.1) then
                 small(i,cen-dis) = -gammax(ix)
                 small(i,cen+dis) = -gammax(ix)
@@ -358,65 +374,7 @@ contains
     
     
 
-    !do i=1,e
-    !   small(i,cen) = 1+2*gammax(1) + 2*gammay(1) + 2*gammaz(1)
-    !end do
-
-
-    ! X DIAGONALS ! 
-    !do i=1,e
-    !   if ( mod(i,nx).ne.0 ) then
-    !      small(i,cen-1)= -gammax(1)
-    !      small(i,cen+1) = -gammax(1)
-    !   end if
-    !end do
-
-
-
-    ! Y DIAGONALS !
-    !do i=1,e
-    !   do j=1,e
-    !      !kk = i+1
-    !      if (ny.gt.1  .and.  mod((i-1)/nx,ny) .ne. 0) then
-    !         small(i,cen-nx) = -gammay(1)
-    !      else if (ny.gt.1.and.mod((j-1)/nx,ny).ne.0) then
-    !         small(j,cen+nx) = -gammay(1)
-    !      end if
-    !   end do
-    !end do
-
-
-    !do j=1,e
-    !   if (small(1,cen+nx).eq.0) then
-    !      do i=1,(e-1)
-    !         small(i,cen+nx)=small(i+1,cen+nx)
-    !      end do
-    !      small(e,cen+nx)=0
-    !   end if
-    !end do
-
-    !do j=1,e
-    !   if (small(1,cen-nx).eq.0) then
-    !      do i=1,(e-1)
-    !         small(i,cen-nx)=small(i+1,cen-nx)
-    !      end do
-    !      small(e,cen-nx)=0
-    !   end if
-    !end do
-
-
-
-    ! Z DIAGONALS !
-
-    !do i=1,endz
-    !   if (nz.gt.1) then
-    !      small(i,cen-dis) = -gammaz(1)
-    !      small(i,cen+dis) = -gammaz(1)
-    !   end if
-    !end do
-
-
-
+    
 
     ! SET OFFSETS !
 
@@ -462,11 +420,13 @@ contains
     b_prime(:,1) = b
     !   call matinv1(dble(small_transpose),dble(b_prime),int(e))
     !print*, small_transpose
-    !print*, b_prime
+    !print*, b
     !small_transpose = dble(small_transpose)
     !b_prime = dble(b_prime)
     !print*, b_prime
     !print*, small_transpose
+    n = size(b)
+    !call conjugate_gradient(n, small_transpose, T_matrix, b, tol, itmax, iter)
     call matinv1(small_transpose,b_prime,e_prime,off_prime)
     !print*, T_matrix
     !print*, b_prime
@@ -481,26 +441,26 @@ contains
              if(abs(TN(ix,iy,iz)-b_prime(flag,1)).gt.tol) then
                 TN(ix,iy,iz) = b_prime(flag,1)
              else
-                equ = equ + 1
+                equ = equ + 1A library of different materials cases, selected by giving desired material case value in GridMaterial.txt
              end if
-          !b_temp(ix,iy,iz) = b(flag)
+          b_temp(ix,iy,iz) = b(flag)
           flag = flag+1
-       end do
-    end do
- end do
+         end do
+      end do
+   end do
 
  if(equ.eq.flag) then
     print*, 'EQUILIBRIUM REACHED'
  end if
 
 
- !print*, TN
- write(*, '("TN(1,1,1)=",F0.7)') TN(1,1,1)
- write(*, '("TN(1,1,2)=",F0.7)') TN(1,1,2) 
- write(*, '("TN(1,2,2)=",F0.7)') TN(1,2,2)
- write(*, '("TN(1,2,3)=",F0.7)') TN(1,2,3)
- write(*, '("TN(2,2,2)=",F0.7)') TN(2,2,2)
- write(*, '(" TN(",I0,",",I0,",",I0,")= ",F0.7)') 3,3,3,TN(3,3,3)
+ !print*, TNA library of different materials cases, selected by giving desired material case value in GridMaterial.txt
+ !write(*, '("TN(1,1,1)=",F0.7)') TN(1,1,1)
+ !write(*, '("TN(1,1,2)=",F0.7)') TN(1,1,2) 
+ !write(*, '("TN(1,2,2)=",F0.7)') TN(1,2,2)
+ !write(*, '("TN(1,2,3)=",F0.7)') TN(1,2,3)
+ !write(*, '("TN(2,2,2)=",F0.7)') TN(2,2,2)
+ !write(*, '(" TN(",I0,",",I0,",",I0,")= ",F0.7)') 3,3,3,TN(3,3,3)
 
 
  ! reset at end of timestep !
@@ -512,6 +472,7 @@ contains
        end do
     end do
  end do
+ !Print *, Told
 
 end subroutine evolve
 end MODULE simulator

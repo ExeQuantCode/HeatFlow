@@ -59,9 +59,9 @@ BUILD_DIR = ./obj
 # 	mod_rw_dat.f90
 #OBJS := $(addprefix $(LIB_DIR)/,$(LIBS))
 SRCS := constants.f90 \
-        parameters.f90 \
+		ReadTxt.f90 \
+		inputs.f90 \
         constructions.f90 \
-	set_grid.f90 \
 	heating.f90 \
 	setup.f90 \
         material.f90 \

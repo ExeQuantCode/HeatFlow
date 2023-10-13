@@ -10,4 +10,5 @@ MODULE Constants
   !!!Specifies accuracy of variables (Can be reduced to save memory)
   integer, parameter :: real12 = Selected_real_kind(12,200) !(12,200)
   integer, parameter :: int12  = Selected_int_kind(12)
+  real(real12), parameter :: room = 293.0
 end MODULE Constants
