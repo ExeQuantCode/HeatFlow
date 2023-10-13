@@ -1,9 +1,13 @@
 module heatermatrix
+use delta_ave
+use materials
+use heater
+use inputs
 
 contains
 
 subroutine hmatrix(i,j,H)
-  integer, intent(in) i,j
+  integer, intent(in) :: i,j,ix,iy,iz
   real(real12), intent(out) :: H
 
 !Calculates Hmatrix element
@@ -54,6 +58,7 @@ subroutine hmatrix(i,j,H)
           end do
        end do
     end do
+
 
 
 
