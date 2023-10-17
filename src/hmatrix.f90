@@ -1,5 +1,5 @@
 module heatermatrix
-use delta_ave
+use dea
 use materials
 use heater
 use inputs
@@ -7,57 +7,112 @@ use inputs
 contains
 
 subroutine hmatrix(i,j,H)
-  integer, intent(in) :: i,j,ix,iy,iz
+  integer, intent(in) :: i, j, x, y, z, n
+  real(real12), intent(in) :: alpha, A, B, D, E, F, G, kappa1
   real(real12), intent(out) :: H
 
-!Calculates Hmatrix element
-!does stuff
-!LOOP THROUGH THE CELLS Issues with this its not averaging cells that are different and has issue with infinity
-    do ix=1,nx
-       do iy=1,ny
-          do iz=1,nz
-             !Delta ave returns boundary averaged values and temperature gradients                 
-             ! It doesn't change anything
-             !print*, ix,iy,iz
-             CALL DELTA_ave(T,Kap,l_c,H_con,ix,iy,iz,grid)
-             call material(grid(ix,iy,iz)%imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
-             call heater(ix,iy,iz,it,grid(ix,iy,iz)%imaterial_type,QQ)
-               !write(*,*) 'QQ', QQ
-             !delta_ave needs to be converted from 1st order to second order
-             ! make matrices for gamma !
 
-             !gammax(ix) = (kappa*time_step*time_step)/(rho*heat_capacity*cellengthx(ix)*cellengthx(ix)*(tau+time_step))
+  ! For ease atm
+  n = nx
 
-             alpha(ix,iy,iz) = (tau+time_step)/(time_step*time_step)
+   
+  alpha = (tau+time_step)/(time_step*time_step)
 
-             tdx = (kap(1,1)+kap(1,2)/2)/(rho*heat_capacity)
-             tdy = (kap(2,1)+kap(2,2)/2)/(rho*heat_capacity)
-             tdz = (kap(3,1)+kap(3,2)/2)/(rho*heat_capacity)
-             
-             gammax(ix) = (((kap(1,1)+kap(1,2))/2)*time_step*time_step)/(rho*heat_capacity*cellengthx(ix) &
-                  *cellengthx(ix)*(tau+time_step))
-             gammay(iy) = (((kap(2,1)+kap(2,2))/2)*time_step*time_step)/(rho*heat_capacity*cellengthy(iy) &
-                  *cellengthy(iy)*(tau+time_step))
-             gammaz(iz) = (((kap(3,1)+kap(3,2))/2)*time_step*time_step)/(rho*heat_capacity*cellengthz(iz) &
-                  *cellengthz(iz)*(tau+time_step))
-             !print*, rho*heat_capacity*cellengthz(iz)*cellengthz(iz)*(tau+time_step) 
-             !gammaz(iz) = (tdz/(cellengthz(iz)*cellengthz(iz)))/alpha(ix,iy,iz)
-             !print*, ix,iy,iz
-             !print*, tau
-             !print*, time_step
-             
-             !print*, 'ALPHA =', alpha
-             beta(ix,iy,iz) = ((tau)/(time_step*time_step))!/alpha(ix,iy,iz)
-             !print*, 'BETA =', beta
 
-             !Change qq to include material properties
-             !QQ(ix,iy,iz) = QQ(ix,iy,iz) *(cellengthx(ix)*cellengthy(iy)*cellengthz(iz))!/ &
-             !     (sum(cellengthx)*sum(cellengthy)*sum(cellengthz))
-             QQ(ix,iy,iz) = QQ(ix,iy,iz)/(rho*heat_capacity)
+   ! x y and z of self 
+    x = j - int(j/n)*n - int(j/(n**2))*(n**2)!Structure coordinate; int(j/n)*n refers the y row in the structure; int(j/(n**2))*(n**2) refers to the plane i.e z
+    y = int(j/n) - int(j/(n**2))*(n**2) !Structure coordinate
+    z = int(j/(n**2))!Structure coordinate
+
+    if (x .gt. 1) then
+     call material(grid(x,y,z)%imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+     kappa1 = kappa
+   4
+    call material(grid(x-1,y,z)%imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+     A = (kappa1 + kappa)/2 !kappa x left 
+    else 
+      A=0
+    end if
+    if (x.lt.nx) then
+      call material(grid(x,y,z)%imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+      kappa1 = kappa
+      call material(grid(x+1,y,z)%imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+      B = (kappa1 + kappa)/2 !kappa x right
+    else
+      B = 0
+    end if
+
+    if (y.gt.1) then
+     call material(grid(x,y,z)%imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+     kappa1 = kappa
+     call material(grid(x,y-1,z)%imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+     D = (kappa1+kappa)/2 !y down
+    else
+      D = 0
+    end if
+    if (y.lt.ny) then
+      call material(grid(x,y,z)%imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+      kappa1 = kappa
+      call material(grid(x,y+1,z)%imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+      E = (kappa1+kappa)/2 !y up
+    else
+      E = 0
+    end if
+    if (z.gt.1) then
+     call material(grid(x,y,z)%imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+     kappa1 = kappa
+     call material(grid(x,y,z-1)%imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+     F = (kappa1+kappa)/2 !z in
+    else
+      F = 0
+    end if
+    if (z.lt.nz) then
+     call material(grid(x,y,z)%imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+     kappa1 = kappa
+     call material(grid(x,y,z+1)%imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+     G = (kappa1+kappa)/2 !z out
+    else
+      G = 0
+    end if
+
+   ! Finding what the Hij element is connected to in system
+   if (i .eq. j) then ! return the value of the self if self is in argument
+      H = -((A+B+D+E+F+G)-alpha)
+      return
+   end if    
  
-          end do
-       end do
-    end do
+   if (i+1 .eq. j) then
+      H = B
+      return
+   
+   else if (i-1 .eq. j) then !X left and right neighbour of self respectivily 
+      H = A 
+      return
+
+   else if (i+n .eq. j ) then 
+      H = E 
+      return
+   
+   else if (i-n .eq. j) then !Y down and up neighbour of self respectivily
+      H = D 
+      return
+   
+   else if (i+n**2 .eq. j) then
+      H = G 
+      return 
+   
+   else if (i-n**2 .eq. j) then !Z out and in neighbour of self respectivily
+      H = F
+      return
+   else 
+     H = 0
+     return
+   end if
+
+
+
+
+
 
 
 
