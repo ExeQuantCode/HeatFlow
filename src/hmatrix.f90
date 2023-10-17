@@ -27,7 +27,7 @@ subroutine hmatrix(i,j,H)
     if (x .gt. 1) then
      call material(grid(x,y,z)%imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
      kappa1 = kappa
-   4
+   
     call material(grid(x-1,y,z)%imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
      A = (kappa1 + kappa)/2 !kappa x left 
     else 
