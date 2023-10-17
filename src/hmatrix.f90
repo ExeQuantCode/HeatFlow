@@ -7,22 +7,22 @@ use inputs
 contains
 
 subroutine hmatrix(i,j,H)
-  integer, intent(in) :: i, j, x, y, z, n
+  integer, intent(in) :: i, j, x, y, z
   real(real12), intent(in) :: alpha, A, B, D, E, F, G, kappa1
   real(real12), intent(out) :: H
 
 
   ! For ease atm
-  n = nx
+
 
    
   alpha = (tau+time_step)/(time_step*time_step)
 
 
    ! x y and z of self 
-    x = j - int(j/n)*n - int(j/(n**2))*(n**2)!Structure coordinate; int(j/n)*n refers the y row in the structure; int(j/(n**2))*(n**2) refers to the plane i.e z
-    y = int(j/n) - int(j/(n**2))*(n**2) !Structure coordinate
-    z = int(j/(n**2))!Structure coordinate
+    x = j - int(j/nx)*nx - int(j/(nx*ny))*(nx*ny)!Structure coordinate; int(j/nx)*nx refers the y row in the structure; int(j/(nx*ny))*(nx*ny) refers to the plane i.e z
+    y = int(j/nx) - int(j/(nx*ny))*(nx*ny) !Structure coordinate
+    z = int(j/(nx*ny))!Structure coordinate
 
     if (x .gt. 1) then
      call material(grid(x,y,z)%imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
@@ -89,19 +89,19 @@ subroutine hmatrix(i,j,H)
       H = A 
       return
 
-   else if (i+n .eq. j ) then 
+   else if (i+nx .eq. j ) then 
       H = E 
       return
    
-   else if (i-n .eq. j) then !Y down and up neighbour of self respectivily
+   else if (i-nx .eq. j) then !Y down and up neighbour of self respectivily
       H = D 
       return
    
-   else if (i+n**2 .eq. j) then
+   else if (i+(nx*ny) .eq. j) then
       H = G 
       return 
    
-   else if (i-n**2 .eq. j) then !Z out and in neighbour of self respectivily
+   else if (i-(nx*ny) .eq. j) then !Z out and in neighbour of self respectivily
       H = F
       return
    else 
