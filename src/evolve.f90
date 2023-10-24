@@ -32,7 +32,7 @@ contains
           
           H(i,j)=H0
           if (HBoundary.eq.1) then
-             CALL HATRIX_BOUND(i,j,HB)
+             CALL HMATRIX_BOUND(i,j,HB)
              H(i,j)=H(i,j)+HB(i,j)
           end if
        end do
@@ -49,12 +49,12 @@ contains
     
     S=0
     
-    CALL TP_OLD(j,TO)
+!    CALL TP_OLD(j,TO)
     !   S=TP/dt
     
-    !CALL Boundary
+    CALL SBoundary(B)
     
-    !CALL HEATER
+    CALL HEATER(Q)
     
     !Call S_CAT
     
