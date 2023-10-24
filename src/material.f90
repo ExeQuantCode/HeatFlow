@@ -1,30 +1,32 @@
-!##############################################################################################################
-! A library of different materials cases, selected by giving desired material case value in GridMaterial.txt
-!##############################################################################################################
 module materials
 
  use constants
+  use inputs
   use constructions
   use heating
   implicit none
 
 contains
 
-subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+subroutine material(imaterial_type,T,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
   
    integer(int12) ::imaterial_type
    integer(int12) :: i3D
+   !integer, parameter:: e = nx*ny*nz
+   Real(real12) :: T
     ! real(real12), dimension(e) :: T
    !!   real(real12) :: Temperature
-   real(real12), dimension(3,3) :: kappa3D
+   !real(real12), dimension(3,3) :: kappa3D
+   real(real12) :: kappa3D
    real(real12) :: kappa
 !convective current!
-   real(real12) :: h_conv ! 
-   real(real12) :: heat_capacity 
+   real(real12) :: h_conv
+   real(real12) :: heat_capacity
    real(real12) :: sound_speed
    real(real12) :: rho
    real(real12) :: volume
    real(real12) :: tau
+
 !14 - silicon
 !3001 - air (convection - h 50)
 !3002 - air (convection - h 100)

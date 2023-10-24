@@ -17,7 +17,7 @@ MODULE simulator
 
 
 
-  subroutine evolve(grid, T, TN, Told, it)
+  subroutine bmake(grid, T, TN, Told, TPD, it)
     implicit none
 
     ! Define dtypes for variables
@@ -35,10 +35,9 @@ MODULE simulator
     real(real12), parameter :: tol = 1e-8
     character:: uplo, no
     character(len=20) :: fmt_string
-    real(real12) :: pa,pb,L,rho_C,cv_C,Q,Pin,kap11,Delta_Temp
+    real(real12) :: pa,pb,L,rho_C,cv_C, Q ,Pin,kap11,Delta_Temp,TP
     real(real12) :: h_conv, heat_capacity, HC, sound_speed, rho, volume, RC                                                     
     real(real12) :: RTerm, qdot, kappa, tau, tdx, tdy, tdz
-    
     ! define allocatable arrays
     integer(int12), dimension(7) :: idiag 
     real(real12), allocatable :: small(:,:)
@@ -55,11 +54,12 @@ MODULE simulator
     real(real12), allocatable :: Told_matrix(:)
     real(real12), allocatable :: heat(:)
     real(real12), allocatable :: b(:)
+    real(real12), dimension(NA) :: TPD
 
     real(real12), allocatable ::  gammax(:)
     real(real12), allocatable :: gammay(:)
     real(real12), allocatable :: gammaz(:)
-    real(real12), dimension(3,3) :: kappa3D
+    real(real12) :: kappa3D
     real(real12), allocatable :: b_prime(:,:)
 
     real(real12), dimension(nx,ny,nz):: T, TN, Told
@@ -91,7 +91,7 @@ MODULE simulator
     off = (3*dis)+1
     m = 4*nx*ny*nz - ny*nz - nx*nz - nx*ny
     endz = (nx*ny)*(nz-1)
-    
+
     ! Allocate arrays
     allocate(small(e,off))
     allocate(small_transpose(off, e))
@@ -156,8 +156,9 @@ MODULE simulator
              ! It doesn't change anything
              !print*, ix,iy,iz
              CALL DELTA_ave(T,Kap,l_c,H_con,ix,iy,iz,grid)
-             call material(grid(ix,iy,iz)%imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
-             call heater(ix,iy,iz,it,grid(ix,iy,iz)%imaterial_type,QQ)
+             call material(grid(ix,iy,iz)%imaterial_type,TP,kappa,kappa3D &
+	 ,h_conv,heat_capacity,rho,sound_speed,tau)
+             call heater(it, Q)
                !write(*,*) 'QQ', QQ
              !delta_ave needs to be converted from 1st order to second order
              ! make matrices for gamma !
@@ -382,10 +383,7 @@ MODULE simulator
     small(:,cen+nx) = eoshift(small(:,cen+nx),shift =nx,boundary = 0.e0_real12, dim=1)
     small(:,cen-dis) = eoshift(small(:,cen-dis),shift =-dis,boundary = 0.e0_real12, dim=1)
 
-    !write(fmt_string,'("(",I0,"(1X,F0.9))")') e
-    !write(*,trim(fmt_string)) small
-    !write(*,*)
-    !write(*,'(10(1X,F8.4))') (small(i,:),i=1,8)
+
 !!!################################################################################################
 
     !     CALCULATE INVERSE OF A     
@@ -411,7 +409,7 @@ MODULE simulator
        end do
     end do
 
-
+	TPD = b
     ! Do the math !
 
     small_transpose = transpose(small)
@@ -427,7 +425,7 @@ MODULE simulator
     !print*, small_transpose
     n = size(b)
     !call conjugate_gradient(n, small_transpose, T_matrix, b, tol, itmax, iter)
-    call matinv1(small_transpose,b_prime,e_prime,off_prime)
+    !call matinv1(small_transpose,b_prime,e_prime,off_prime) ! small*T = b_prime
     !print*, T_matrix
     !print*, b_prime
 
@@ -441,7 +439,7 @@ MODULE simulator
              if(abs(TN(ix,iy,iz)-b_prime(flag,1)).gt.tol) then
                 TN(ix,iy,iz) = b_prime(flag,1)
              else
-                equ = equ + 1A library of different materials cases, selected by giving desired material case value in GridMaterial.txt
+                equ = equ + 1
              end if
           b_temp(ix,iy,iz) = b(flag)
           flag = flag+1
@@ -453,14 +451,6 @@ MODULE simulator
     print*, 'EQUILIBRIUM REACHED'
  end if
 
-
- !print*, TNA library of different materials cases, selected by giving desired material case value in GridMaterial.txt
- !write(*, '("TN(1,1,1)=",F0.7)') TN(1,1,1)
- !write(*, '("TN(1,1,2)=",F0.7)') TN(1,1,2) 
- !write(*, '("TN(1,2,2)=",F0.7)') TN(1,2,2)
- !write(*, '("TN(1,2,3)=",F0.7)') TN(1,2,3)
- !write(*, '("TN(2,2,2)=",F0.7)') TN(2,2,2)
- !write(*, '(" TN(",I0,",",I0,",",I0,")= ",F0.7)') 3,3,3,TN(3,3,3)
 
 
  ! reset at end of timestep !
@@ -474,7 +464,7 @@ MODULE simulator
  end do
  !Print *, Told
 
-end subroutine evolve
+end subroutine bmake
 end MODULE simulator
 
 

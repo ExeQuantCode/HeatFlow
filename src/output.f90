@@ -1,32 +1,29 @@
-
-!##############################################################################################################
-! This codes primary function is to output the results of the simulation to txt file
-!##############################################################################################################
 MODULE OUTPUT
   use constants
-  use constructions
   use inputs
+  use constructions
   implicit none
   
 contains
   SUBROUTINE PLOT(it,TN,grid)
     TYPE(heatblock), dimension(nx,ny,nz) :: grid
-    real(real12), dimension(nx,ny,nz):: TN
-    real(real12), dimension(nx):: r
+    
+    ! real(real12), dimension(nx, ny,nz) :: T
+
+    real(real12), dimension(nx,ny,nz) :: TN
+  !  real(real12), dimension(e) :: T_matrix
+    real(real12), dimension(nx) :: R
     real(real12) :: xlen
-    integer(int12) :: flag
-
-
+    integer(int12) flag
+    !integer :: zpos = 508
+    
     integer(int12) :: i,j,k,it,ix
 
-
-    
-    
     
     xlen= 1.0*0.333
     flag=0
     if (it.eq.1) then
-       open(unit=30,file='Temperature.txt', status='old')
+       open(unit=30,file='Temperature.txt')
     end if
     
     r(1)=grid(1,ny/2,zpos)%length(1)

@@ -8,9 +8,10 @@ module inputs
 
 
   implicit none
-  integer :: unit
+  integer :: unit, newunit
   real(real12) :: time_step, T_Bath, freq, power_in, T_period, cutoff
-  integer(int12) ::  newunit, IVERB, icell_mix, ntime, Rel, zpos, ACon, iheater, iboundary, nx, ny, nz, gradcalc, icattaneo, isteady
+  integer(int12) :: IVERB, icell_mix, ntime, Rel, zpos, ACon, iheater &
+	, iboundary, nx, ny, nz, gradcalc, icattaneo, isteady, NA
   logical, parameter :: verbose = .FALSE.
 
 
@@ -81,21 +82,21 @@ contains
 !############################################################################
   subroutine readINPUT(unit)
     integer::unit,Reason, i
-    integer,dimension(17)::readvar
+    integer,dimension(19)::readvar
     character(1024)::buffer
     logical::ex
     readvar=0
     !------------------------------------------
-    ! assine defaults
+    ! assign defaults
     !------------------------------------------
     IVERB = 1
     icell_mix = 2
-    ntime = 20
+    ntime = 10
     Rel = 0
     zpos = 1
     ACon = 0
     time_step = 1.0
-    iheater = 20
+    iheater = 0
     freq = 1
     iboundary = 1
     icattaneo = 1
@@ -107,6 +108,7 @@ contains
     nx = 2
     ny = 2
     nz = 2
+    Na = nx*ny*nz
     !------------------------------------------
     do
        read(unit,'(A)',iostat=Reason) buffer
@@ -114,30 +116,31 @@ contains
        if(scan(buffer,'!').ne.0) buffer=buffer(:(scan(buffer,'!')-1)) ! looks for comments in each line of txt file and trims them off
        if(trim(buffer).eq.'') cycle ! removes blank spaces
        !---------------------------------------
-       ! assineD works for doubles
-       ! assineL for logicals
-       ! assineI for integers
+       ! assignD works for doubles
+       ! assignL for logicals
+       ! assignI for integers
        !---------------------------------------
        ! looks for all the keywords relating to inputs and defines their variables
-       call assineI(buffer,"IVERB",IVERB,readvar(1))         
-       call assineI(buffer,"icell_mix",icell_mix,readvar(2))             
-       call assineI(buffer,"ntime",ntime,readvar(3))           
-       call assineI(buffer,"Rel",Rel,readvar(4))       
-       call assineI(buffer,"zpos",zpos,readvar(5))      
-       call assineI(buffer,"ACon",ACon,readvar(6))         
-       call assineD(buffer,"time_step",time_step,readvar(7))   
-       call assineI(buffer,"iheater",iheater,readvar(8))       
-       call assineD(buffer,"freq",freq,readvar(9))       
-       call assineI(buffer,"iboundary",iboundary,readvar(10))   
-       call assineI(buffer, "icattaneo", icattaneo, readvar(11))
-       call assineI(buffer, "isteady", isteady, readvar(12))
-       call assineD(buffer,"T_Bath",T_Bath,readvar(13)) 
-       call assineD(buffer,"cutoff",cutoff,readvar(14))    
-       call assineD(buffer,"power_in",power_in,readvar(15))       
-       call assineD(buffer,"T_period",T_period,readvar(16))       
-       call assineI(buffer,"nx",nx,readvar(17))    
-       call assineI(buffer,"ny",ny,readvar(18))    
-       call assineI(buffer,"nz",nz,readvar(19))  
+       call assignI(buffer,"IVERB",IVERB,readvar(1))         
+       call assignI(buffer,"icell_mix",icell_mix,readvar(2))             
+       call assignI(buffer,"ntime",ntime,readvar(3))           
+       call assignI(buffer,"Rel",Rel,readvar(4))       
+       call assignI(buffer,"zpos",zpos,readvar(5))      
+       call assignI(buffer,"ACon",ACon,readvar(6))         
+       call assignD(buffer,"time_step",time_step,readvar(7))   
+       call assignI(buffer,"iheater",iheater,readvar(8))       
+       call assignD(buffer,"freq",freq,readvar(9))       
+       call assignI(buffer,"iboundary",iboundary,readvar(10))   
+       call assignI(buffer, "icattaneo", icattaneo, readvar(11))
+       call assignI(buffer, "isteady", isteady, readvar(12))
+       call assignD(buffer,"T_Bath",T_Bath,readvar(13)) 
+       call assignD(buffer,"cutoff",cutoff,readvar(14))    
+       call assignD(buffer,"power_in",power_in,readvar(15))       
+       call assignD(buffer,"T_period",T_period,readvar(16))       
+       call assignI(buffer,"nx",nx,readvar(17))    
+       call assignI(buffer,"ny",ny,readvar(18))    
+       call assignI(buffer,"nz",nz,readvar(19))
+       Na = nx*ny*nz
     end do
     close(unit)
     call checkINPUT(readvar,size(readvar,1))
@@ -148,10 +151,10 @@ contains
 
 
 !############################################################################
-! assines a DP value to variable if the line contains the right keyword
+! assigns a DP value to variable if the line contains the right keyword
 !############################################################################
 ! KEYWORD = 5.2
-  subroutine assineD(buffer,keyword,variable,found)
+  subroutine assignD(buffer,keyword,variable,found)
     !for the line with the keyword trim everything before the = inclusively and assign that value to the keyword
     integer::found
     character(1024)::buffer1,buffer2
@@ -164,14 +167,14 @@ contains
        found=found+1
        read(buffer2,*) variable
     end if
-  end subroutine assineD
+  end subroutine assignD
 !############################################################################
 
 
 !############################################################################
-! assines an integer
+! assigns an integer
 !############################################################################
-  subroutine assineI(buffer,keyword,variable,found)
+  subroutine assignI(buffer,keyword,variable,found)
       !for the line with the keyword trim everything before the = inclusively and assign that value to the keyword
     integer::found
     character(1024)::buffer1,buffer2
@@ -184,14 +187,14 @@ contains
        found=found+1
        read(buffer2,*) variable
     end if
-  end subroutine assineI
+  end subroutine assignI
 !############################################################################
 
 
 !############################################################################
-! assines an logical
+! assigns an logical
 !############################################################################
-  subroutine assineL(buffer,keyword,variable,found)
+  subroutine assignL(buffer,keyword,variable,found)
       !for the line with the keyword trim everything before the = inclusively and assign that value to the keyword
 
     integer::found
@@ -210,14 +213,14 @@ contains
           variable=.FALSE.
        end if
     end if
-  end subroutine assineL
+  end subroutine assignL
 !############################################################################
 
 
 !############################################################################
-! assines a string
+! assigns a string
 !############################################################################
-  subroutine assineS(buffer,keyword,variable,found)
+  subroutine assignS(buffer,keyword,variable,found)
       !for the line with the keyword trim everything before the = inclusively and assign that value to the keyword
 
     integer::found
@@ -231,7 +234,7 @@ contains
        found=found+1
        read(buffer2,*) variable
     end if
-  end subroutine assineS
+  end subroutine assignS
 !############################################################################
 
 

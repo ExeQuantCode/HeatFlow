@@ -7,14 +7,15 @@ PROGRAM HEATFLOW_V0_1
   use constructions
   use setup
   use simulator
-  use matrix_inversion
   use output
   use inputs
-
+  use evolution
   implicit none
    real(real12) :: rstart, rend, rprogress
    integer(int12) :: it
-   real(real12), allocatable :: T(:,:,:), TN(:,:,:), Told(:,:,:) 
+   real(real12), allocatable :: T(:,:,:), TN(:,:,:), Told(:,:,:)
+   !real(real12), dimension(nx, ny,nz) :: T,T0, T00
+   real(real12), allocatable :: TD(:), TPD(:) !1D x and b respectively
    TYPE(heatblock), allocatable :: grid(:, :, :)
 
    call cpu_time(rstart) ! starts timer 
@@ -29,14 +30,17 @@ PROGRAM HEATFLOW_V0_1
    allocate(TN(nx, ny, nz))
    allocate(T(nx, ny, nz))
    allocate(Told(nx, ny, nz))
-
+   allocate(TD(NA))
+   allocate(TPD(NA))
    Print*, 'Setup complete, running simulation' ! indication that inputs have been read
    do it=1,ntime ! run simulation for 'ntime' time steps
       if (iverb.eq.1) then
          print*, 'Evolving system, timestep = ', it
       end if
 
-      CALL evolve(grid, T, TN, Told, it) !run the simulation, located in Matrix4.f90
+      !call bmake(grid, T, TN, Told, TPD ,it) !Temp will be moved to evolve eventually
+
+      CALL evolve(it,Told) !run the simulation, located in evolve.f90
 
       CALL plot(it,TN,grid) ! Write result to an output file, located in output.f90
 
