@@ -1,7 +1,7 @@
 module Heating
   use constants, only: real12, int12
   use constructions, only: heatblock
-  use inputs, only: nx,ny,nz, iheater
+  use inputs, only: nx,ny,nz, iheater, grid
 
 
 contains
@@ -9,7 +9,6 @@ contains
 
   !!Simple heat source implemented
   subroutine heater(it,Q)
-    TYPE(heatblock), dimension(nx,ny,nz) :: grid
     integer :: IA,iheater
     integer(int12) :: it 
     real(real12) :: time

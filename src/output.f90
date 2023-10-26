@@ -1,12 +1,11 @@
 MODULE OUTPUT
   use constants, only: real12, int12
-  use inputs, only: nx,ny,nz, time_step, zpos
+  use inputs, only: nx,ny,nz, time_step, zpos, grid
   use constructions, only: heatblock
   implicit none
   
 contains
-  SUBROUTINE PLOT(it,TN,grid)
-    TYPE(heatblock), dimension(nx,ny,nz) :: grid
+  SUBROUTINE PLOT(it,TN)
     
     ! real(real12), dimension(nx, ny,nz) :: T
     integer :: new, newunit
