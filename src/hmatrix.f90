@@ -2,12 +2,11 @@ module hmatrixmod
 use constructions, only: heatblock
 use constants, only: real12, int12
 use materials, only: material
-use inputs, only: nx, ny, nz, time_step
+use inputs, only: nx, ny, nz, time_step, grid
 
 contains
 
 subroutine hmatrix(i,j,H)
-  TYPE(heatblock), dimension(nx,ny,nz) :: grid
   integer(int12), intent(in) :: i, j
   integer(int12) :: x, y, z
   real(real12) :: alpha, A, B, D, E, F, G, kappa1, T

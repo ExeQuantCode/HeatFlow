@@ -18,7 +18,7 @@ def multi_split(s, *delimiters):
 def volume_read(block_type, line, block_data):
     line_lower = line.lower()
     if block_type == "VOLUME":
-        flags = ["x", "y", "z", "d"]
+        flags = ["x", "y", "z", "d","units"]
         if any(line_lower.startswith(flag) for flag in flags):
             key, value = multi_split(line_lower, '=', ':')
             block_data[key.strip()] = float(value.strip())
@@ -27,7 +27,7 @@ def volume_read(block_type, line, block_data):
             v1, v2, v3 = value.split()
             v1, v2, v3 = int(v1), int(v2), int(v3)
             block_data[key.strip()] = [v1, v2, v3]
-        flags = ["f", "u"]
+        flags = ["f"]
         if any(line_lower.startswith(flag) for flag in flags):
             key, value = multi_split(line_lower, '=', ':')
             block_data[key.strip()] = str(value.strip())
@@ -422,7 +422,7 @@ for c, structure in enumerate(blocks['STRUCTURE']):
     if not is_closed_surface(structure):
         print("Error: Structure {} is not closed!".format(c+1))
         exit(1)
-print("All structures are closed!")
+print(" All structures are closed!")
 
 
 # ceate the point mesh. each coordinate is at the center of it's respective cell
@@ -446,7 +446,17 @@ for i in range(grid_dims[0]):
             fill = point_mesh[k][j][i]['fill']
 
 
+print(" Writing to: GridMaterial.dat")
 with open("GridMaterial.dat", "w") as f:
+    s=blocks["VOLUME"][0]["units"]
+    x=str(blocks["VOLUME"][0]["x"]*s)
+    y=str(blocks["VOLUME"][0]["y"]*s)
+    z=str(blocks["VOLUME"][0]["z"]*s)
+    i=str(grid_dims[0])
+    j=str(grid_dims[1])
+    k=str(grid_dims[2])
+    f.write(x+' '+y+' '+z+'\n')
+    f.write(i+' '+j+' '+k+'\n\n')
     i=int(0)
     j=int(0)
     k=int(0)
@@ -460,18 +470,18 @@ with open("GridMaterial.dat", "w") as f:
             f.write(" ".join(line_values) + "\n")
         f.write("\n")
 
-with open("GridMaterial.bin", "wb") as f:
-    i=int(0)
-    j=int(0)
-    k=int(0)
-    for i in range(grid_dims[0]):
-        for j in range(grid_dims[1]):
-            line_values = []
-            for k in range(grid_dims[2]):
-                coordinate = point_mesh[k][j][i]['coord']
-                fill = int(point_mesh[k][j][i]['fill'])
-                line_values.append(str(fill))
-                f.write(struct.pack('i', fill))
+#with open("GridMaterial.bin", "wb") as f:
+#    i=int(0)
+#    j=int(0)
+#    k=int(0)
+#    for i in range(grid_dims[0]):
+#        for j in range(grid_dims[1]):
+#            line_values = []
+#            for k in range(grid_dims[2]):
+#                coordinate = point_mesh[k][j][i]['coord']
+#                fill = int(point_mesh[k][j][i]['fill'])
+#                line_values.append(str(fill))
+#                f.write(struct.pack('i', fill))
 
 
 

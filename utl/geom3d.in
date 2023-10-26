@@ -8,7 +8,7 @@ VOLUME
        Z = 200
        Fill = 1
        !units are meters by default
-       Units = nano
+       Units = 1E-6
        dim = 3
        grid = 10 10 10
 END

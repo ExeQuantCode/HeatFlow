@@ -6,7 +6,7 @@ PROGRAM HEATFLOW_V0_1
   use constants, only: real12, int12
   use constructions, only: heatblock
   use output, only: plot
-  use inputs, only: readINPUT, nx, ny, nz, NA, iverb, ntime
+  use inputs, only: read_all_files, nx, ny, nz, NA, iverb, ntime, grid
   use evolution, only: evolve
   use setup, only: Initiate, set_global_variables
   implicit none
@@ -16,24 +16,21 @@ PROGRAM HEATFLOW_V0_1
    real(real12), allocatable :: T(:,:,:), TN(:,:,:), Told(:,:,:)
    !real(real12), dimension(nx, ny,nz) :: T,T0, T00
    real(real12), allocatable :: TD(:), TPD(:) !1D x and b respectively
-   TYPE(heatblock), allocatable :: grid(:, :, :)
    call cpu_time(rstart) ! starts timer 
 
 
    Print*, 'Setup initialising' ! indication that the model is runnning
    
    ! Read parameters from inputs file, located in inputs.f90
-   open(unit = newunit, file = 'Inputs.txt')
-   call readINPUT(unit)
-   close(unit)
-   allocate(grid(nx, ny, nz))
+   call read_all_files()
+
    allocate(TN(nx, ny, nz))
    allocate(T(nx, ny, nz))
    allocate(Told(nx, ny, nz))
    allocate(TD(NA))
    allocate(TPD(NA))
 
-   call Initiate(grid)
+   call Initiate()
    call set_global_variables()
    Print*, 'Setup complete, running simulation' ! indication that inputs have been read
 

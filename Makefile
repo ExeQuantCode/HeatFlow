@@ -26,7 +26,6 @@ SRCS := constants.f90 \
 		Globe_data.f90 \
 		Sparse.f90 \
 		inputs.f90 \
-		ReadTxt.f90 \
 		setup.f90 \
 		heating.f90 \
 		material.f90 \
