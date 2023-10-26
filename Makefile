@@ -20,7 +20,6 @@ mkfile_path := $(abspath $(firstword $(MAKEFILE_LIST)))
 mkfile_dir := $(dir $(mkfile_path))
 BIN_DIR := ./bin
 SRC_DIR := ./src
-LIB_DIR := ./lib
 BUILD_DIR = ./obj
 
 SRCS := constants.f90 \
@@ -50,14 +49,6 @@ FC = gfortran
 # LIBRARY SECTION
 ##########################################
 MKLROOT?="/usr/local/intel/parallel_studio_xe_2017/compilers_and_libraries_2017/linux/mkl/lib/intel64_lin"
-LLAPACK = $(MKLROOT)/lib/intel64_lin/libmkl_lapack95_lp64.a \
-	-Wl,--start-group \
-	$(MKLROOT)/lib/intel64_lin/libmkl_intel_lp64.a \
-	$(MKLROOT)/lib/intel64_lin/libmkl_sequential.a \
-	$(MKLROOT)/lib/intel64_lin/libmkl_core.a \
-	-Wl,--end-group \
-	-lpthread
-
 
 
 NAME = ThermalFLow.x
