@@ -3,16 +3,15 @@
 !##############################################################################################################
 PROGRAM HEATFLOW_V0_1
   
-  use constants
-  use constructions
-  use setup
-  use simulator
-  use output
-  use inputs
-  use evolution
+  use constants, only: real12, int12
+  use constructions, only: heatblock
+  use output, only: plot
+  use inputs, only: readINPUT, nx, ny, nz, NA, iverb, ntime
+  use evolution, only: evolve
   implicit none
    real(real12) :: rstart, rend, rprogress
    integer(int12) :: it
+   integer :: newunit, unit
    real(real12), allocatable :: T(:,:,:), TN(:,:,:), Told(:,:,:)
    !real(real12), dimension(nx, ny,nz) :: T,T0, T00
    real(real12), allocatable :: TD(:), TPD(:) !1D x and b respectively

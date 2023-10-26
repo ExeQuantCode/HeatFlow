@@ -1,5 +1,5 @@
 module globe_data
-  use sptype
+  use sptype, only: sprs2_dp, diag_sprs_dp
   implicit none
   double precision, dimension(:,:), allocatable :: H
   TYPE(sprs2_dp) :: ra !Techniqually rH

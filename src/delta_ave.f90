@@ -1,9 +1,8 @@
 MODULE DeA
-  use constants
-  use inputs
-  use constructions
-  use heating
-  use materials
+  use constants, only: real12, int12
+  use inputs, only: nx,ny,nz, icell_mix
+  use constructions, only: heatblock
+  use materials, only: material
   implicit none
 contains
 

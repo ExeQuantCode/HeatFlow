@@ -1,6 +1,6 @@
 MODULE INITIAL
-  use constants
-  use inputs
+  use constants, only: real12, int12
+  use inputs, only: NA, T_Bath
   implicit none
 
   

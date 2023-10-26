@@ -1,7 +1,7 @@
 MODULE OUTPUT
-  use constants
-  use inputs
-  use constructions
+  use constants, only: real12, int12
+  use inputs, only: nx,ny,nz, time_step, zpos
+  use constructions, only: heatblock
   implicit none
   
 contains
@@ -9,7 +9,7 @@ contains
     TYPE(heatblock), dimension(nx,ny,nz) :: grid
     
     ! real(real12), dimension(nx, ny,nz) :: T
-
+    integer :: new, newunit
     real(real12), dimension(nx,ny,nz) :: TN
   !  real(real12), dimension(e) :: T_matrix
     real(real12), dimension(nx) :: R

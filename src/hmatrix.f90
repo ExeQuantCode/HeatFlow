@@ -1,8 +1,8 @@
 module hmatrixmod
-use dea
-use materials
-use heating
-use inputs
+use constructions, only: heatblock
+use constants, only: real12, int12
+use materials, only: material
+use inputs, only: nx, ny, nz, time_step
 
 contains
 

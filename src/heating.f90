@@ -1,6 +1,7 @@
 module Heating
-  use constants
-  use inputs
+  use constants, only: real12, int12
+  use constructions, only: heatblock
+  use inputs, only: nx,ny,nz, iheater
 
 
 contains
