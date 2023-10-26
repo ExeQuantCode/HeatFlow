@@ -10,37 +10,8 @@ SHELL = /bin/sh
 #
 PLAT = _linux
 #
-#  Modify the FORTRAN and OPTS definitions to refer to the
-#  compiler and desired compiler options for your machine.  NOOPT
-#  refers to the compiler options desired when NO OPTIMIZATION is
-#  selected.  Define LOADER and LOADOPTS to refer to the loader and
-#  desired load options for your machine.
 #
-FORTRAN  = g77
-OPTS     = -funroll-all-loo ps -fno-f2c -O3
-DRVOPTS  = $(OPTS)
-NOOPT    =
-LOADER   = g77
-LOADOPTS = $(OPTS)
-#
-#  The archiver and the flag(s) to use when building archive (library)
-#  If you system has no ranlib, set RANLIB = echo.
-#
-ARCH     = ar
-ARCHFLAGS= cr
-RANLIB   = ranlib
-#
-#  The location of the libraries to which you will link.  (The
-#  machine-specific, optimized BLAS library should be used whenever
-#  possible.)
-#
-BLASLIB      =  /home/links/hm556/.local/lapack/libblas.a
-LAPACKLIB    =  /home/links/hm556/.local/lapack/liblapack.a
-#BLASLIB      =  $(MKLROOT)/lib/intel64_lin/libmkl_blas95_ilp64.a   #lapack-3.11.0/librefblas.a
-#LAPACKLIB    =  $(MKLROOT)/lib/intel64_lin/libmkl_lapack95_ilp64.a
-# TMGLIB       = tmglib$(PLAT).a
-# EIGSRCLIB    = eigsrc$(PLAT).a
-# LINSRCLIB    = linsrc$(PLAT).a
+
 
 ##########################################
 # CODE DIRECTORIES AND FILES
@@ -51,27 +22,21 @@ BIN_DIR := ./bin
 SRC_DIR := ./src
 LIB_DIR := ./lib
 BUILD_DIR = ./obj
-# LIBS := mod_constants.f90 \
-# 	mod_misc.f90 \
-# 	mod_misc_linalg.f90 \
-# 	mod_rw_geom.f90 \
-# 	mod_edit_kpoints.f90 \
-# 	mod_rw_dat.f90
-#OBJS := $(addprefix $(LIB_DIR)/,$(LIBS))
+
 SRCS := constants.f90 \
-        inputs.f90 \
-	Sparse.f90 \
-	SPtype.f90 \
-	Globe_data.f90 \
-	hmatrix.f90 \
-	init_evolve.f90 \
-	evolve.f90 \
-	ReadTxt.f90 \
-        constructions.f90 \
-	heating.f90 \
-	setup.f90 \
-        material.f90 \
-        delta_ave.f90 \
+		constructions.f90 \
+		SPtype.f90 \
+		Globe_data.f90 \
+		Sparse.f90 \
+		inputs.f90 \
+		ReadTxt.f90 \
+		setup.f90 \
+		heating.f90 \
+		material.f90 \
+		hmatrix.f90 \
+		init_evolve.f90 \
+		delta_ave.f90 \
+		evolve.f90 \
         output.f90 \
         main.f90
 OBJS := $(addprefix $(SRC_DIR)/,$(SRCS))
@@ -80,7 +45,6 @@ OBJS := $(addprefix $(SRC_DIR)/,$(SRCS))
 FFLAGS = -O3
 MODULEFLAGS = -J
 FC = gfortran
-# LIB= libchesspexsi.a #-l?
 
 ##########################################
 # LIBRARY SECTION
@@ -94,10 +58,9 @@ LLAPACK = $(MKLROOT)/lib/intel64_lin/libmkl_lapack95_lp64.a \
 	-Wl,--end-group \
 	-lpthread
 
-#$(MKLROOT)/libmkl_scalapack_lp64.a \
-#$(MKLROOT)/libmkl_solver_lp64_sequential.a \
 
-NAME = ThermalFLow
+
+NAME = ThermalFLow.x
 programs = $(BIN_DIR)/$(NAME)
 all: $(programs)
 
@@ -108,7 +71,7 @@ $(BUILD_DIR):
 	mkdir -p $@
 
 $(programs) : $(OBJS) | $(BIN_DIR) $(BUILD_DIR)
-	$(FC) -O3 $(MODULEFLAGS) $(BUILD_DIR) $(OBJS) $(LAPACKLIB) $(BLASLIB) -o $@
+	$(FC) -O3 $(MODULEFLAGS) $(BUILD_DIR) $(OBJS) -o $@
 
 debug :  $(OBJS)
-	$(FC) -O3 -mcmodel=large -fbacktrace -fcheck=all -fbounds-check $(MODULEFLAGS) $(BUILD_DIR) $(LAPACKLIB) $(BLASLIB) -o $(programs)
+	$(FC) -O3 -mcmodel=large -fbacktrace -fcheck=all -fbounds-check $(MODULEFLAGS) $(BUILD_DIR) -o $(programs)
