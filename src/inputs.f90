@@ -96,9 +96,9 @@ contains
     cutoff = 1e12
     power_in = 0
     T_period = 1
-    nx = 2
-    ny = 2
-    nz = 2
+    nx = 5
+    ny = 5
+    nz = 5
     Na = nx*ny*nz
     !------------------------------------------
     do

@@ -1,10 +1,8 @@
 MODULE EVOLUTION
-  use constants, only: real12, int12, TINY
+  use constants, only: real12, int12
   use inputs, only: NA, icattaneo, isteady
-  use hmatrixmod, only: hmatrix
   use sptype, only: I4B
-  use globe_data, only: H, ra
-  use sparse, only: SRSin, linbcg
+  use sparse, only: linbcg
 
   implicit none
 
@@ -14,47 +12,20 @@ MODULE EVOLUTION
 
 contains
 
+
   subroutine EVOLVE(it,b)
     real(real12), dimension(NA) :: S, T, TP, TPP, x
     real(real12), dimension(NA) :: Q, B, S_CAT
     integer(int12) :: i,j, nT, it, ncg, itol, itmax, iss
     integer(I4B) :: iter
-    real(real12) :: dt, H0, hboundary, To, Hb, e, err, tol
+    real(real12) :: dt, To, Hb, e, err, tol
     !TP  is the previous set of temperatures
     !TPP goes back two time steps.
-    if (.not. allocated(H)) allocate(H(NA,NA))
+    
     !-------------------------------
     !initialise variables
     !CALL INIT_EVOLVE(it,TP,TPP)
     !------------------------
-    
-    !H_ij T_i =S_j
-    
-    !------------------------------------------------
-    !Make hmatrix
-    !Hmatrix consists of H_ij,0 and H_ij,B (heat flow across grid and matrix correction for boundaries
-    !-----------------------------------------------
-    if (it .eq. 1) then
-	    H=0.0
-	    hboundary = 0.0
-	    do i=1,NA 
-	       do j=1,NA
-		  CALL HMATRIX(i,j,H0)
-		  
-		  H(i,j)=H0
-		  !if (HBoundary.eq.1) then
-		     !CALL HATRIX_BOUND(i,j,HB)
-		  !   H(i,j)=H(i,j)+HB(i,j)
-		  !end if
-	       end do
-	    end do
-	    H(1,1) = H(2,2)
-    end if 
-    !print*, H
-   ! Convert the matrix into Sparse Diagonal Storage.
-   ! call SDSin(A,TINY, da)
-   ! Convert the matrix into Sparse Row Storage.
-   call SRSin(H,TINY, ra)
 
     !----------------------------------------------
     !Make S-vector
