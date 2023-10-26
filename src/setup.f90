@@ -46,16 +46,6 @@ module setup
    end subroutine set_global_variables
 
 
-
-subroutine Initiate(grid)
-
-   ! Convert the matrix into Sparse Diagonal Storage.
-   ! call SDSin(A,TINY, da)
-   ! Convert the matrix into Sparse Row Storage.
-   call SRSin(H,TINY, ra)
-   end subroutine set_global_variables
-
-
 subroutine Initiate()
   integer(int12) :: ix,iy,iz,itime,i,it,j,k
   real(real12), dimension(nx) :: cellengthx
