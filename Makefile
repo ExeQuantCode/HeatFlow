@@ -80,7 +80,7 @@ SRCS := constants.f90 \
 OBJS := $(addprefix $(SRC_DIR)/,$(SRCS))
 
 
-FFLAGS = -O2 
+FFLAGS = -O3
 MODULEFLAGS = -J
 FC = gfortran
 # LIB= libchesspexsi.a #-l?

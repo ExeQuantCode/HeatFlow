@@ -78,20 +78,20 @@ CALL set_gridReadFromTxt(grid,cellengthx,cellengthy,cellengthz)
       
 !!!Introduced by Josh, provides a 2D plot of structure, useful for checking
     !!!Open files for debugging
-      open(unit=45,file='Structure.txt')
-
-    !!!Defines formatting
-    write(string,'("( ",I0,"(",I0,"I3,/))" )') ny, nx
-    string=trim(adjustl(string))
-    !write(6,*) trim(string)
-
-    !!!Prints a grid using the material type number to show the geometry of the simulation in a 2D slice (needs work to display the 3D version)
-   ! write(45,string) grid(1:nx,1:ny,1)%imaterial_type
-   ! write(45,string) grid(1:nx,1:ny,505)%imaterial_type
-    write(45,string) grid(1:nx,1:ny,1)%imaterial_type
-   ! write(45,string) grid(1:nx,1:ny,507)%imaterial_type
-    
-    close(unit=45)
+!      open(unit=45,file='Structure.txt')
+!
+!    !!!Defines formatting
+!    write(string,'("( ",I0,"(",I0,"I3,/))" )') ny, nx
+!    string=trim(adjustl(string))
+!    !write(6,*) trim(string)
+!
+!    !!!Prints a grid using the material type number to show the geometry of the simulation in a 2D slice (needs work to display the 3D version)
+!   ! write(45,string) grid(1:nx,1:ny,1)%imaterial_type
+!   ! write(45,string) grid(1:nx,1:ny,505)%imaterial_type
+!    write(45,string) grid(1:nx,1:ny,1)%imaterial_type
+!   ! write(45,string) grid(1:nx,1:ny,507)%imaterial_type
+!    
+!    close(unit=45)
     
  
   end subroutine Initiate
