@@ -1,9 +1,9 @@
 
 module setup
-  use constants
-  use inputs
-  use constructions
-  use SET_GRID_UP
+  use constants, only: real12, int12
+  use inputs, only: nx,ny,nz
+  use constructions, only: heatblock
+  use readtxt, only: readparameters
   
   implicit none
   
@@ -33,7 +33,7 @@ subroutine Initiate(grid, cellengthx, cellengthy, cellengthz)
 ! end if
 
 
-CALL set_gridReadFromTxt(grid,cellengthx,cellengthy,cellengthz)
+CALL readparameters(cellengthx,cellengthy,cellengthz)
 
 
 

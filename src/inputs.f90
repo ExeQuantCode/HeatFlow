@@ -3,15 +3,15 @@
 ! This code reads parameter inputs from Inputs.txt. See InputsHelp.txt for help
 !##############################################################################################################
 module inputs
-  use constants
-  use constructions
+  use constants, only: real12, int12
+  use constructions, only: heatblock
 
 
   implicit none
   integer :: unit, newunit
   real(real12) :: time_step, T_Bath, freq, power_in, T_period, cutoff
   integer(int12) :: IVERB, icell_mix, ntime, Rel, zpos, ACon, iheater &
-	, iboundary, nx, ny, nz, gradcalc, icattaneo, isteady, NA
+	, iboundary, nx, ny, nz, icattaneo, isteady, NA
   logical, parameter :: verbose = .FALSE.
 
 
@@ -35,16 +35,7 @@ contains
        write(0,'(A)') ' --- ERROR: same KEYWORD apears more than once    ---'
        call exit
     end if
-    if(gradcalc.ne.1.and.gradcalc.ne.2) then
-       write(0,*)
-       write(0,'(A43)') '###############################'
-       write(0,'(A43)') '##########  WARNING  ##########'
-       write(0,'(A43)') '###############################'
-       write(0,*)
-       write(0,'(A)') ' --- WARNING: GRAD_ORDER must be 1 or 2             ---'
-       gradcalc=2
-       write(0,'(A)') ' --- GRAD_ORDER has been changed to 2               ---'
-    end if
+
     if(verbose) then
        write(6,'(A)') ' vebose printing option'
        write(6,'(A)') ' running calculation with :'

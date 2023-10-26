@@ -1,6 +1,6 @@
 MODULE BOUNDARY_VECTOR
-  use constants
-  use inputs
+  use constants, only: real12, int12
+  use inputs, only: NA,nx,ny,nz
 
 contains
 
@@ -18,7 +18,7 @@ contains
     IA=0
 
     
-    do i=1,nX
+    do i=1,nx
        do j=1,ny
           do k=1,nz
              IA=IA+1

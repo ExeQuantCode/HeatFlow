@@ -1,9 +1,7 @@
 module materials
 
- use constants
-  use inputs
-  use constructions
-  use heating
+  use constants, only: real12, int12
+
   implicit none
 
 contains

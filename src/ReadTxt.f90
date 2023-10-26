@@ -4,9 +4,9 @@
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 MODULE readtxt
 ! The aim of this version is to read data from a txt file
-  use constants
-  use constructions
-  use inputs
+  use constants, only: real12, int12
+  use constructions, only: heatblock
+  use inputs, only: nx,ny,nz
   implicit none
 
 

@@ -1,12 +1,10 @@
 MODULE EVOLUTION
-  use constants
-  use inputs
-  use initial
-  use constructions
-  use hmatrixmod
+  use constants, only: real12, int12, TINY
+  use inputs, only: NA, icattaneo, isteady
+  use hmatrixmod, only: hmatrix
   use sptype, only: I4B
-  use globe_data
-  use sparse
+  use globe_data, only: H, ra
+  use sparse, only: SRSin, linbcg
 
   implicit none
 

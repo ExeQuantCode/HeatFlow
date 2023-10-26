@@ -1,6 +1,6 @@
 MODULE CONSTRUCTIONS
 !!!These serve as classes or structures in f90
-  use constants
+  use constants, only: real12, int12
   !!!Defines the heatblock to be used in the simulation
   type heatblock
      sequence

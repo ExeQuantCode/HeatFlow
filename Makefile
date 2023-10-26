@@ -68,13 +68,10 @@ SRCS := constants.f90 \
 	evolve.f90 \
 	ReadTxt.f90 \
         constructions.f90 \
-	set_grid.f90 \
 	heating.f90 \
 	setup.f90 \
         material.f90 \
         delta_ave.f90 \
-	matinv.f90 \
-        matrix4.f90 \
         output.f90 \
         main.f90
 OBJS := $(addprefix $(SRC_DIR)/,$(SRCS))
