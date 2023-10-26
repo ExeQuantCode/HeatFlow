@@ -26,13 +26,13 @@ contains
     integer,dimension(n)::readvar
     ! Not currently in use
     if(any(readvar.gt.1)) then
-       write(0,*)
-       write(0,'(A43)') '###############################'
-       write(0,'(A43)') '##########   ERROR   ##########'
-       write(0,'(A43)') '###############################'
-       write(0,*)
-       write(0,'(A)') ' ---       Error in subroutine "checkINPUT"       ---'
-       write(0,'(A)') ' --- ERROR: same KEYWORD apears more than once    ---'
+       write(6,*)
+       write(6,'(A43)') '###############################'
+       write(6,'(A43)') '##########   ERROR   ##########'
+       write(6,'(A43)') '###############################'
+       write(6,*)
+       write(6,'(A)') ' ---       Error in subroutine "checkINPUT"       ---'
+       write(6,'(A)') ' --- ERROR: same KEYWORD apears more than once    ---'
        call exit
     end if
 
