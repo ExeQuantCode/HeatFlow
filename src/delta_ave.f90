@@ -1,17 +1,16 @@
 MODULE DeA
   use constants, only: real12, int12
-  use inputs, only: nx,ny,nz, icell_mix
+  use inputs, only: nx,ny,nz, icell_mix, grid
   use constructions, only: heatblock
   use materials, only: material
   implicit none
 contains
 
-  subroutine Delta_Ave(T,Kap,l_c,H_con,ix,iy,iz,grid)
+  subroutine Delta_Ave(T,Kap,l_c,H_con,ix,iy,iz)
 !this subroutine does two things:
 !1)averages properties over adjacent cells 
 !2) It selects the boundary conditions (three types, discussed in entry)
 !3)
-   TYPE(heatblock), dimension(nx,ny,nz) :: grid
    real(real12), dimension(nx,ny,nz) :: T
   ! integer, parameter :: e = nx*ny*nz
   ! real(real12), dimension(e) = T

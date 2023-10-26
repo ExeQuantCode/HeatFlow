@@ -4,7 +4,7 @@
 !##############################################################################################################
 module inputs
   use constants, only: real12, int12
-  use constructions, only: heatblock
+  use constructions, only: heatblock, material
 
 
   implicit none
@@ -13,15 +13,95 @@ module inputs
   integer(int12) :: IVERB, icell_mix, ntime, Rel, zpos, ACon, iheater &
 	, iboundary, nx, ny, nz, icattaneo, isteady, NA
   logical, parameter :: verbose = .FALSE.
+  type(heatblock), dimension(:,:,:), allocatable :: grid
+  type(material), dimension(:), allocatable :: materials
+  real(real12) :: Lx, Ly, Lz ! Volume dimensions (lenghts)
 
 
 
 
 contains
 !############################################################################
-! checkINPUT gives errors and warnings regarding the INPUT file
+! read_all_files will call the routines to read each input file
 !############################################################################
-  subroutine checkINPUT(readvar,n)
+  subroutine read_all_files()
+    integer :: unit, reason
+    character(64) :: param_infile, mat_infile, mesh_infile
+    logical :: file_exists
+
+
+    !-----------------------------------------------
+    ! get data from param.in
+    !-----------------------------------------------
+    ! name infile
+    param_infile = "param.in"
+
+    ! check if file is there
+    inquire(file=param_infile, exist=file_exists)
+
+    ! give error and exit code
+    if (.not.file_exists) then
+        write(6,*) 'Error cannot find file: param.in'
+        call exit
+    end if
+    
+    ! open, read and close
+    open(newunit=unit, file=param_infile, iostat=reason)
+    call read_param(unit)
+    close(unit)
+    !-----------------------------------------------
+
+
+    !-----------------------------------------------
+    ! get data from mat.in
+    !-----------------------------------------------
+    ! name infile
+    mat_infile = "mat.in"
+
+    ! check if file is there
+    inquire(file=mat_infile, exist=file_exists)
+
+    ! give error and exit code
+    if (.not.file_exists) then
+        write(6,*) 'Error cannot find file: mat.in'
+        call exit
+    end if
+    
+    ! open, read and close
+    open(newunit=unit, file=mat_infile, iostat=reason)
+    call read_mat(unit)
+    close(unit)
+    !-----------------------------------------------
+
+
+    !-----------------------------------------------
+    ! get data from geom.in
+    !-----------------------------------------------
+    ! name infile
+    mesh_infile = "geom.in"
+
+    ! check if file is there
+    inquire(file=mesh_infile, exist=file_exists)
+
+    ! give error and exit code
+    if (.not.file_exists) then
+        write(6,*) 'Error cannot find file: geom.in'
+        call exit
+    end if
+    
+    ! open, read and close
+    open(newunit=unit, file=mesh_infile, iostat=reason)
+    call read_mesh(unit)
+    close(unit)
+    !-----------------------------------------------
+  end subroutine read_all_files
+!############################################################################
+
+
+!############################################################################
+! check_param gives errors and warnings regarding the INPUT file
+!############################################################################
+  subroutine check_param(readvar,n)
     integer::n
     integer,dimension(n)::readvar
     ! Not currently in use
@@ -37,32 +117,32 @@ contains
     end if
 
     if(verbose) then
-       write(6,'(A)') ' vebose printing option'
-       write(6,'(A)') ' running calculation with :'
-       write(6,'(A35,I6)')  '      IVERB     = ',IVERB
-       write(6,'(A35,I6)') '      icell_mix  = ',icell_mix
-       write(6,'(A35,I6)')  '      ntime    = ',ntime
-       write(6,'(A35,I6)')  '      Rel      = ', Rel
-       write(6,'(A35,I6)')  '      zpos     = ',zpos
-       write(6,'(A35,I6)')  '      ACon     = ',ACon       
-       write(6,'(A35,F12.5)')  '   Time_step     = ',time_step
-       write(6,'(A35,I6)')  '      iheater     = ',iheater
-       write(6,'(A35,F12.5)')  '   frequency     = ',freq
-       write(6,'(A35,I6)')  '      iboundary     = ',iboundary
-       write(6,'(A35,I6)') ' icattaneo = ' , icattaneo
-       write(6,'(A35,I6)') ' isteady = ', isteady
-       write(6,'(A35,F12.5)')  '   T_Bath     = ', T_Bath
-       write(6,'(A35,F12.5)')  '      cutoff     = ',cutoff
-       write(6,'(A35,F12.5)')  '   power_in     = ',power_in
-       write(6,'(A35,F12.5)')  '   T_period     = ',T_period
-       write(6,'(A35,I6)')  '      nx     = ',nx
-       write(6,'(A35,I6)')  '      ny     = ',ny
-       write(6,'(A35,I6)')  '      nz     = ',nz
+       write(6,'(A)')        ' vebose printing option'
+       write(6,'(A)')        ' running calculation with :'
+       write(6,'(A35,I6)')   '   IVERB      = ',IVERB
+       write(6,'(A35,I6)')   '   icell_mix  = ',icell_mix
+       write(6,'(A35,I6)')   '   ntime      = ',ntime
+       write(6,'(A35,I6)')   '   Rel        = ', Rel
+       write(6,'(A35,I6)')   '   zpos       = ',zpos
+       write(6,'(A35,I6)')   '   ACon       = ',ACon       
+       write(6,'(A35,F12.5)')'   Time_step  = ',time_step
+       write(6,'(A35,I6)')   '   iheater    = ',iheater
+       write(6,'(A35,F12.5)')'   frequency  = ',freq
+       write(6,'(A35,I6)')   '   iboundary  = ',iboundary
+       write(6,'(A35,I6)')   '   icattaneo  = ' , icattaneo
+       write(6,'(A35,I6)')   '   isteady    = ', isteady
+       write(6,'(A35,F12.5)')'   T_Bath     = ', T_Bath
+       write(6,'(A35,F12.5)')'   cutoff     = ',cutoff
+       write(6,'(A35,F12.5)')'   power_in   = ',power_in
+       write(6,'(A35,F12.5)')'   T_period   = ',T_period
+       write(6,'(A35,I6)')   '   nx         = ',nx
+       write(6,'(A35,I6)')   '   ny         = ',ny
+       write(6,'(A35,I6)')   '   nz         = ',nz
 
     end if
 
 
-  end subroutine checkINPUT
+  end subroutine check_param
 !############################################################################
 
 
@@ -71,7 +151,7 @@ contains
 ! reads an input file where each flag has the format "KEYWORD =" followed ...
 ! ... by the variable i.e. 1, 2, .TRUE., 5D-15
 !############################################################################
-  subroutine readINPUT(unit)
+  subroutine read_param(unit)
     integer::unit,Reason, i
     integer,dimension(19)::readvar
     character(1024)::buffer
@@ -104,7 +184,8 @@ contains
     do
        read(unit,'(A)',iostat=Reason) buffer
        if(Reason.ne.0) exit
-       if(scan(buffer,'!').ne.0) buffer=buffer(:(scan(buffer,'!')-1)) ! looks for comments in each line of txt file and trims them off
+       ! looks for comments in each line of txt file and trims them off
+       if(scan(buffer,'!').ne.0) buffer=buffer(:(scan(buffer,'!')-1)) 
        if(trim(buffer).eq.'') cycle ! removes blank spaces
        !---------------------------------------
        ! assignD works for doubles
@@ -122,8 +203,8 @@ contains
        call assignI(buffer,"iheater",iheater,readvar(8))       
        call assignD(buffer,"freq",freq,readvar(9))       
        call assignI(buffer,"iboundary",iboundary,readvar(10))   
-       call assignI(buffer, "icattaneo", icattaneo, readvar(11))
-       call assignI(buffer, "isteady", isteady, readvar(12))
+       call assignI(buffer,"icattaneo", icattaneo, readvar(11))
+       call assignI(buffer,"isteady", isteady, readvar(12))
        call assignD(buffer,"T_Bath",T_Bath,readvar(13)) 
        call assignD(buffer,"cutoff",cutoff,readvar(14))    
        call assignD(buffer,"power_in",power_in,readvar(15))       
@@ -133,10 +214,112 @@ contains
        call assignI(buffer,"nz",nz,readvar(19))
        Na = nx*ny*nz
     end do
-    close(unit)
-    call checkINPUT(readvar,size(readvar,1))
+    call check_param(readvar,size(readvar,1))
 
-  end subroutine readINPUT
+  end subroutine read_param
+!############################################################################
+
+
+
+!############################################################################
+! assigns a DP value to variable if the line contains the right keyword
+!############################################################################
+  subroutine read_mesh(unit)
+    integer, intent(in) :: unit
+    integer :: i, j, k, reason
+    character(1024) :: buffer
+    
+    ! read mesh volume dimessions
+    read(unit,'(A)',iostat=Reason) buffer
+    read(buffer,*) Lx, Ly, Lz
+
+    ! read mesh cell number
+    read(unit,'(A)',iostat=Reason) buffer
+    read(buffer,*) nx, ny, nz
+    Na = nx*ny*nz
+
+    ! read in the integer matrix
+    allocate(grid(nx,ny,nz))
+    
+    do k = 1, nz
+       read(unit, *) buffer
+       do j = 1, ny
+          read(unit, *, iostat=Reason) (grid(i,j,k)%imaterial_type, i = 1, nx)
+          if (.not. Reason .eq. 0) then
+             write(6,*) 'Error: Unexpected EOF geom.in'
+             call exit
+          end if
+       end do
+    end do
+  end subroutine read_mesh
+!############################################################################
+
+
+
+!############################################################################
+! The the materials file
+!############################################################################
+subroutine read_mat(unit)
+    implicit none
+    integer, intent(in) :: unit
+    type(material), dimension(100) :: dum_mat
+    character(1024) :: buffer
+    integer :: reason, j
+    integer, dimension(8) :: readvar
+    integer :: i, index
+
+    read: do
+       read(unit,'(A)',iostat=Reason) buffer
+       if(Reason.ne.0) exit read
+       
+       ! Remove comment lines
+       if(scan(buffer,'!').ne.0) buffer=buffer(:(scan(buffer,'!')-1))
+       if(trim(buffer).eq.'') cycle
+
+       ! Check if the first field is a number
+       read(buffer, '(A10)', iostat=reason) index
+
+       ! If a number reason=zero
+       if(reason .eq. 0) then
+          ! If 0 reset readvar
+          if(index == 0) then
+             readvar(:) = 0
+          else
+             ! If other number record it and increment
+             i = i + 1
+             dum_mat(i)%index = index
+          end if
+          cycle
+       end if
+
+       call assignD(buffer,"heat_capacity",dum_mat(i)%heat_capacity,readvar(1))
+       call assignD(buffer,"h_conv"       ,dum_mat(i)%h_conv       ,readvar(2))
+       call assignD(buffer,"kappa"        ,dum_mat(i)%kappa        ,readvar(3))
+       call assignD(buffer,"kappa3D"      ,dum_mat(i)%kappa3D      ,readvar(4))
+       call assignD(buffer,"rho"          ,dum_mat(i)%rho          ,readvar(5))
+       call assignD(buffer,"sound_speed"  ,dum_mat(i)%sound_speed  ,readvar(6))
+       call assignD(buffer,"tau"          ,dum_mat(i)%tau          ,readvar(7))
+       call assignL(buffer,"source"       ,dum_mat(i)%source       ,readvar(8))
+    end do read
+
+    ! Check for duplicate indices
+    do j = 1, i-1
+       if (any(dum_mat(j)%index .eq. dum_mat(j+1:i)%index)) then
+          write(6,*) "Error: Duplicate material index ", dum_mat(j)%index
+          call exit
+       end if
+    end do
+
+    ! Check for missing parameters after the loop
+    if (any(readvar .ne. 1)) then
+       write(6,*) "Error in parameters : material ", i
+       call exit
+    end if
+    
+    allocate(materials(i))
+    materials(1:i) = dum_mat(1:i)
+
+  end subroutine read_mat
 !############################################################################
 
 
@@ -146,7 +329,8 @@ contains
 !############################################################################
 ! KEYWORD = 5.2
   subroutine assignD(buffer,keyword,variable,found)
-    !for the line with the keyword trim everything before the = inclusively and assign that value to the keyword
+    ! for the line with the keyword trim everything before the = inclusively 
+    ! and assign that value to the keyword
     integer::found
     character(1024)::buffer1,buffer2
     character(*)::buffer,keyword
@@ -166,7 +350,8 @@ contains
 ! assigns an integer
 !############################################################################
   subroutine assignI(buffer,keyword,variable,found)
-      !for the line with the keyword trim everything before the = inclusively and assign that value to the keyword
+    ! for the line with the keyword trim everything before the = inclusively 
+    ! and assign that value to the keyword
     integer::found
     character(1024)::buffer1,buffer2
     character(*)::buffer,keyword
@@ -186,8 +371,8 @@ contains
 ! assigns an logical
 !############################################################################
   subroutine assignL(buffer,keyword,variable,found)
-      !for the line with the keyword trim everything before the = inclusively and assign that value to the keyword
-
+    ! for the line with the keyword trim everything before the = inclusively 
+    ! and assign that value to the keyword
     integer::found
     character(1024)::buffer1,buffer2
     character(*)::buffer,keyword
@@ -212,8 +397,8 @@ contains
 ! assigns a string
 !############################################################################
   subroutine assignS(buffer,keyword,variable,found)
-      !for the line with the keyword trim everything before the = inclusively and assign that value to the keyword
-
+    ! for the line with the keyword trim everything before the = inclusively 
+    ! and assign that value to the keyword
     integer::found
     character(1024)::buffer1,buffer2
     character(*)::buffer,keyword
