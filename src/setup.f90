@@ -6,6 +6,7 @@ module setup
   use hmatrixmod, only: hmatrix
   use globe_data, only: H, ra
   use sparse, only: SRSin
+
   implicit none
   
    contains
@@ -60,7 +61,27 @@ subroutine Initiate()
   cellengthy(:) = Ly/real(ny)
   cellengthz(:) = Lz/real(nz)
 
+<<<<<<< HEAD
  !!!This section calculates the cell lengths and areas based on inputs above
+=======
+! if (it.eq.1) then  
+!   T=T_bath
+!   Told=T_bath
+!   TN=T_bath
+! end if
+
+
+CALL readparameters(cellengthx,cellengthy,cellengthz)
+call set_gridReadFromTxt(grid)
+
+
+      
+
+
+
+!!!This section calculates the cell lengths and areas based on inputs above
+
+>>>>>>> 94f2a7e (Fix set_gridReadFromTxt call)
       do ix=1,nx
          do iy=1,ny
             do iz=1,nz
