@@ -3,7 +3,7 @@ module setup
   use constants, only: real12, int12, TINY
   use inputs, only: nx,ny,nz,NA
   use constructions, only: heatblock
-  use readtxt, only: readparameters
+  use readtxt, only: readparameters, set_gridReadFromTxt
   use hmatrixmod, only: hmatrix
   use globe_data, only: H, ra
   use sparse, only: SRSin
@@ -72,7 +72,7 @@ subroutine Initiate(grid)
 
 
  CALL readparameters(cellengthx,cellengthy,cellengthz)
-
+ call set_gridReadFromTxt(grid)
 
 
       
