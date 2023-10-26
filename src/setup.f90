@@ -1,15 +1,53 @@
 
 module setup
-  use constants, only: real12, int12
-  use inputs, only: nx,ny,nz
+  use constants, only: real12, int12, TINY
+  use inputs, only: nx,ny,nz,NA
   use constructions, only: heatblock
   use readtxt, only: readparameters
-  
+  use hmatrixmod, only: hmatrix
+  use globe_data, only: H, ra
+  use sparse, only: SRSin
   implicit none
   
-contains
+   contains
+    
+   !------------------------------------------------
+   !This sets up the HMatrix global variable so as a Sparse row storage.
+   !
+   !-----------------------------------------------
+   subroutine set_global_variables()
+   real(real12) :: H0, hboundary
+   integer(int12) :: i, j
+   if (.not. allocated(H)) allocate(H(NA,NA))
 
-subroutine Initiate(grid, cellengthx, cellengthy, cellengthz)
+   !------------------------------------------------
+   !Make hmatrix
+   !Hmatrix consists of H_ij,0 and H_ij,B (heat flow across grid and matrix correction for boundaries
+   !-----------------------------------------------
+   !H_ij T_i =S_j
+   H=0.0
+   hboundary = 0.0
+   do i=1,NA 
+      do j=1,NA
+        CALL HMATRIX(i,j,H0)
+		  
+	     H(i,j)=H0
+	     !if (HBoundary.eq.1) then
+        !CALL HATRIX_BOUND(i,j,HB)
+	     !   H(i,j)=H(i,j)+HB(i,j)
+	     !end if
+       end do
+   end do
+    !print*, H
+
+   ! Convert the matrix into Sparse Diagonal Storage.
+   ! call SDSin(A,TINY, da)
+   ! Convert the matrix into Sparse Row Storage.
+   call SRSin(H,TINY, ra)
+   end subroutine set_global_variables
+
+
+subroutine Initiate(grid)
 
   TYPE(heatblock), dimension(nx,ny,nz) :: grid
 
@@ -19,21 +57,21 @@ subroutine Initiate(grid, cellengthx, cellengthy, cellengthz)
   real(real12), dimension(nx) :: cellengthx
   real(real12), dimension(ny) :: cellengthy
   real(real12), dimension(nz) :: cellengthz
-!  real(real12) :: cellengthx, cellengthy, cellengthz
+ !  real(real12) :: cellengthx, cellengthy, cellengthz
 
   real(real12) :: pa,pb,A,L
   integer(int12) :: ii,jj,kk
   character(len=8192):: string
 
 
-! if (it.eq.1) then  
-!   T=T_bath
-!   Told=T_bath
-!   TN=T_bath
-! end if
+ ! if (it.eq.1) then  
+ !   T=T_bath
+ !   Told=T_bath
+ !   TN=T_bath
+ ! end if
 
 
-CALL readparameters(cellengthx,cellengthy,cellengthz)
+ CALL readparameters(cellengthx,cellengthy,cellengthz)
 
 
 
@@ -41,7 +79,7 @@ CALL readparameters(cellengthx,cellengthy,cellengthz)
 
 
 
-!!!This section calculates the cell lengths and areas based on inputs above
+ !!!This section calculates the cell lengths and areas based on inputs above
 
       do ix=1,nx
          do iy=1,ny
