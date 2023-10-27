@@ -24,7 +24,7 @@ contains
     
     !-------------------------------
     !initialise variables
-    !CALL INIT_EVOLVE(it,TP,TPP)
+    !**CALL INIT_EVOLVE(it,TP,TPP)
     !------------------------
 
     !----------------------------------------------
@@ -38,23 +38,22 @@ contains
     
     S=0
     
-    !CALL TP_OLD(j,TO)
-    !   S=TP/dt
+    !** CALL TP_OLD(j,TO)
+    !**   S=TP/dt
     
-    !CALL Boundary
+    !**CALL Boundary
     
-    !CALL HEATER
+    !**CALL HEATER
     
-    !Call S_CAT
+    !**Call S_CAT
     
-    !S=0.0
+   
     if (iSteady.eq.0) then
        
        do j=1,nT
           S(j)=TD(j)/dt+Q(j)+B(j)
           if (iCAttaneo.eq.1)  then 
-             !  S(J)=S(j)+S_cat(j)
-             !NOT IMPLEMENTED
+             !** S(J)=S(j)+S_cat(j)
           end if
        end do
     else
@@ -63,9 +62,7 @@ contains
        end do
     end if
     
-    !----------------------------------------------------
-    
-    !now solve H(ij)T(i)=S(J)
+   
     
     !!!#################################################
     !!! Call the CG method to solve the equation Ax=b.
@@ -91,7 +88,7 @@ contains
     !!!#################################################
     
     
-    !-------
+
     
     CALL TP_UPDATE()
 
@@ -101,7 +98,7 @@ contains
   
   subroutine TP_UPDATE()
     integer(int12) :: j
-    DO j = 1, na
+    DO j = 1, NA
        TD(j)=TPD(j)
        TPD(j)=TD(j)
     end DO
