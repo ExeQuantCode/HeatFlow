@@ -1,22 +1,22 @@
 MODULE INITIAL
   use constants, only: real12, int12
   use inputs, only: NA, T_Bath
+  use globe_data, only: TD,TPD
   implicit none
 
   
 contains
   
-  subroutine INIT_EVOLVE(it,TP,TPP)
+  subroutine INIT_EVOLVE(it)
     integer, intent(in) :: iT
-    real(real12), dimension(NA), intent(out) :: TP, TPP
     
     !Current version just sets all previous time steps temperatures = heat bath
 
     if (it.eq.1) then
-       TP=T_bath
-       TPP=T_bath
+       TD=T_bath
+       TPD=T_bath
     else if (it.eq.2) then
-       TPP=T_Bath
+       TPD=T_Bath
     end if
     
     

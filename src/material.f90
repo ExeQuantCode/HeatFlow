@@ -1,17 +1,16 @@
 module materials
 
   use constants, only: real12, int12
-
+  use globe_data, only: T
   implicit none
 
 contains
 
-subroutine material(imaterial_type,T,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+subroutine material(imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
   
    integer(int12) ::imaterial_type
    integer(int12) :: i3D
    !integer, parameter:: e = nx*ny*nz
-   Real(real12) :: T
     ! real(real12), dimension(e) :: T
    !!   real(real12) :: Temperature
    !real(real12), dimension(3,3) :: kappa3D
@@ -24,6 +23,7 @@ subroutine material(imaterial_type,T,kappa,kappa3D,h_conv,heat_capacity,rho,soun
    real(real12) :: rho
    real(real12) :: volume
    real(real12) :: tau
+   real(real12) :: TC !Temperature of current cell
 
 !14 - silicon
 !3001 - air (convection - h 50)

@@ -3,14 +3,15 @@ use constructions, only: heatblock
 use constants, only: real12, int12
 use materials, only: material
 use inputs, only: nx, ny, nz, time_step, grid
-
+use globe_data, only: T
 contains
 
 subroutine hmatrix(i,j,H)
   integer(int12), intent(in) :: i, j
   integer(int12) :: x, y, z
-  real(real12) :: alpha, A, B, D, E, F, G, kappa1, T
+  real(real12) :: alpha, A, B, D, E, F, G, kappa1
   real(real12) :: kappa, kappa3D, h_conv, heat_capacity, rho, sound_speed, tau
+  real(real12) :: TC
   real(real12), intent(out) :: H
 
 
@@ -27,51 +28,62 @@ subroutine hmatrix(i,j,H)
     z = int(j/(nx*ny))!Structure coordinate
 
     if (x .gt. 1) then
-     call material(grid(x,y,z)%imaterial_type,T,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+      TC = T(x,y,z)
+     call material(grid(x,y,z)%imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
      kappa1 = kappa
-   
-    call material(grid(x-1,y,z)%imaterial_type,T,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+      TC=T(x-1,y,z)
+    call material(grid(x-1,y,z)%imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
      A = (kappa1 + kappa)/(2*(rho*heat_capacity)) !kappa x left 
     else 
       A=0
     end if
     if (x.lt.nx) then
-      call material(grid(x,y,z)%imaterial_type,T,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+      TC= T(x,y,z)
+      call material(grid(x,y,z)%imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
       kappa1 = kappa
-      call material(grid(x+1,y,z)%imaterial_type,T,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+      TC = T(x+1, y, z)
+      call material(grid(x+1,y,z)%imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
       B = (kappa1 + kappa)/(2*(rho*heat_capacity)) !kappa x right
     else
       B = 0
     end if
 
     if (y.gt.1) then
-     call material(grid(x,y,z)%imaterial_type,T,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+     TC = T(x,y,z)
+     call material(grid(x,y,z)%imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
      kappa1 = kappa
-     call material(grid(x,y-1,z)%imaterial_type,T,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+     TC = T(x,y-1,z)
+     call material(grid(x,y-1,z)%imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
      D = (kappa1+kappa)/(2*(rho*heat_capacity)) !y down
     else
       D = 0
     end if
     if (y.lt.ny) then
-      call material(grid(x,y,z)%imaterial_type,T,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+      TC=T(x,y,z)
+      call material(grid(x,y,z)%imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
       kappa1 = kappa
-      call material(grid(x,y+1,z)%imaterial_type,T,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+      TC=T(x,y+1,z)
+      call material(grid(x,y+1,z)%imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
       E = (kappa1+kappa)/(2*(rho*heat_capacity))!y up
     else
       E = 0
     end if
     if (z.gt.1) then
-     call material(grid(x,y,z)%imaterial_type,T,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+     TC=T(x,y,z)
+     call material(grid(x,y,z)%imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
      kappa1 = kappa
-     call material(grid(x,y,z-1)%imaterial_type,T,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+     TC= T(x,y,z-1)
+     call material(grid(x,y,z-1)%imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
      F = (kappa1+kappa)/(2*(rho*heat_capacity)) !z in
     else
       F = 0
     end if
     if (z.lt.nz) then
-     call material(grid(x,y,z)%imaterial_type,T,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+     TC= T(x,y,z)
+     call material(grid(x,y,z)%imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
      kappa1 = kappa
-     call material(grid(x,y,z+1)%imaterial_type,T,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+     TC=T(x,y,z+1)
+     call material(grid(x,y,z+1)%imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
      G = (kappa1+kappa)/(2*(rho*heat_capacity)) !z out
     else
       G = 0
