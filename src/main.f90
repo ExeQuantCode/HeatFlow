@@ -9,7 +9,7 @@ PROGRAM HEATFLOW_V0_1
   use inputs, only: read_all_files, nx, ny, nz, NA, iverb, ntime, grid
   use evolution, only: evolve
   use setup, only: Initiate, set_global_variables
-  use globe_data, only: T, TN, Told, TD, TPD
+
   implicit none
    real(real12) :: rstart, rend, rprogress
    integer(int12) :: it
@@ -23,11 +23,7 @@ PROGRAM HEATFLOW_V0_1
    ! Read parameters from inputs file, located in inputs.f90
    call read_all_files()
 
-   allocate(TN(nx, ny, nz))
-   allocate(T(nx, ny, nz))
-   allocate(Told(nx, ny, nz))
-   allocate(TD(NA))
-   allocate(TPD(NA))
+
 
    call Initiate()
    call set_global_variables()
@@ -40,7 +36,7 @@ PROGRAM HEATFLOW_V0_1
 
       !call bmake(grid, T, TN, Told, TPD ,it) !Temp will be moved to evolve eventually
 
-      CALL evolve(it,Told) !run the simulation, located in evolve.f90
+      CALL evolve(it) !run the simulation, located in evolve.f90
 
       !CALL plot(it,TN,grid) ! Write result to an output file, located in output.f90
 

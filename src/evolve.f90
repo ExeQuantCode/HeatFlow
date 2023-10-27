@@ -13,9 +13,9 @@ MODULE EVOLUTION
 contains
 
 
-  subroutine EVOLVE(it,b)
+  subroutine EVOLVE(it)
     real(real12), dimension(NA) :: S, x, Q, S_CAT
-    real(real12), dimension(NA), intent(in) :: B
+    real(real12), dimension(NA) :: B
     integer(int12), intent(in) :: it
     integer(int12) :: i,j, nT, ncg, itol, itmax, iss
     integer(I4B) :: iter
@@ -62,8 +62,8 @@ contains
        end do
     end if
     
-   
-    
+    !**Unfinished implementation of b vector calculation
+    b = TPD
     !!!#################################################
     !!! Call the CG method to solve the equation Ax=b.
     !!!#################################################

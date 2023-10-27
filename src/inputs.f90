@@ -5,7 +5,7 @@
 module inputs
   use constants, only: real12, int12
   use constructions, only: heatblock, material
-
+  use globe_data, only: T, TN, Told, TD, TPD 
 
   implicit none
   integer :: unit, newunit
@@ -249,8 +249,13 @@ contains
     read(buffer,*) nx, ny, nz
     Na = nx*ny*nz
 
-    ! read in the integer matrix
+    ! Allocate Global data arrays
     allocate(grid(nx,ny,nz))
+    allocate(TN(nx, ny, nz))
+    allocate(T(nx, ny, nz))
+    allocate(Told(nx, ny, nz))
+    allocate(TD(NA))
+    allocate(TPD(NA))
     
     do k = 1, nz
        read(unit, *) buffer
