@@ -14,16 +14,11 @@ contains
 !3)
   ! integer, parameter :: e = nx*ny*nz
   ! real(real12), dimension(e) = T
- real(real12), dimension(3,2) :: DeT, kap, h_con, L_c
+ real(real12), dimension(3,2), intent(inout) :: kap, h_con, L_c
+ real(real12), dimension(3,2) :: DeT
   !real(real12), dimension(3,3) :: kappa3D
-   real(real12) :: kappa, kappa3D, TC
+   real(real12) :: kappa, kappa3D, TC, h_conv,heat_capacity,soundspeed,rho, volume, tau
 !convective current!
-   real(real12) :: h_conv
-   real(real12) :: heat_capacity
-   real(real12) :: soundspeed
-   real(real12) :: rho
-   real(real12) :: volume
-   real(real12) :: tau
 !DeT = array of delta t in direction_i (i)
 ! and (j) between cells ix-1 and ix, or ix and ix+1
  integer(int12), intent(in) :: ix,iy,iz

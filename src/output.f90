@@ -10,13 +10,14 @@ contains
     
     ! real(real12), dimension(nx, ny,nz) :: T
     integer :: new, newunit
-  !  real(real12), dimension(e) :: T_matrix
+   !  real(real12), dimension(e) :: T_matrix
     real(real12), dimension(nx) :: R
     real(real12) :: xlen
     integer(int12) flag
     !integer :: zpos = 508
-    
-    integer(int12) :: i,j,k,it,ix
+    integer(int12), intent(in) :: it
+
+    integer(int12) :: i,j,k,ix
 
     
     xlen= 1.0*0.333

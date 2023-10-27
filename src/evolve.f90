@@ -14,9 +14,10 @@ contains
 
 
   subroutine EVOLVE(it,b)
-    real(real12), dimension(NA) :: S, x
-    real(real12), dimension(NA) :: Q, B, S_CAT
-    integer(int12) :: i,j, nT, it, ncg, itol, itmax, iss
+    real(real12), dimension(NA) :: S, x, Q, S_CAT
+    real(real12), dimension(NA), intent(in) :: B
+    integer(int12), intent(in) :: it
+    integer(int12) :: i,j, nT, ncg, itol, itmax, iss
     integer(I4B) :: iter
     real(real12) :: dt, To, Hb, e, err, tol
     !TP  is the previous set of temperatures
@@ -101,7 +102,7 @@ contains
 
   
   subroutine TP_UPDATE()
-    integer :: j
+    integer(int12) :: j
     DO j = 1, na
        TD(j)=TPD(j)
        TPD(j)=TD(j)

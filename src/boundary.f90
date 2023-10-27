@@ -5,8 +5,8 @@ MODULE BOUNDARY_VECTOR
 contains
 
   subroutine BOUNDARY(B)
-    real(real12), dimension(NA) :: B
-    integer :: i,j,k, IA
+    real(real12), dimension(NA), intent(out) :: B
+    integer, intent(in) :: i,j,k, IA
 
 
     !Bound term has a correction for the x,y,z edges of our grid (first vector) and this can be both edges (second vector)
