@@ -3,7 +3,7 @@ MODULE EVOLUTION
   use inputs, only: NA, icattaneo, isteady
   use sptype, only: I4B
   use sparse, only: linbcg
-
+  use globe_data, only: TD, TPD
   implicit none
 
   private
@@ -14,7 +14,7 @@ contains
 
 
   subroutine EVOLVE(it,b)
-    real(real12), dimension(NA) :: S, T, TP, TPP, x
+    real(real12), dimension(NA) :: S, x
     real(real12), dimension(NA) :: Q, B, S_CAT
     integer(int12) :: i,j, nT, it, ncg, itol, itmax, iss
     integer(I4B) :: iter
@@ -51,7 +51,7 @@ contains
     if (iSteady.eq.0) then
        
        do j=1,nT
-          S(j)=TP(j)/dt+Q(j)+B(j)
+          S(j)=TD(j)/dt+Q(j)+B(j)
           if (iCAttaneo.eq.1)  then 
              !  S(J)=S(j)+S_cat(j)
              !NOT IMPLEMENTED
@@ -94,18 +94,17 @@ contains
     
     !-------
     
-    CALL TP_UPDATE(T,TP,TPP)
+    CALL TP_UPDATE()
 
   end subroutine EVOLVE
 
 
   
-  subroutine TP_UPDATE(T,TP,TPP)
+  subroutine TP_UPDATE()
     integer :: j
-    real(real12), dimension(NA) :: T, TP, TPP
     DO j = 1, na
-       TPP(j)=TP(j)
-       TP(j)=T(j)
+       TD(j)=TPD(j)
+       TPD(j)=TD(j)
     end DO
   end subroutine TP_UPDATE
 

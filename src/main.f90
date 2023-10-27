@@ -9,13 +9,12 @@ PROGRAM HEATFLOW_V0_1
   use inputs, only: read_all_files, nx, ny, nz, NA, iverb, ntime, grid
   use evolution, only: evolve
   use setup, only: Initiate, set_global_variables
+  use globe_data, only: T, TN, Told, TD, TPD
   implicit none
    real(real12) :: rstart, rend, rprogress
    integer(int12) :: it
    integer :: newunit, unit
-   real(real12), allocatable :: T(:,:,:), TN(:,:,:), Told(:,:,:)
    !real(real12), dimension(nx, ny,nz) :: T,T0, T00
-   real(real12), allocatable :: TD(:), TPD(:) !1D x and b respectively
    call cpu_time(rstart) ! starts timer 
 
 

@@ -69,18 +69,11 @@ subroutine Initiate()
 !   TN=T_bath
 ! end if
 
-
-CALL readparameters(cellengthx,cellengthy,cellengthz)
-call set_gridReadFromTxt(grid)
-
-
       
 
 
 
 !!!This section calculates the cell lengths and areas based on inputs above
-
->>>>>>> 94f2a7e (Fix set_gridReadFromTxt call)
       do ix=1,nx
          do iy=1,ny
             do iz=1,nz

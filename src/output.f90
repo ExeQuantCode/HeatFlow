@@ -2,14 +2,14 @@ MODULE OUTPUT
   use constants, only: real12, int12
   use inputs, only: nx,ny,nz, time_step, zpos, grid
   use constructions, only: heatblock
+  use globe_data, only: TN
   implicit none
   
 contains
-  SUBROUTINE PLOT(it,TN)
+  SUBROUTINE PLOT(it)
     
     ! real(real12), dimension(nx, ny,nz) :: T
     integer :: new, newunit
-    real(real12), dimension(nx,ny,nz) :: TN
   !  real(real12), dimension(e) :: T_matrix
     real(real12), dimension(nx) :: R
     real(real12) :: xlen
