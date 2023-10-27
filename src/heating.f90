@@ -10,9 +10,9 @@ contains
   !!Simple heat source implemented
   subroutine heater(it,Q)
     integer :: IA,iheater
-    integer(int12) :: it 
+    integer(int12), intent(in) :: it 
     real(real12) :: time
-    real(real12) :: Q
+    real(real12), intent(out) :: Q
     !real(real12), dimension(NA) :: Q
     time=dt*REAL(iT)
     IA=0

@@ -8,22 +8,11 @@ contains
 
 subroutine material(imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
   
-   integer(int12) ::imaterial_type
+   integer(int12), intent(in) ::imaterial_type
    integer(int12) :: i3D
-   !integer, parameter:: e = nx*ny*nz
-    ! real(real12), dimension(e) :: T
-   !!   real(real12) :: Temperature
-   !real(real12), dimension(3,3) :: kappa3D
-   real(real12) :: kappa3D
-   real(real12) :: kappa
-!convective current!
-   real(real12) :: h_conv
-   real(real12) :: heat_capacity
-   real(real12) :: sound_speed
-   real(real12) :: rho
-   real(real12) :: volume
-   real(real12) :: tau
-   real(real12) :: TC !Temperature of current cell
+   real(real12) :: volume !!!check intent
+   !TC = Temperature of current cell
+   real(real12), intent(inout) :: kappa3D, kappa, h_conv, heat_capacity, sound_speed, rho, tau,  TC 
 
 !14 - silicon
 !3001 - air (convection - h 50)
