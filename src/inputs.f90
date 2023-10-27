@@ -116,6 +116,17 @@ contains
        call exit
     end if
 
+    if (any(readvar.eq.0)) then
+        write(6,*)
+        write(6,'(A43)') '###############################'
+        write(6,'(A43)') '##########   ERROR   ##########'
+        write(6,'(A43)') '###############################'
+        write(6,*)
+        write(6,'(A)') ' ---       Error in subroutine "checkINPUT"       ---'
+        write(6,'(A)') ' --- ERROR: A KEYWORD and associated value is missing    ---'
+        call exit
+    end if 
+
     if(verbose) then
        write(6,'(A)')        ' vebose printing option'
        write(6,'(A)')        ' running calculation with :'
