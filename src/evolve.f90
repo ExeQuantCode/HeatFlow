@@ -20,8 +20,7 @@ contains
     integer(int12) :: i,j, nT, ncg, itol, itmax, iss
     integer(I4B) :: iter
     real(real12) :: dt, To, Hb, e, err, tol
-    !TP  is the previous set of temperatures
-    !TPP goes back two time steps.
+    
     
     !-------------------------------
     !initialise variables
@@ -67,7 +66,6 @@ contains
     !----------------------------------------------------
     
     !now solve H(ij)T(i)=S(J)
-    !CALL SOLVER(H,T,S)
     
     !!!#################################################
     !!! Call the CG method to solve the equation Ax=b.
