@@ -61,9 +61,8 @@ subroutine Initiate()
   cellengthy(:) = Ly/real(ny)
   cellengthz(:) = Lz/real(nz)
 
-<<<<<<< HEAD
+
  !!!This section calculates the cell lengths and areas based on inputs above
-=======
 ! if (it.eq.1) then  
 !   T=T_bath
 !   Told=T_bath
