@@ -13,7 +13,6 @@ module setup
     
    !------------------------------------------------
    !This sets up the HMatrix global variable so as a Sparse row storage.
-   !
    !-----------------------------------------------
    subroutine set_global_variables()
    real(real12) :: H0, hboundary

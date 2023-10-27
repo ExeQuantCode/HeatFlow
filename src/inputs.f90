@@ -14,7 +14,7 @@ module inputs
 	, iboundary, nx, ny, nz, icattaneo, isteady, NA
   logical, parameter :: verbose = .FALSE.
   type(heatblock), dimension(:,:,:), allocatable :: grid
-  type(material), dimension(:), allocatable :: materials
+  type(material), dimension(:), allocatable :: input_materials
   real(real12) :: Lx, Ly, Lz ! Volume dimensions (lenghts)
 
 
@@ -151,8 +151,6 @@ contains
        write(6,'(A35,I6)')   '   nz         = ',nz
 
     end if
-
-
   end subroutine check_param
 !############################################################################
 
@@ -284,6 +282,7 @@ subroutine read_mat(unit)
     integer, dimension(8) :: readvar
     integer :: i, index
 
+    i=0
     read: do
        read(unit,'(A)',iostat=Reason) buffer
        if(Reason.ne.0) exit read
@@ -304,6 +303,10 @@ subroutine read_mat(unit)
              ! If other number record it and increment
              i = i + 1
              dum_mat(i)%index = index
+             if(i .eq. 101) then
+                write(6,*) 'Error: code does not suporrt over 100 materials'
+                call exit
+             end if
           end if
           cycle
        end if
@@ -320,7 +323,7 @@ subroutine read_mat(unit)
 
     ! Check for duplicate indices
     do j = 1, i-1
-       if (any(dum_mat(j)%index .eq. dum_mat(j+1:i)%index)) then
+       if (any(dum_mat(j)%index .eq. dum_mat(j+1:i)%index)) then  
           write(6,*) "Error: Duplicate material index ", dum_mat(j)%index
           call exit
        end if
@@ -332,8 +335,8 @@ subroutine read_mat(unit)
        call exit
     end if
     
-    allocate(materials(i))
-    materials(1:i) = dum_mat(1:i)
+    allocate(input_materials(i))
+    input_materials(1:i) = dum_mat(1:i)
 
   end subroutine read_mat
 !############################################################################
