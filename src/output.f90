@@ -23,7 +23,7 @@ contains
     xlen= 1.0*0.333
     flag=0
     if (it.eq.1) then
-       open(unit=30,file='Temperature.txt')
+       open(unit=30,file='./outputs/Temperature.txt')
     end if
     
     r(1)=grid(1,ny/2,zpos)%length(1)
