@@ -1,0 +1,32 @@
+1 unread name
+heat_capacity = 1500.0
+h_conv = 0.0
+kappa  = 0.2
+kappa3D = 0.2
+rho = 1153.0
+sound_speed = 8433.0
+tau = 1.0
+source = .true.
+0
+
+2 new material
+heat_capacity = 1300.0
+h_conv = 0.0
+kappa  = 0.22
+kappa3D = 0.4
+rho = 1113.0
+sound_speed = 7433.0
+tau = 1.1
+source = .true.
+0
+
+3 a place for notes on this material
+heat_capacity = 500.0
+h_conv = 0.1
+kappa  = 0.24
+kappa3D = 0.4
+rho = 115.0
+sound_speed = 5433.0
+tau = 1.5
+source = .false.
+0

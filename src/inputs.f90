@@ -1,6 +1,6 @@
 
 !##############################################################################################################
-! This code reads parameter inputs from Inputs.txt. See InputsHelp.txt for help
+! This code reads inputs files found in the utl folder
 !##############################################################################################################
 module inputs
   use constants, only: real12, int12
@@ -34,7 +34,7 @@ contains
     ! get data from param.in
     !-----------------------------------------------
     ! name infile
-    param_infile = "param.in"
+    param_infile = "./inputs/param.in"
 
     ! check if file is there
     inquire(file=param_infile, exist=file_exists)
@@ -56,7 +56,7 @@ contains
     ! get data from mat.in
     !-----------------------------------------------
     ! name infile
-    mat_infile = "mat.in"
+    mat_infile = "./inputs/mat.in"
 
     ! check if file is there
     inquire(file=mat_infile, exist=file_exists)
@@ -78,7 +78,7 @@ contains
     ! get data from geom.in
     !-----------------------------------------------
     ! name infile
-    mesh_infile = "geom.in"
+    mesh_infile = "./inputs/geom.in"
 
     ! check if file is there
     inquire(file=mesh_infile, exist=file_exists)
@@ -320,7 +320,7 @@ subroutine read_mat(unit)
        call assignD(buffer,"tau"          ,dum_mat(i)%tau          ,readvar(7))
        call assignL(buffer,"source"       ,dum_mat(i)%source       ,readvar(8))
     end do read
-
+    
     ! Check for duplicate indices
     do j = 1, i-1
        if (any(dum_mat(j)%index .eq. dum_mat(j+1:i)%index)) then  
