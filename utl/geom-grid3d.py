@@ -447,7 +447,7 @@ for i in range(grid_dims[0]):
 
 
 print(" Writing to: GridMaterial.dat")
-with open("GridMaterial.dat", "w") as f:
+with open("geom.in", "w") as f:
     s=blocks["VOLUME"][0]["units"]
     x=str(blocks["VOLUME"][0]["x"]*s)
     y=str(blocks["VOLUME"][0]["y"]*s)

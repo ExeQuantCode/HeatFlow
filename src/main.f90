@@ -38,7 +38,7 @@ PROGRAM HEATFLOW_V0_1
 
       CALL evolve(it) !run the simulation, located in evolve.f90
 
-      !CALL plot(it,TN,grid) ! Write result to an output file, located in output.f90
+      CALL plot(it) ! Write result to an output file, located in output.f90
 
       
    end do

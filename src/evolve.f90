@@ -84,7 +84,7 @@ contains
     iss=1
     x=100
      call linbcg(b,x,itol=int(itol,I4B),tol=1D-9, itmax=int(itmax,I4B), iter=iter, &
-	err=E, iss=int(iss,I4B))
+	  err=E, iss=int(iss,I4B))
     !!!#################################################
     
     

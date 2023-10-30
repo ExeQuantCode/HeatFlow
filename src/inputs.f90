@@ -185,9 +185,9 @@ contains
     cutoff = 1e12
     power_in = 0
     T_period = 1
-    nx = 5
-    ny = 5
-    nz = 5
+    nx = 10
+    ny = 10
+    nz = 10
     Na = nx*ny*nz
     !------------------------------------------
     do
@@ -235,8 +235,8 @@ contains
 !############################################################################
   subroutine read_mesh(unit)
     integer, intent(in) :: unit
-    integer :: i, j, k, reason
-    character(1024) :: buffer
+    integer :: i, j, k, reason, c
+    character(1024) :: buffer, array
     
     ! read mesh volume dimessions
     read(unit,'(A)',iostat=Reason) buffer
@@ -254,16 +254,19 @@ contains
     allocate(Told(nx, ny, nz))
     allocate(TD(NA))
     allocate(TPD(NA))
-    
+
     do k = 1, nz
-       read(unit, *) buffer
+       read(unit, '(A)', iostat= Reason) buffer
        do j = 1, ny
-          read(unit, *, iostat=Reason) (grid(i,j,k)%imaterial_type, i = 1, nx)
-          if (.not. Reason .eq. 0) then
-             write(6,*) 'Error: Unexpected EOF geom.in'
-             call exit
+          if (Reason .ne. 0) then
+            write(6,*) 'Error: Unexpected EOF geom.in'
+            call exit
           end if
-       end do
+          read(unit, '(A)', iostat=Reason) array 
+          do i = 1, nx
+            read(array,*,iostat = reason) grid(i,j,k)%imaterial_type
+          end do 
+        end do
     end do
   end subroutine read_mesh
 !############################################################################
@@ -283,6 +286,7 @@ subroutine read_mat(unit)
     integer :: i, index
 
     i=0
+    readvar(:) = 0
     read: do
        read(unit,'(A)',iostat=Reason) buffer
        if(Reason.ne.0) exit read
@@ -292,12 +296,17 @@ subroutine read_mat(unit)
        if(trim(buffer).eq.'') cycle
 
        ! Check if the first field is a number
-       read(buffer, '(A10)', iostat=reason) index
+       read(buffer, *, iostat=reason) index
 
        ! If a number reason=zero
        if(reason .eq. 0) then
           ! If 0 reset readvar
-          if(index == 0) then
+          if(index .eq. 0) then
+                ! Check for missing parameters after the loop
+              if (any(readvar .ne. 1)) then
+                write(6,*) "Error in parameters : material ", readvar
+                call exit
+              end if
              readvar(:) = 0
           else
              ! If other number record it and increment
@@ -311,6 +320,7 @@ subroutine read_mat(unit)
           cycle
        end if
 
+    
        call assignD(buffer,"heat_capacity",dum_mat(i)%heat_capacity,readvar(1))
        call assignD(buffer,"h_conv"       ,dum_mat(i)%h_conv       ,readvar(2))
        call assignD(buffer,"kappa"        ,dum_mat(i)%kappa        ,readvar(3))
@@ -319,6 +329,7 @@ subroutine read_mat(unit)
        call assignD(buffer,"sound_speed"  ,dum_mat(i)%sound_speed  ,readvar(6))
        call assignD(buffer,"tau"          ,dum_mat(i)%tau          ,readvar(7))
        call assignL(buffer,"source"       ,dum_mat(i)%source       ,readvar(8))
+
     end do read
     
     ! Check for duplicate indices
@@ -329,11 +340,6 @@ subroutine read_mat(unit)
        end if
     end do
 
-    ! Check for missing parameters after the loop
-    if (any(readvar .ne. 1)) then
-       write(6,*) "Error in parameters : material ", i
-       call exit
-    end if
     
     allocate(input_materials(i))
     input_materials(1:i) = dum_mat(1:i)

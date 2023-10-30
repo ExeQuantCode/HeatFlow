@@ -14,8 +14,8 @@
     cutoff = 1e12     !
     power_in = 1    !
     T_period = 0.1  !
-    nx = 20     !
-    ny = 20     !
-    nz = 20     !
+    nx = 10     !
+    ny = 10     !
+    nz = 10     !
 
 

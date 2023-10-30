@@ -2,7 +2,7 @@ module materials
 
   use constants, only: real12, int12
   use globe_data, only: T
-  use inputs, only: input_materials
+  use inputs, only: input_materials, grid
   implicit none
 
 contains
@@ -28,7 +28,7 @@ subroutine material(imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sou
 !!! 9002 - epidermis !values provided by A. Ghita
 !!! 9003 - fat !values provided by A. Ghita
 !!!=============================================
-
+   !print*, grid%imaterial_type
    ! Error for unsutable imaterial_type
    if (imaterial_type .le. 0) then
       write(6,*) 'Error: imaterial_type not recognized:', imaterial_type

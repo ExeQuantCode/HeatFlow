@@ -16,9 +16,9 @@ contains
     alpha = (tau + time_step) / (time_step * time_step)
 
     ! Calculate x, y, and z based on the 1D index j
-    x = mod(j, nx)
-    y = mod(j / nx, ny)
-    z = j / (nx * ny)
+    x = mod(j, nx) 
+    y = mod(j / nx, ny) + 1
+    z = j / (nx * ny) + 1
 
     A = calculate_conductivity(x - 1, y, z, x, y, z)
     B = calculate_conductivity(x + 1, y, z, x, y, z)

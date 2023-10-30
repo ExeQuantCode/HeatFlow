@@ -39,6 +39,7 @@ contains
     Kap(1,1)=kappa
     h_con(1,1)=h_conv
     TC=T(ix-1,iy,iz)
+    
     CALL material(grid(ix-1,iy,iz)%imaterial_type, TC, kappa, kappa3D, h_conv, heat_capacity, rho, soundspeed,tau)
     
     select case(icell_mix)
@@ -63,6 +64,7 @@ contains
 !!average in x-direction, on "right" side of cell
  if (ix.lt.nx) then
     TC=T(ix,iy,iz)
+    print*, grid(ix,iy,iz)%imaterial_type
     CALL material(grid(ix,iy,iz)%imaterial_type, TC, kappa, kappa3D, h_conv, heat_capacity, rho, soundspeed,tau)
     Kap(1,2)=kappa
     h_con(1,2)=h_conv
