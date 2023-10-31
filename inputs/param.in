@@ -11,11 +11,11 @@
     icattaneo = 0 !
     isteady = 0 !
     T_Bath = 200     !
-    cutoff = 1e12     !
+    cutoff = 1000     !
     power_in = 1    !
     T_period = 0.1  !
-    nx = 10     !
+    nx = 10  !
     ny = 10     !
-    nz = 10     !
+    nz = 10    !
 
 

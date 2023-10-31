@@ -5,14 +5,13 @@
 module inputs
   use constants, only: real12, int12
   use constructions, only: heatblock, material
-  use globe_data, only: T, TN, Told, TD, TPD 
 
   implicit none
   integer :: unit, newunit
   real(real12) :: time_step, T_Bath, freq, power_in, T_period, cutoff
   integer(int12) :: IVERB, icell_mix, ntime, Rel, zpos, ACon, iheater &
 	, iboundary, nx, ny, nz, icattaneo, isteady, NA
-  logical, parameter :: verbose = .FALSE.
+  logical, parameter :: verbose = .TRUE.
   type(heatblock), dimension(:,:,:), allocatable :: grid
   type(material), dimension(:), allocatable :: input_materials
   real(real12) :: Lx, Ly, Lz ! Volume dimensions (lenghts)
@@ -143,7 +142,7 @@ contains
        write(6,'(A35,I6)')   '   icattaneo  = ' , icattaneo
        write(6,'(A35,I6)')   '   isteady    = ', isteady
        write(6,'(A35,F12.5)')'   T_Bath     = ', T_Bath
-       write(6,'(A35,F12.5)')'   cutoff     = ',cutoff
+       write(6,'(A35,F16.5)')'   cutoff     = ',cutoff
        write(6,'(A35,F12.5)')'   power_in   = ',power_in
        write(6,'(A35,F12.5)')'   T_period   = ',T_period
        write(6,'(A35,I6)')   '   nx         = ',nx
@@ -218,7 +217,7 @@ contains
        call assignD(buffer,"cutoff",cutoff,readvar(14))    
        call assignD(buffer,"power_in",power_in,readvar(15))       
        call assignD(buffer,"T_period",T_period,readvar(16))       
-       call assignI(buffer,"nx",nx,readvar(17))    
+       call assignI(buffer,"nx",nx,readvar(17))
        call assignI(buffer,"ny",ny,readvar(18))    
        call assignI(buffer,"nz",nz,readvar(19))
        Na = nx*ny*nz
@@ -246,14 +245,9 @@ contains
     read(unit,'(A)',iostat=Reason) buffer
     read(buffer,*) nx, ny, nz
     Na = nx*ny*nz
-
+    print*,Na
     ! Allocate Global data arrays
     allocate(grid(nx,ny,nz))
-    allocate(TN(nx, ny, nz))
-    allocate(T(nx, ny, nz))
-    allocate(Told(nx, ny, nz))
-    allocate(TD(NA))
-    allocate(TPD(NA))
 
     do k = 1, nz
        read(unit, '(A)', iostat= Reason) buffer

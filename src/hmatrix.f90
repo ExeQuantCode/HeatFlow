@@ -36,7 +36,6 @@ contains
     if (i-j .eq. -nx)   H = E  ! Y up neighbor
     if (i-j .eq. nx*ny) H = F  ! Z in neighbor
     if (i-j .eq. -nx*ny) H = G ! Z out neighbor
-    
   end subroutine hmatrix
 
   function calculate_conductivity(x_in, y_in, z_in, x, y, z) result(conductivity)
@@ -51,6 +50,7 @@ contains
             kappa3D, h_conv, heat_capacity, rho, sound_speed, tau)
        call material(grid(x   , y   , z   )%imaterial_type, T, kappa, &
             kappa3D, h_conv, heat_capacity, rho, sound_speed, tau)
+        !** Check implmentation of rho and heat_capacity
        conductivity = (kappa1 + kappa) / (2 * (rho * heat_capacity))
     else
        conductivity = 0

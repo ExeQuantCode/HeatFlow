@@ -4,7 +4,7 @@ module setup
   use inputs, only: Lx, Ly, Lz, nx, ny, nz, NA, grid
   use constructions, only: heatblock
   use hmatrixmod, only: hmatrix
-  use globe_data, only: H, ra
+  use globe_data, only: H, ra, T, TN, Told,TD,TPD,H
   use sparse, only: SRSin
 
   implicit none
@@ -17,8 +17,12 @@ module setup
    subroutine set_global_variables()
    real(real12) :: H0, hboundary
    integer(int12) :: i, j
-   if (.not. allocated(H)) allocate(H(NA,NA))
-
+   allocate(TN(nx, ny, nz))
+   allocate(T(nx, ny, nz))
+   allocate(Told(nx, ny, nz))
+   allocate(TD(NA))
+   allocate(TPD(NA))
+   allocate(H(NA,NA))
    !------------------------------------------------
    !Make hmatrix
    !Hmatrix consists of H_ij,0 and H_ij,B (heat flow across grid and matrix correction for boundaries
@@ -26,6 +30,7 @@ module setup
    !H_ij T_i =S_j
    H=0.0
    hboundary = 0.0
+   print*, NA
    do i=1,NA 
       do j=1,NA
         call hmatrix(i,j,H0)
@@ -37,12 +42,12 @@ module setup
 	     !end if
        end do
    end do
-    !print*, H
 
    ! Convert the matrix into Sparse Diagonal Storage.
    ! call SDSin(A,TINY, da)
    ! Convert the matrix into Sparse Row Storage.
    call SRSin(H,TINY, ra)
+   
    end subroutine set_global_variables
 
 
@@ -62,17 +67,17 @@ subroutine Initiate()
 
 
  !!!This section calculates the cell lengths and areas based on inputs above
-! if (it.eq.1) then  
-!   T=T_bath
-!   Told=T_bath
-!   TN=T_bath
-! end if
+   ! if (it.eq.1) then  
+   !   T=T_bath
+   !   Told=T_bath
+   !   TN=T_bath
+   ! end if
 
       
 
 
 
-!!!This section calculates the cell lengths and areas based on inputs above
+ !!!This section calculates the cell lengths and areas based on inputs above
       do ix=1,nx
          do iy=1,ny
             do iz=1,nz
