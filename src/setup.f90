@@ -28,7 +28,7 @@ module setup
    hboundary = 0.0
    do i=1,NA 
       do j=1,NA
-        CALL HMATRIX(i,j,H0)
+        call hmatrix(i,j,H0)
 		  
 	     H(i,j)=H0
 	     !if (HBoundary.eq.1) then
