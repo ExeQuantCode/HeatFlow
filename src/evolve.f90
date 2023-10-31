@@ -1,9 +1,9 @@
 MODULE EVOLUTION
   use constants, only: real12, int12
-  use inputs, only: NA, icattaneo, isteady
+  use inputs, only: NA, icattaneo, isteady, nx, ny, nz
   use sptype, only: I4B
   use sparse, only: linbcg
-  use globe_data, only: TD, TPD
+  use globe_data, only: TD, TPD, TN, Told, T
   implicit none
 
   private
@@ -63,6 +63,7 @@ contains
     end if
     !**Unfinished implementation of b vector calculation
     b = TPD
+    b = 200
     !!!#################################################
     !!! Call the CG method to solve the equation Ax=b.
     !!!#################################################
@@ -89,18 +90,33 @@ contains
     
 
     
-    CALL TP_UPDATE()
+    CALL TP_UPDATE(x)
+
+
 
   end subroutine EVOLVE
 
 
   
-  subroutine TP_UPDATE()
-    integer(int12) :: j
+  subroutine TP_UPDATE(x)
+    integer(int12) :: i, j, k, index
+    real(real12), dimension(NA) :: x
     DO j = 1, NA
        TD(j)=TPD(j)
        TPD(j)=TD(j)
     end DO
+   
+    Told = TN
+    T = TN
+    index = 1
+    do k = 1, nz
+      do j = 1, ny
+         do i = 1, nx
+            TN(i,j,k) = X(index)
+            index = index+1
+         end do
+      end do
+    end do 
   end subroutine TP_UPDATE
 
 end module

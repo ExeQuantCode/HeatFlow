@@ -15,37 +15,37 @@ module setup
    !This sets up the HMatrix global variable so as a Sparse row storage.
    !-----------------------------------------------
    subroutine set_global_variables()
-   real(real12) :: H0, hboundary
-   integer(int12) :: i, j
-   allocate(TN(nx, ny, nz))
-   allocate(T(nx, ny, nz))
-   allocate(Told(nx, ny, nz))
-   allocate(TD(NA))
-   allocate(TPD(NA))
-   allocate(H(NA,NA))
-   !------------------------------------------------
-   !Make hmatrix
-   !Hmatrix consists of H_ij,0 and H_ij,B (heat flow across grid and matrix correction for boundaries
-   !-----------------------------------------------
-   !H_ij T_i =S_j
-   H=0.0
-   hboundary = 0.0
-   do i=1,NA 
-      do j=1,NA
-        call hmatrix(i,j,H0)
-		  
-	     H(i,j)=H0
-	     !if (HBoundary.eq.1) then
-        !CALL HATRIX_BOUND(i,j,HB)
-	     !   H(i,j)=H(i,j)+HB(i,j)
-	     !end if
-       end do
-   end do
+      real(real12) :: H0, hboundary
+      integer(int12) :: i, j
+      allocate(TN(nx, ny, nz))
+      allocate(T(nx, ny, nz))
+      allocate(Told(nx, ny, nz))
+      allocate(TD(NA))
+      allocate(TPD(NA))
+      allocate(H(NA,NA))
+      !------------------------------------------------
+      !Make hmatrix
+      !Hmatrix consists of H_ij,0 and H_ij,B (heat flow across grid and matrix correction for boundaries
+      !-----------------------------------------------
+      !H_ij T_i =S_j
+      H=0.0
+      hboundary = 0.0
+      do i=1,NA 
+         do j=1,NA
+         call hmatrix(i,j,H0)
+         
+         H(i,j)=H0
+         !if (HBoundary.eq.1) then
+         !CALL HATRIX_BOUND(i,j,HB)
+         !   H(i,j)=H(i,j)+HB(i,j)
+         !end if
+         end do
+      end do
 
-   ! Convert the matrix into Sparse Diagonal Storage.
-   ! call SDSin(A,TINY, da)
-   ! Convert the matrix into Sparse Row Storage.
-   call SRSin(H,TINY, ra)
+      ! Convert the matrix into Sparse Diagonal Storage.
+      ! call SDSin(A,TINY, da)
+      ! Convert the matrix into Sparse Row Storage.
+      call SRSin(H,TINY, ra)
    
    end subroutine set_global_variables
 
