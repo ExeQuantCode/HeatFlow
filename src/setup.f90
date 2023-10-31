@@ -30,7 +30,6 @@ module setup
    !H_ij T_i =S_j
    H=0.0
    hboundary = 0.0
-   print*, NA
    do i=1,NA 
       do j=1,NA
         call hmatrix(i,j,H0)

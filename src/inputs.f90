@@ -245,7 +245,6 @@ contains
     read(unit,'(A)',iostat=Reason) buffer
     read(buffer,*) nx, ny, nz
     Na = nx*ny*nz
-    print*,Na
     ! Allocate Global data arrays
     allocate(grid(nx,ny,nz))
 
