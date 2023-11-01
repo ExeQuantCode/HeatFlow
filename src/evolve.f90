@@ -4,6 +4,7 @@ MODULE EVOLUTION
   use sptype, only: I4B
   use sparse, only: linbcg
   use globe_data, only: TD, TPD, TN, Told, T
+  use heating, only: heater
   implicit none
 
   private
@@ -46,10 +47,9 @@ contains
     !**CALL HEATER
     
     !**Call S_CAT
-    
+    call heater(it,Q)
    
     if (iSteady.eq.0) then
-       
        do j=1,nT
           S(j)=TD(j)/dt+Q(j)+B(j)
           if (iCAttaneo.eq.1)  then 
