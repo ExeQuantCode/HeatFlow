@@ -5,6 +5,7 @@ MODULE EVOLUTION
   use sparse, only: linbcg
   use globe_data, only: TD, TPD, TN, Told, T
   use heating, only: heater
+  use boundary_vector, only: boundary
   implicit none
 
   private
@@ -43,11 +44,11 @@ contains
     !**   S=TP/dt
     
     !**CALL Boundary
-    
+    call boundary(B)
     !**CALL HEATER
-    
-    !**Call S_CAT
     call heater(it,Q)
+    !**Call S_CAT
+    
    
     if (iSteady.eq.0) then
        do j=1,nT

@@ -10,8 +10,8 @@ contains
 
 
     !Bound term has a correction for the x,y,z edges of our grid (first vector) and this can be both edges (second vector)
-!for example, the x-axis has a left and right boundary,
-!these correspond to  Bound_Term(1,1) and Bound_Term(1,2)
+    !for example, the x-axis has a left and right boundary,
+    !these correspond to  Bound_Term(1,1) and Bound_Term(1,2)
 
     real(real12), dimension(3,2) :: Bound_term
     B=0
