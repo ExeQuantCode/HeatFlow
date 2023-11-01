@@ -1,7 +1,7 @@
 module Heating
   use constants, only: real12, int12
   use constructions, only: heatblock
-  use inputs, only: nx,ny,nz, iheater, grid
+  use inputs, only: nx,ny,nz, iheater, grid, NA
 
 
 contains
@@ -12,7 +12,7 @@ contains
     integer :: IA,iheater
     integer(int12), intent(in) :: it 
     real(real12) :: time
-    real(real12), intent(out) :: Q
+    real(real12), dimension(NA), intent(out) :: Q
     !real(real12), dimension(NA) :: Q
     time=dt*REAL(iT)
     IA=0
@@ -26,7 +26,7 @@ contains
                 
                 !NO HEATING
              CASE(0)
-		Q = 0.0
+		          Q = 0.0
                 !Q(IA)=0.0
                 
              CASE(1)
@@ -40,7 +40,7 @@ contains
                    Q=POWER
 		   !Q(IA)=POWER
                 else
-		   Q=0.0
+		            Q=0.0
                    !Q(IA)=0.0
                 end if
                 

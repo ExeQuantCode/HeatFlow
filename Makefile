@@ -27,6 +27,7 @@ SRCS := constants.f90 \
 		Sparse.f90 \
 		inputs.f90 \
 		setup.f90 \
+		boundary.f90 \
 		heating.f90 \
 		material.f90 \
 		hmatrix.f90 \
