@@ -26,11 +26,11 @@ SRCS := constants.f90 \
 		Globe_data.f90 \
 		Sparse.f90 \
 		inputs.f90 \
+		hmatrix.f90 \
 		setup.f90 \
 		boundary.f90 \
 		heating.f90 \
 		material.f90 \
-		hmatrix.f90 \
 		init_evolve.f90 \
 		delta_ave.f90 \
 		evolve.f90 \
