@@ -7,18 +7,14 @@ MODULE INITIAL
   
 contains
   
-  subroutine INIT_EVOLVE(it)
-    integer, intent(in) :: iT
+  subroutine initial_evolve()
     
     !Current version just sets all previous time steps temperatures = heat bath
 
-    if (it.eq.1) then
-       TD=T_bath
-       TPD=T_bath
-    else if (it.eq.2) then
-       TPD=T_Bath
-    end if
+  
+    TD=T_bath
+    TPD=T_bath
+
     
-    
-  end subroutine INIT_EVOLVE
+  end subroutine initial_evolve
 end MODULE INITIAL

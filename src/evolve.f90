@@ -1,6 +1,6 @@
 MODULE EVOLUTION
   use constants, only: real12, int12
-  use inputs, only: NA, icattaneo, isteady, nx, ny, nz
+  use inputs, only: NA, icattaneo, isteady, nx, ny, nz, T_bath
   use sptype, only: I4B
   use sparse, only: linbcg
   use globe_data, only: TD, TPD, TN, Told, T
@@ -37,11 +37,9 @@ contains
     !S_j,cat = cattaneo correction
     !Q_j = heater
     !---------------------------------------------
-    
-    S=0
-    
+        
     !** CALL TP_OLD(j,TO)
-    !**   S=TP/dt
+    S=TPD/dt
     
     !**CALL Boundary
     call boundary(B)
@@ -62,13 +60,13 @@ contains
        	 S(j)=Q(j)+B(j)
        end do
     end if
+    
     !**Unfinished implementation of b vector calculation
-    b = TPD
-    b = 200
+
     !!!#################################################
     !!! Call the CG method to solve the equation Ax=b.
     !!!#################################################
-    ! b:     Input - the b vector.
+    ! b/S:     Input - the b vector.
     ! x:     Input/Output - initial guess for x, overwritten with the final solution.
     ! itol:  Input - sets the tolerance method used to calculate error.
     ! tol:   Input - sets the convergence criteria.
@@ -84,7 +82,7 @@ contains
     err=E
     iss=1
     x=100
-    call linbcg(b,x,itol=int(itol,I4B),tol=1D-9, itmax=int(itmax,I4B), iter=iter, &
+    call linbcg(S,x,itol=int(itol,I4B),tol=1D-9, itmax=int(itmax,I4B), iter=iter, &
 	  err=E, iss=int(iss,I4B))
     !!!#################################################
     
@@ -102,6 +100,7 @@ contains
   subroutine TP_UPDATE(x)
     integer(int12) :: i, j, k, index
     real(real12), dimension(NA) :: x
+    !** This isnt right
     DO j = 1, NA
        TD(j)=TPD(j)
        TPD(j)=TD(j)

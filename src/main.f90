@@ -9,6 +9,7 @@ PROGRAM HEATFLOW_V0_1
   use inputs, only: read_all_files, nx, ny, nz, NA, iverb, ntime, grid
   use evolution, only: evolve
   use setup, only: Initiate, set_global_variables
+  use INITIAL, only: initial_evolve
 
   implicit none
    real(real12) :: rstart, rend, rprogress
@@ -27,6 +28,7 @@ PROGRAM HEATFLOW_V0_1
 
    call Initiate()
    call set_global_variables()
+   call initial_evolve()
    Print*, 'Setup complete, running simulation' ! indication that inputs have been read
 
    do it=1,ntime ! run simulation for 'ntime' time steps
