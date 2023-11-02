@@ -8,20 +8,20 @@ MODULE DeA
 contains
 
   subroutine Delta_Ave(Kap,l_c,H_con,ix,iy,iz)
-!this subroutine does two things:
-!1)averages properties over adjacent cells 
-!2) It selects the boundary conditions (three types, discussed in entry)
-!3)
+   !this subroutine does two things:
+   !1)averages properties over adjacent cells 
+   !2) It selects the boundary conditions (three types, discussed in entry)
+   !3)
   ! integer, parameter :: e = nx*ny*nz
   ! real(real12), dimension(e) = T
- real(real12), dimension(3,2), intent(inout) :: kap, h_con, L_c
- real(real12), dimension(3,2) :: DeT
+  real(real12), dimension(3,2), intent(inout) :: kap, h_con, L_c
+   real(real12), dimension(3,2) :: DeT
   !real(real12), dimension(3,3) :: kappa3D
    real(real12) :: kappa, kappa3D, TC, h_conv,heat_capacity,soundspeed,rho, volume, tau
-!convective current!
-!DeT = array of delta t in direction_i (i)
-! and (j) between cells ix-1 and ix, or ix and ix+1
- integer(int12), intent(in) :: ix,iy,iz
+  !convective current!
+  !DeT = array of delta t in direction_i (i)
+  ! and (j) between cells ix-1 and ix, or ix and ix+1
+  integer(int12), intent(in) :: ix,iy,iz
  
 
 !General averaging block
