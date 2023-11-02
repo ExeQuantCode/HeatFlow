@@ -6,6 +6,7 @@ MODULE EVOLUTION
   use globe_data, only: TD, TPD, TN, Told, T
   use heating, only: heater
   use boundary_vector, only: boundary
+  use cattaneo
   implicit none
 
   private
@@ -46,7 +47,7 @@ contains
     !**CALL HEATER
     call heater(it,Q)
     !**Call S_CAT
-    
+    call s_catS(s_cat)
    
     if (iSteady.eq.0) then
        do j=1,nT
