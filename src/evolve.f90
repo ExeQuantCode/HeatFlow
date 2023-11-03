@@ -1,6 +1,6 @@
 MODULE EVOLUTION
   use constants, only: real12, int12
-  use inputs, only: NA, icattaneo, isteady, nx, ny, nz, T_bath
+  use inputs, only: NA, icattaneo, isteady, nx, ny, nz, T_bath, time_step
   use sptype, only: I4B
   use sparse, only: linbcg
   use globe_data, only: TD, TPD, TN, Told, T
@@ -40,7 +40,7 @@ contains
     !---------------------------------------------
         
     !** CALL TP_OLD(j,TO)
-    S=TPD/dt
+    S=TPD/time_step
     
     !**CALL Boundary
     call boundary(B)
@@ -51,19 +51,19 @@ contains
    
     if (iSteady.eq.0) then
        do j=1,nT
-          S(j)=TD(j)/dt+Q(j)+B(j)
+          S(j)=TD(j)/(time_step)+Q(j)+B(j)
           if (iCAttaneo.eq.1)  then 
-             !** S(J)=S(j)+S_cat(j)
+               S(j)=S(j)+S_cat(j)
           end if
        end do
     else
        do j=1,nT
-       	 S(j)=Q(j)+B(j)
+       	 S(j)=S(j)+Q(j)+B(j)
        end do
     end if
-    
     !**Unfinished implementation of b vector calculation
 
+    
     !!!#################################################
     !!! Call the CG method to solve the equation Ax=b.
     !!!#################################################

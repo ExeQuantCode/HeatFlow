@@ -9,7 +9,7 @@ contains
   subroutine hmatrix(i, j, H)
     integer(int12), intent(in) :: i, j
     integer(int12) :: x, y, z
-    real(real12) :: alpha, A, B, D, E, F, G
+    real(real12) :: alpha, A, B, D, E, F, G 
     real(real12), intent(out) :: H
 
     ! For ease atm

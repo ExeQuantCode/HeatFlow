@@ -1,4 +1,4 @@
-MODULE Constants
+module constants
   implicit none
   !!!Specifies accuracy of variables (Can be reduced to save memory)
   integer, parameter :: real12 = Selected_real_kind(12,200) !(12,200)
@@ -12,4 +12,4 @@ MODULE Constants
   real(real12), parameter :: avogadros=6.022e23_real12
   
   real(real12), PARAMETER :: TINY=1.0e-9_real12
-end MODULE Constants
+end module constants
