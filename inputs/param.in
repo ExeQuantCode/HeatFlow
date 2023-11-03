@@ -14,8 +14,8 @@
     cutoff = 1000     !
     power_in = 1    !
     T_period = 0.1  !
-    nx = 10  !
-    ny = 10     !
-    nz = 10    !
+    nx = 30  !
+    ny = 30     !
+    nz = 30    !
 
 

@@ -17,12 +17,14 @@ module setup
    subroutine set_global_variables()
       real(real12) :: H0, hboundary
       integer(int12) :: i, j
+
       allocate(TN(nx, ny, nz))
       allocate(T(nx, ny, nz))
       allocate(Told(nx, ny, nz))
       allocate(TD(NA))
-      allocate(TPD(NA))
+      allocate(TPD(NA))      
       allocate(H(NA,NA))
+
       !------------------------------------------------
       !Make hmatrix
       !Hmatrix consists of H_ij,0 and H_ij,B (heat flow across grid and matrix correction for boundaries

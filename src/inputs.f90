@@ -234,7 +234,7 @@ contains
 !############################################################################
   subroutine read_mesh(unit)
     integer, intent(in) :: unit
-    integer :: i, j, k, reason, c
+    integer(int12) :: i, j, k, reason, c
     character(1024) :: buffer, array
     
     ! read mesh volume dimessions
