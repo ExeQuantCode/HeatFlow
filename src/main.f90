@@ -1,7 +1,7 @@
 !##############################################################################################################
 ! This is the main program for HeatFlow
 !##############################################################################################################
-PROGRAM HEATFLOW_V0_1
+program HEATFLOW_V0_1
   
   use constants, only: real12, int12
   use constructions, only: heatblock
@@ -55,7 +55,7 @@ PROGRAM HEATFLOW_V0_1
 
 
 
-end PROGRAM HEATFLOW_V0_1
+end program HEATFLOW_V0_1
 
 
   

@@ -1,4 +1,4 @@
-MODULE INITIAL
+module initial 
   use constants, only: real12, int12
   use inputs, only: NA, T_Bath
   use globe_data, only: TD,TPD
@@ -17,4 +17,4 @@ contains
     
     
   end subroutine initial_evolve
-end MODULE INITIAL
+end module initial

@@ -1,4 +1,4 @@
-MODULE EVOLUTION
+module evolution
   use constants, only: real12, int12
   use inputs, only: NA, icattaneo, isteady, nx, ny, nz, T_bath, time_step
   use sptype, only: I4B
@@ -6,7 +6,7 @@ MODULE EVOLUTION
   use globe_data, only: TD, TPD, TN, Told, T
   use heating, only: heater
   use boundary_vector, only: boundary
-  use cattaneo
+  use cattaneo, only: S_catS
   implicit none
 
   private
@@ -63,7 +63,7 @@ contains
     end if
     !**Unfinished implementation of b vector calculation
 
-    
+
     !!!#################################################
     !!! Call the CG method to solve the equation Ax=b.
     !!!#################################################
@@ -90,7 +90,7 @@ contains
     
 
     
-    CALL TP_UPDATE(x)
+    call TP_UPDATE(x)
 
 
 
@@ -120,5 +120,5 @@ contains
     end do 
   end subroutine TP_UPDATE
 
-end module
+end module evolution
   

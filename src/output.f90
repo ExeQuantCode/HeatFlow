@@ -1,4 +1,4 @@
-MODULE OUTPUT
+module output
   use constants, only: real12, int12
   use inputs, only: nx,ny,nz, time_step, zpos, grid
   use constructions, only: heatblock
@@ -6,7 +6,7 @@ MODULE OUTPUT
   implicit none
   
 contains
-  SUBROUTINE PLOT(it)
+  subroutine plot(it)
     
     ! real(real12), dimension(nx, ny,nz) :: T
     integer :: new, newunit
@@ -52,5 +52,5 @@ contains
    !    end if
    ! end do
    ! print*,zpos
-  end SUBROUTINE PLOT
-end MODULE OUTPUT
+  end subroutine plot
+end module output

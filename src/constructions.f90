@@ -1,4 +1,4 @@
-MODULE CONSTRUCTIONS
+module constructions
 !!!These serve as classes or structures in f90
   use constants, only: real12, int12
   !!!Defines the heatblock to be used in the simulation
@@ -21,5 +21,5 @@ MODULE CONSTRUCTIONS
      real(real12) :: tau
      logical :: source
   end type material
-end MODULE CONSTRUCTIONS
+end module constructions
   

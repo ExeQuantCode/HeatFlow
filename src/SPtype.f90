@@ -1,4 +1,4 @@
-MODULE sptype
+module sptype
   use constants, only: int12
   !Symbolic names for kind types of 4, 2, and 1byte integers:
   integer, parameter :: I4B = SELECTED_INT_KIND(9)
@@ -28,4 +28,4 @@ MODULE sptype
      ! hence for diag_vals(x,y), irow = y & jcol = diag_offsets(x)+y
      ! can be converted for operations
   END TYPE diag_sprs_dp
-END MODULE sptype
+end module sptype

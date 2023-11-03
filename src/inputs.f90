@@ -443,4 +443,4 @@ subroutine read_mat(unit)
   end function val
 !############################################################################
 
-END module inputs
+end module inputs

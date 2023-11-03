@@ -1,4 +1,4 @@
-MODULE DeA
+module dea
   use constants, only: real12, int12
   use inputs, only: nx,ny,nz, icell_mix, grid
   use constructions, only: heatblock
@@ -200,4 +200,4 @@ contains
 
   end subroutine Delta_Ave
 
-end MODULE DeA
+end module dea

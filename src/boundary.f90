@@ -1,10 +1,10 @@
-MODULE BOUNDARY_VECTOR
+module boundary_vector
   use constants, only: real12, int12
   use inputs, only: NA,nx,ny,nz
 
 contains
 
-  subroutine BOUNDARY(B)
+  subroutine boundary(B)
     real(real12), dimension(NA), intent(out) :: B
     real(real12), dimension(NA) :: BA
 
@@ -46,6 +46,6 @@ contains
     end do
 
     BoundTerm(1,1) = kappa_boundx0*T_heatbath_x/(rhox1*c_1)  
-  end subroutine BOUNDARY
+  end subroutine boundary
 
-end MODULE BOUNDARY_VECTOR
+end module boundary_vector

@@ -1,4 +1,4 @@
-MODULE sputil
+module sputil
   USE sptype !Parameters for crossover from serial to parallel algorithms (these are used only within this sputil module):
   IMPLICIT NONE
   INTEGER(I4B), PARAMETER :: NPAR_ARTH=16,NPAR2_ARTH=8
