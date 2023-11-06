@@ -1,7 +1,7 @@
 module Heating
   use constants, only: real12, int12
   use constructions, only: heatblock
-  use inputs, only: nx,ny,nz, grid, NA, iheater
+  use inputs, only: nx,ny,nz, grid, NA, iheater, power_in
   use materials, only: material
 
 contains
@@ -16,7 +16,7 @@ contains
     !real(real12), dimension(NA) :: Q
     time=dt*REAL(iT)
     IA=0
-    POWER = 1000
+    POWER = power_in
     do i=1,NX
        do j=1,NY
           do k=1,NZ
@@ -26,6 +26,7 @@ contains
                 
                 !NO HEATING
              CASE(0)
+               
 		          Q(IA) = 0.0
                 !Q(IA)=0.0
                 

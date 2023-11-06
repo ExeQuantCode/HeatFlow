@@ -298,12 +298,12 @@ contains
             write(6,*) 'Error: Unexpected EOF heat.in'
             call exit
           end if
-          read(unit, '(A)', iostat=Reason) array 
-          do i = 1, nx
-            read(array,*,iostat = reason) iheater(i,j,k)
-          end do 
+          read(buffer, '(A)', iostat=Reason) array           
+          read(array,*,iostat = reason) (iheater(i,j,k), i=1,nx)
         end do
     end do
+
+  
   end subroutine read_heat
 !############################################################################
 

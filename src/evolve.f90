@@ -3,7 +3,7 @@ module evolution
   use inputs, only: NA, icattaneo, isteady, nx, ny, nz, T_bath, time_step
   use sptype, only: I4B
   use sparse, only: linbcg
-  use globe_data, only: TD, TPD, TN, Told, T
+  use globe_data, only: TD, TPD, TN, Told, T, H
   use heating, only: heater
   use boundary_vector, only: boundary
   use cattaneo, only: S_catS
@@ -58,12 +58,11 @@ contains
        end do
     else
        do j=1,NA
-       	 S(j)=S(j)+Q(j)+B(j)
+       	 S(j)=S(j)-Q(j)!+B(j)
        end do
     end if
     !**Unfinished implementation of b vector calculation
-
-
+   
     !!!#################################################
     !!! Call the CG method to solve the equation Ax=b.
     !!!#################################################
@@ -77,19 +76,18 @@ contains
     ! iss:   Input - sets the Sparse Storage type (1=SRS, 2=SDS).
     itol=1
     tol=1D-9 
-    itmax=500
+    itmax=5000
     ncg = 0
     iter=ncg
     err=E
     iss=1
-    x=100
+    x=500
     call linbcg(S,x,itol=int(itol,I4B),tol=1D-9, itmax=int(itmax,I4B), iter=iter, &
 	  err=E, iss=int(iss,I4B))
     !!!#################################################
     
     
 
-    
     call TP_UPDATE(x)
 
 
