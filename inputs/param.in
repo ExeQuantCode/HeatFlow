@@ -13,8 +13,8 @@
     cutoff = 1000     !
     power_in = 1    !
     T_period = 0.1  !
-    nx = 30  !
-    ny = 30     !
-    nz = 30    !
+    kappaBoundx = 0.22  !
+    kappaBoundy = 0.22     !
+    kappaBoundz = 0.22    !
 
 
