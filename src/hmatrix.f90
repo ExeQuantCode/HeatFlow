@@ -1,7 +1,7 @@
 module hmatrixmod
   use constants, only: real12, int12
   use materials, only: material
-  use inputs, only: nx, ny, nz, time_step, grid
+  use inputs, only: nx, ny, nz, time_step, grid, isteady
   use globe_data, only: T
 
 contains
@@ -13,8 +13,11 @@ contains
     real(real12), intent(out) :: H
 
     ! For ease atm
-    alpha = (tau + time_step) / (time_step * time_step)
-
+    if (isteady .eq. 0) then
+      alpha = 0
+    else
+      alpha = (tau + time_step) / (time_step * time_step)
+    end if   
     ! Calculate x, y, and z based on the 1D index j
     x = mod(j, nx) 
     y = mod(j / nx, ny) + 1

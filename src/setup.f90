@@ -17,7 +17,7 @@ module setup
    subroutine set_global_variables()
       real(real12) :: H0, hboundary
       integer(int12) :: i, j
-
+      real(real12), dimension(7, NA) :: Hsparse
       allocate(TN(nx, ny, nz))
       allocate(T(nx, ny, nz))
       allocate(Told(nx, ny, nz))
@@ -48,7 +48,41 @@ module setup
       ! call SDSin(A,TINY, da)
       ! Convert the matrix into Sparse Row Storage.
       call SRSin(H,TINY, ra)
-   
+      do j = 1, NA
+         do i = 1, NA
+
+            if (i-j .eq. 0) then
+               call hmatrix(i,j, H0)
+               Hsparse(4, j) = H0  ! Diagonal, major band
+            
+            else if (i-j .eq. 1) then
+               call hmatrix(i,j, H0)
+               Hsparse(3, j) = H0 ! X left neighbor, sub_1 band
+
+            else if (i-j .eq. -1) then 
+               call hmatrix(i,j, H0)
+               Hsparse(5, j) = H0 ! X right neighbor, sup_1 band
+            
+            else if (i-j .eq. nx)  then
+               call hmatrix(i,j, H0)
+               Hsparse(2, j) = H0! Y down neighbor, sub_2 band
+            
+            else if (i-j .eq. -nx) then
+               call hmatrix(i,j, H0)
+               Hsparse(6, j) = H0 ! Y up neighbor, sup_2 band 
+            
+            else if (i-j .eq. nx*ny) then
+               call hmatrix(i,j, H0)
+               Hsparse(1, j) = H0  ! Z in neighbor, sub_3 band
+            
+            else if (i-j .eq. -nx*ny) then
+               call hmatrix(i,j, H0)
+               Hsparse(7, j) = H0 ! Z out neighbor, sup_3 band
+            end if 
+         end do
+      end do
+      !print*,Hsparse
+      
    end subroutine set_global_variables
 
 

@@ -2,7 +2,7 @@ module Heating
   use constants, only: real12, int12
   use constructions, only: heatblock
   use inputs, only: nx,ny,nz, grid, NA, iheater
-
+  use materials, only: material
 
 contains
 
@@ -11,7 +11,7 @@ contains
   subroutine heater(it,Q)
     integer :: IA
     integer(int12), intent(in) :: it 
-    real(real12) :: time
+    real(real12) :: time, TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau
     real(real12), dimension(NA), intent(out) :: Q
     !real(real12), dimension(NA) :: Q
     time=dt*REAL(iT)
@@ -21,7 +21,7 @@ contains
        do j=1,NY
           do k=1,NZ
              IA=IA+1
-             
+             call material(grid(i,j,k)%imaterial_type, TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
              select case(iheater(i,j,k))
                 
                 !NO HEATING
@@ -38,7 +38,7 @@ contains
                 !heater on for a time period
                 if (time.le.PARAM_time_pulse) then
                    Q=POWER
-		   !Q(IA)=POWER
+		             !Q(IA)=POWER
                 else
 		            Q=0.0
                    !Q(IA)=0.0
@@ -54,10 +54,11 @@ contains
              !        i, j, k, ' to zero'
              !   Q(IA)=0.0
              end select
+             Q(IA) = Q(IA)/(rho*heat_capacity)
           end do
        end do
     end do
-    
+   
     
   end subroutine heater
 end module Heating
