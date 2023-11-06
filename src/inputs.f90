@@ -8,7 +8,7 @@ module inputs
 
   implicit none
   integer :: unit, newunit
-  real(real12) :: time_step, T_Bath, freq, power_in, T_period, cutoff
+  real(real12) :: time_step, T_Bath, freq, power_in, T_period, cutoff, kappaBoundx, kappaBoundy, kappaBoundz
   integer(int12) :: IVERB, icell_mix, ntime, Rel, zpos, ACon, iboundary, nx, ny, nz, icattaneo, isteady, NA
   logical, parameter :: verbose = .TRUE.
   type(heatblock), dimension(:,:,:), allocatable :: grid
@@ -165,9 +165,9 @@ contains
        write(6,'(A35,F16.5)')'   cutoff     = ',cutoff
        write(6,'(A35,F12.5)')'   power_in   = ',power_in
        write(6,'(A35,F12.5)')'   T_period   = ',T_period
-       write(6,'(A35,I6)')   '   nx         = ',nx
-       write(6,'(A35,I6)')   '   ny         = ',ny
-       write(6,'(A35,I6)')   '   nz         = ',nz
+       write(6,'(A35,F12.5)')   '   kappaBoundx         = ',kappaBoundx
+       write(6,'(A35,F12.5)')   '   kappaBoundy         = ',kappaBoundy
+       write(6,'(A35,F12.5)')   '   kappaBoundz         = ',kappaBoundz
 
     end if
   end subroutine check_param
@@ -203,10 +203,9 @@ contains
     cutoff = 1e12
     power_in = 0
     T_period = 1
-    nx = 10
-    ny = 10
-    nz = 10
-    Na = nx*ny*nz
+    kappaBoundx = 0.22
+    kappaBoundy = 0.22
+    kappaBoundz = 0.22
     !------------------------------------------
     do
        read(unit,'(A)',iostat=Reason) buffer
@@ -235,10 +234,9 @@ contains
        call assignD(buffer,"cutoff",cutoff,readvar(13))    
        call assignD(buffer,"power_in",power_in,readvar(14))       
        call assignD(buffer,"T_period",T_period,readvar(15))       
-       call assignI(buffer,"nx",nx,readvar(16))
-       call assignI(buffer,"ny",ny,readvar(17))    
-       call assignI(buffer,"nz",nz,readvar(18))
-       Na = nx*ny*nz
+       call assignD(buffer,"kappaBoundx",kappaBoundx,readvar(16))
+       call assignD(buffer,"kappaBoundy",kappaBoundy,readvar(17))    
+       call assignD(buffer,"kappaBoundz",kappaBoundz,readvar(18))
     end do
     call check_param(readvar,size(readvar,1))
 
