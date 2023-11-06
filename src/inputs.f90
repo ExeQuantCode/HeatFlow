@@ -9,10 +9,10 @@ module inputs
   implicit none
   integer :: unit, newunit
   real(real12) :: time_step, T_Bath, freq, power_in, T_period, cutoff
-  integer(int12) :: IVERB, icell_mix, ntime, Rel, zpos, ACon, iheater &
-	, iboundary, nx, ny, nz, icattaneo, isteady, NA
+  integer(int12) :: IVERB, icell_mix, ntime, Rel, zpos, ACon, iboundary, nx, ny, nz, icattaneo, isteady, NA
   logical, parameter :: verbose = .TRUE.
   type(heatblock), dimension(:,:,:), allocatable :: grid
+  integer(int12), dimension(:,:,:), allocatable :: iheater
   type(material), dimension(:), allocatable :: input_materials
   real(real12) :: Lx, Ly, Lz ! Volume dimensions (lenghts)
 
@@ -93,6 +93,27 @@ contains
     call read_mesh(unit)
     close(unit)
     !-----------------------------------------------
+
+    !-----------------------------------------------
+    ! get data from heat.in
+    !-----------------------------------------------
+    ! name infile
+    mesh_infile = "./inputs/heat.in"
+
+    ! check if file is there
+    inquire(file=mesh_infile, exist=file_exists)
+
+    ! give error and exit code
+    if (.not.file_exists) then
+        write(6,*) 'Error cannot find file: heat.in'
+        call exit
+    end if
+    
+    ! open, read and close
+    open(newunit=unit, file=mesh_infile, iostat=reason)
+    call read_heat(unit)
+    close(unit)
+    !-----------------------------------------------
   end subroutine read_all_files
 !############################################################################
 
@@ -136,7 +157,6 @@ contains
        write(6,'(A35,I6)')   '   zpos       = ',zpos
        write(6,'(A35,I6)')   '   ACon       = ',ACon       
        write(6,'(A35,F12.5)')'   Time_step  = ',time_step
-       write(6,'(A35,I6)')   '   iheater    = ',iheater
        write(6,'(A35,F12.5)')'   frequency  = ',freq
        write(6,'(A35,I6)')   '   iboundary  = ',iboundary
        write(6,'(A35,I6)')   '   icattaneo  = ' , icattaneo
@@ -161,7 +181,7 @@ contains
 !############################################################################
   subroutine read_param(unit)
     integer::unit,Reason, i
-    integer,dimension(19)::readvar
+    integer,dimension(18)::readvar
     character(1024)::buffer
     logical::ex
     readvar=0
@@ -175,7 +195,6 @@ contains
     zpos = 1
     ACon = 0
     time_step = 1.0
-    iheater = 0
     freq = 1
     iboundary = 1
     icattaneo = 1
@@ -208,18 +227,17 @@ contains
        call assignI(buffer,"zpos",zpos,readvar(5))      
        call assignI(buffer,"ACon",ACon,readvar(6))         
        call assignD(buffer,"time_step",time_step,readvar(7))   
-       call assignI(buffer,"iheater",iheater,readvar(8))       
-       call assignD(buffer,"freq",freq,readvar(9))       
-       call assignI(buffer,"iboundary",iboundary,readvar(10))   
-       call assignI(buffer,"icattaneo", icattaneo, readvar(11))
-       call assignI(buffer,"isteady", isteady, readvar(12))
-       call assignD(buffer,"T_Bath",T_Bath,readvar(13)) 
-       call assignD(buffer,"cutoff",cutoff,readvar(14))    
-       call assignD(buffer,"power_in",power_in,readvar(15))       
-       call assignD(buffer,"T_period",T_period,readvar(16))       
-       call assignI(buffer,"nx",nx,readvar(17))
-       call assignI(buffer,"ny",ny,readvar(18))    
-       call assignI(buffer,"nz",nz,readvar(19))
+       call assignD(buffer,"freq",freq,readvar(8))       
+       call assignI(buffer,"iboundary",iboundary,readvar(9))   
+       call assignI(buffer,"icattaneo", icattaneo, readvar(10))
+       call assignI(buffer,"isteady", isteady, readvar(11))
+       call assignD(buffer,"T_Bath",T_Bath,readvar(12)) 
+       call assignD(buffer,"cutoff",cutoff,readvar(13))    
+       call assignD(buffer,"power_in",power_in,readvar(14))       
+       call assignD(buffer,"T_period",T_period,readvar(15))       
+       call assignI(buffer,"nx",nx,readvar(16))
+       call assignI(buffer,"ny",ny,readvar(17))    
+       call assignI(buffer,"nz",nz,readvar(18))
        Na = nx*ny*nz
     end do
     call check_param(readvar,size(readvar,1))
@@ -264,7 +282,32 @@ contains
   end subroutine read_mesh
 !############################################################################
 
+!############################################################################
+! The heating file
+!############################################################################
+  subroutine read_heat(unit)
+    integer, intent(in) :: unit
+    integer(int12) :: i, j, k, reason, c
+    character(1024) :: buffer, array
 
+    ! Allocate Global data arrays
+    allocate(iheater(nx,ny,nz))
+
+    do k = 1, nz
+       read(unit, '(A)', iostat= Reason) buffer
+       do j = 1, ny
+          if (Reason .ne. 0) then
+            write(6,*) 'Error: Unexpected EOF heat.in'
+            call exit
+          end if
+          read(unit, '(A)', iostat=Reason) array 
+          do i = 1, nx
+            read(array,*,iostat = reason) iheater(i,j,k)
+          end do 
+        end do
+    end do
+  end subroutine read_heat
+!############################################################################
 
 !############################################################################
 ! The the materials file
