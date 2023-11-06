@@ -40,7 +40,7 @@ contains
     !---------------------------------------------
         
     !** CALL TP_OLD(j,TO)
-    S=TD/time_step
+    S=0
     
     !**CALL Boundary
     call boundary(B)
