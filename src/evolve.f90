@@ -20,7 +20,7 @@ contains
     real(real12), dimension(NA) :: S, x, Q, S_CAT
     real(real12), dimension(NA) :: B
     integer(int12), intent(in) :: it
-    integer(int12) :: i,j, nT, ncg, itol, itmax, iss
+    integer(int12) :: i,j, ncg, itol, itmax, iss
     integer(I4B) :: iter
     real(real12) :: dt, To, Hb, e, err, tol
     
@@ -40,7 +40,7 @@ contains
     !---------------------------------------------
         
     !** CALL TP_OLD(j,TO)
-    S=TPD/time_step
+    S=TD/time_step
     
     !**CALL Boundary
     call boundary(B)
@@ -50,14 +50,14 @@ contains
     call s_catS(s_cat)
    
     if (iSteady.eq.0) then
-       do j=1,nT
+       do j=1,NA
           S(j)=TD(j)/(time_step)+Q(j)+B(j)
           if (iCAttaneo.eq.1)  then 
                S(j)=S(j)+S_cat(j)
           end if
        end do
     else
-       do j=1,nT
+       do j=1,NA
        	 S(j)=S(j)+Q(j)+B(j)
        end do
     end if
@@ -102,12 +102,10 @@ contains
     integer(int12) :: i, j, k, index
     real(real12), dimension(NA) :: x
     !** This isnt right
-    DO j = 1, NA
-       TD(j)=TPD(j)
-       TPD(j)=TD(j)
-    end DO
+    TPD = TD
+    TD = x
    
-    Told = TN
+    Told = T
     T = TN
     index = 1
     do k = 1, nz

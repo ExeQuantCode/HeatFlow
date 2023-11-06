@@ -5,11 +5,10 @@
     zpos = 1     !
     ACon = 1     !
     time_step = 1.0     !
-    iheater = 1    !
     freq = 1     !
     iboundary = 1     !
     icattaneo = 0 !
-    isteady = 0 !
+    isteady = 1 !
     T_Bath = 200     !
     cutoff = 1000     !
     power_in = 1    !
