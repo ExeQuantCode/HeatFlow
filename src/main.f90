@@ -8,7 +8,7 @@ program HEATFLOW_V0_1
   use output, only: plot
   use inputs, only: read_all_files, nx, ny, nz, NA, iverb, ntime, grid
   use evolution, only: evolve
-  use setup, only: Initiate, set_global_variables
+  use setup, only: set_global_variables
   use INITIAL, only: initial_evolve
 
   implicit none
@@ -16,44 +16,64 @@ program HEATFLOW_V0_1
    integer(int12) :: it
    integer :: newunit, unit
    !real(real12), dimension(nx, ny,nz) :: T,T0, T00
-   call cpu_time(rstart) ! starts timer 
 
+   !-------------------------------------------------------------!
+   ! calculate the time to run full simulation                   !
+   !-------------------------------------------------------------!
+   call cpu_time(rstart)                                         !
+   !-------------------------------------------------------------!
 
-   Print*, 'Setup initialising' ! indication that the model is runnning
+   ! give feedback to user that code has begun
+   write(*,*) 'Setup initialising' 
    
-   ! Read parameters from inputs file, located in inputs.f90
-   call read_all_files()
+   !-------------------------------------------------------------!
+   ! Read parameters from input file and set global variables ...!
+   ! ... and arrays                                              !
+   !-------------------------------------------------------------!
+   call read_all_files()                                         !
+                                                                 !
+   call set_global_variables()                                   !
+   !-------------------------------------------------------------!
 
 
+   !-------------------------------------------------------------!
+   ! run initial evolve step                                     !
+   !-------------------------------------------------------------!
+   call initial_evolve()                                         !
+   !-------------------------------------------------------------!
 
-   call Initiate()
-   call set_global_variables()
-   call initial_evolve()
-   Print*, 'Setup complete, running simulation' ! indication that inputs have been read
+   ! give feedback to user that main simulation is begining
+   write(*,*) 'Setup complete, running simulation' 
 
-   do it=1,ntime ! run simulation for 'ntime' time steps
-      if (iverb.eq.1) then
-         print*, 'Evolving system, timestep = ', it
-      end if
+   !-------------------------------------------------------------!
+   ! run simulation for 'ntime' time steps                       !
+   !-------------------------------------------------------------!
+   do it=1,ntime                                                 !
+      if (iverb.eq.1) then                                       !
+         print*, 'Evolving system, timestep = ', it              !
+      end if                                                     !
+                                                                 !
+      ! Temp will be moved to evolve eventually                  !
+      !call bmake(grid, T, TN, Told, TPD ,it)                    !
+                                                                 !
+      ! run the time evolution                                   !
+      CALL evolve(it)                                            !
+                                                                 !
+      ! Write results                                            !
+      CALL plot(it)                                              !
+                                                                 !
+   end do                                                        !
+   !-------------------------------------------------------------!
 
-      !call bmake(grid, T, TN, Told, TPD ,it) !Temp will be moved to evolve eventually
+   !-------------------------------------------------------------!
+   ! calculate end time and print to user                        !
+   !-------------------------------------------------------------!
+   call cpu_time(rend)                                           !
+   write(*,'(7A,F12.6)') 'time=', rend-rstart                    !
+   !-------------------------------------------------------------!
 
-      CALL evolve(it) !run the simulation, located in evolve.f90
-
-      CALL plot(it) ! Write result to an output file, located in output.f90
-
-      
-   end do
-
-   call cpu_time(rend) !ends timer so we can see how long the simulation took to run
-
-   print*, 'time=', rend-rstart
-
-   print*, 'all done'
-
-
-
-
+   ! give feedback to user that code has ended
+   write(*,*) 'all done'
 
 end program HEATFLOW_V0_1
 

@@ -41,9 +41,42 @@ contains
     if ((i-j) .eq. -(nx*ny)) H = G  ! Z out neighbor
   end subroutine hmatrix
 
+  subroutine hmatrixB(i,j,B)
+    integer(int12), intent(in) :: i, j
+    integer(int12) :: x, y, z
+    real(real12) :: alpha, A, C, D, E, F, G 
+    real(real12), intent(out) :: B
+  
+    x = altmod(i,nx)
+    y = mod((i-altmod(i,nx))/nx,ny)+1
+    z = (i-altmod(i,nx*ny))/(nx*ny)+1
+
+    A = calculate_conductivity(x - 1, y, z, x, y, z)
+    C = calculate_conductivity(x + 1, y, z, x, y, z)
+    D = calculate_conductivity(x, y - 1, z, x, y, z)
+    E = calculate_conductivity(x, y + 1, z, x, y, z)
+    F = calculate_conductivity(x, y, z - 1, x, y, z)
+    G = calculate_conductivity(x, y, z + 1, x, y, z)
+   
+    ! Determine the value of H based on the relationship between i and j
+    B = 0
+    if (i.eq.j) then
+      if ((x) .eq. 1) B = A  
+      if ((x) .eq. nx) B = C
+      ! if ((y) .eq. 1) B = D  
+      ! if ((y) .eq. ny) B = E 
+      ! if ((z) .eq. 1) B = F
+      ! if ((z) .eq. nz) B = G 
+    else
+      !print*, i,j 
+    end if 
+
+  end subroutine hmatrixB
+
+
   function calculate_conductivity(x_in, y_in, z_in, x, y, z) result(conductivity)
     integer(int12), intent(in) :: x_in, y_in, z_in, x, y, z
-    real(real12) :: kappa1, kappa, kappa3D, h_conv, heat_capacity, rho, sound_speed, tau
+    real(real12) :: kappa1, kappa, kappa3D, h_conv, heat_capacity, rho, sound_speed, tau, kappa_ab
     real(real12) :: conductivity
     real(real12) :: T ! Dummy T value; as it seems unused in the original
 
@@ -54,7 +87,17 @@ contains
        call material(grid(x, y, z)%imaterial_type, T, kappa, &
             kappa3D, h_conv, heat_capacity, rho, sound_speed, tau)
         !** Check implmentation of rho and heat_capacity
-       conductivity = (kappa1 + kappa) / (2 * (rho * heat_capacity))
+       if(x_in .ne. x) then
+          kappa_ab= ( grid(x_in, y_in, z_in)%Length(1) + grid(x, y, z)%Length(1) )/ &
+               (grid(x_in, y, z)%Length(1)/kappa1 + grid(x, y, z)%Length(1)/kappa )
+       else if (y_in .ne. y) then
+          kappa_ab= ( grid(x_in, y_in, z_in)%Length(2) + grid(x, y, z)%Length(2) )/ &
+               (grid(x_in, y_in, z_in)%Length(2)/kappa1 + grid(x, y, z)%Length(2)/kappa )
+       else if (z_in .ne. z) then
+          kappa_ab= ( grid(x_in, y_in, z_in)%Length(3) + grid(x, y, z)%Length(3) )/ &
+               (grid(x_in, y_in, z_in)%Length(3)/kappa1 + grid(x, y, z)%Length(3)/kappa )
+       end if
+       conductivity = (kappa_ab) / (2 * (rho * heat_capacity))
     else
        conductivity = 0
     end if
