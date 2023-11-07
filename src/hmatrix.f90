@@ -24,78 +24,22 @@ contains
     z = (i-altmod(i,nx*ny))/(nx*ny)+1
 
     A = calculate_conductivity(x - 1, y, z, x, y, z)
-
     B = calculate_conductivity(x + 1, y, z, x, y, z)
-
     D = calculate_conductivity(x, y - 1, z, x, y, z)
-
     E = calculate_conductivity(x, y + 1, z, x, y, z)
-
     F = calculate_conductivity(x, y, z - 1, x, y, z)
-
     G = calculate_conductivity(x, y, z + 1, x, y, z)
    
     ! Determine the value of H based on the relationship between i and j
     H = 0
-    if ((i-j) .eq. 0) H = -((A + B + D + E + F + G) - alpha)  ! Diagonal
-
-    if ((i-j) .eq. 1) H = A  ! X left neighbor
-    if ((i-j) .eq. -1) H = B  ! X right neighbor
-    if ((i-j) .eq. nx)    H = D  ! Y down neighbor
-    if ((i-j) .eq. -nx)   H = E  ! Y up neighbor
-    if ((i-j) .eq. (nx*ny)) H = F  ! Z in neighbor
-    if ((i-j) .eq. -(nx*ny)) H = G ! Z out neighbor
-    
-  
+    if ((i-j) .eq. 0)  H = -((A + B + D + E + F + G) - alpha)  ! Diagonal
+    if ((i-j) .eq. 1)        H = A  ! X left neighbor
+    if ((i-j) .eq. -1)       H = B  ! X right neighbor
+    if ((i-j) .eq. nx)       H = D  ! Y down neighbor
+    if ((i-j) .eq. -nx)      H = E  ! Y up neighbor
+    if ((i-j) .eq. (nx*ny))  H = F  ! Z in neighbor
+    if ((i-j) .eq. -(nx*ny)) H = G  ! Z out neighbor
   end subroutine hmatrix
-
-  subroutine hmatrixB(i,j,B)
-    integer(int12), intent(in) :: i, j
-    integer(int12) :: x, y, z
-    real(real12) :: alpha, A, C, D, E, F, G 
-    real(real12), intent(out) :: B
-
-  
-    ! Calculate x, y, and z based on the 1D index j
-    x = altmod(i,nx)
-    y = mod((i-altmod(i,nx))/nx,ny)+1
-    z = (i-altmod(i,nx*ny))/(nx*ny)+1
-
-    A = calculate_conductivityB(x - 1, y, z, x, y, z)
-
-    C = calculate_conductivityB(x + 1, y, z, x, y, z)
-
-    D = calculate_conductivityB(x, y - 1, z, x, y, z)
-
-    E = calculate_conductivityB(x, y + 1, z, x, y, z)
-
-    F = calculate_conductivityB(x, y, z - 1, x, y, z)
-
-    G = calculate_conductivityB(x, y, z + 1, x, y, z)
-   
-    ! Determine the value of H based on the relationship between i and j
-    B = 0
-    if (i.eq.j) then
-      if ((x) .eq. 1) B = A  
-      if ((x) .eq. nx) B = C
-      ! if ((y) .eq. 1) B = D  
-      ! if ((y) .eq. ny) B = E 
-      ! if ((z) .eq. 1) B = F
-      ! if ((z) .eq. nz) B = G 
-    else
-      !print*, i,j 
-    end if 
-    
-
-
-  end subroutine hmatrixB
-
-  function altmod(a,b) result(c)
-    integer(int12) :: a, b, c
-    c=mod(a,b)
-    if(c .eq. 0) c = b
-  end function altmod
-
 
   function calculate_conductivity(x_in, y_in, z_in, x, y, z) result(conductivity)
     integer(int12), intent(in) :: x_in, y_in, z_in, x, y, z
@@ -115,36 +59,11 @@ contains
        conductivity = 0
     end if
   end function calculate_conductivity
-  
-  function calculate_conductivityB(x_in, y_in, z_in, x, y, z) result(B)
-    integer(int12), intent(in) :: x_in, y_in, z_in, x, y, z
-    real(real12) ::  kappa, kappa3D, h_conv, heat_capacity, rho, sound_speed, tau
-    real(real12) :: conductivity
-    real(real12) :: T ! Dummy T value; as it seems unused in the original
-    real(real12) :: B
 
-    if ((x_in .ge. 1) .and. (x_in .le. nx) .and. (y_in .ge. 1) .and. &
-         (y_in .le. ny) .and. (z_in .ge. 1) .and. (z_in .le. nz)) then
-          B=0
-    end if
-    if ((x .eq. 1) .or. (x_in .gt. nx ))then
-      call material(grid(x, y, z)%imaterial_type, T, kappa, &
-      kappa3D, h_conv, heat_capacity, rho, sound_speed, tau)
-      !** Check implmentation of rho and heat_capacity
-      B = -(kappaBoundx + kappa) / (2 * (rho * heat_capacity))
-    end if
-    ! if ((y_in .lt. 1) .or. (y_in .gt. ny ))then
-    !   call material(grid(x, y, z)%imaterial_type, T, kappa, &
-    !   kappa3D, h_conv, heat_capacity, rho, sound_speed, tau)
-    !   !** Check implmentation of rho and heat_capacity
-    !   B = -(kappaBoundy + kappa) / (2 * (rho * heat_capacity))
-    ! end if
-    ! if ((z_in .lt. 1) .or. (z_in .gt. nz ))then
-    !   call material(grid(x, y, z)%imaterial_type, T, kappa, &
-    !   kappa3D, h_conv, heat_capacity, rho, sound_speed, tau)
-    !   !** Check implmentation of rho and heat_capacity
-    !   B = -(kappaBoundz + kappa) / (2 * (rho * heat_capacity))
-    ! end if
-  end function calculate_conductivityB
+  function altmod(a,b) result(c)
+    integer(int12) :: a, b, c
+    c=mod(a,b)
+    if(c .eq. 0) c = b
+  end function altmod
 
 end module hmatrixmod

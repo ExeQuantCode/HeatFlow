@@ -37,8 +37,6 @@ module setup
            call hmatrix(i,j,H0)
          
            H(i,j)=H0
-
-
         
           call hmatrixB(i,j,HB)
           print*, 'H0 =  ',H0, ', HB = ', HB
@@ -46,6 +44,7 @@ module setup
 
          end do
       end do
+
       write(*,'(3F9.6)') H
 
       ! Convert the matrix into Sparse Row Storage.
