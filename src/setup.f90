@@ -48,15 +48,15 @@ module setup
       end do
       write(*,'(3F9.4)') H
       write(*,'(A)')
-      H=0
-      H(1,1)=-2
-      H(2,1)= 1.000
-      H(1,2)= 1.000
-      H(2,2) = -2
-      H(3,2) = 1.000
-      H(2,3) = 1.000
-      H(3,3)= -2
-      write(*,'(3F9.4)') H
+      ! H=0
+      ! H(1,1)=-2
+      ! H(2,1)= 1.000
+      ! H(1,2)= 1.000
+      ! H(2,2) = -2
+      ! H(3,2) = 1.000
+      ! H(2,3) = 1.000
+      ! H(3,3)= -2
+      ! write(*,'(3F9.4)') H
       ! Convert the matrix into Sparse Diagonal Storage.
       ! call SDSin(A,TINY, da)
       ! Convert the matrix into Sparse Row Storage.

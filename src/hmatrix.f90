@@ -19,9 +19,9 @@ contains
       alpha = (tau + time_step) / (time_step * time_step)
     end if   
     ! Calculate x, y, and z based on the 1D index j
-    x = altmod(j,nx)
-    y = mod((j-altmod(j,nx))/nx,ny)+1
-    z = (j-altmod(j,nx*ny))/(nx*ny)+1
+    x = altmod(i,nx)
+    y = mod((i-altmod(i,nx))/nx,ny)+1
+    z = (i-altmod(i,nx*ny))/(nx*ny)+1
 
     A = calculate_conductivity(x - 1, y, z, x, y, z)
 
@@ -37,24 +37,17 @@ contains
    
     ! Determine the value of H based on the relationship between i and j
     H = 0
-    if ((i-j) .eq. 0) then
-      
-      
-      H = -((A + B + D + E + F + G) - alpha)  ! Diagonal
-    end if 
-    if ((i-j) .eq. -1)  then
-      print*,'HELOOO'
-      H = A  ! X left neighbor
-         
-    end if 
-    if ((i-j) .eq. 1) then 
-      H = B  ! X right neighbor
-      print*, i,j,B
-    end if  
-    ! if ((i-j) .eq. nx)    H = D  ! Y down neighbor
-    ! if ((i-j) .eq. -nx)   H = E  ! Y up neighbor
-    ! if ((i-j) .eq. (nx*ny)) H = F  ! Z in neighbor
-    ! if ((i-j) .eq. -(nx*ny)) H = G ! Z out neighbor
+    if ((i-j) .eq. 0) H = -((A + B + D + E + F + G) - alpha)  ! Diagonal
+
+    if ((i-j) .eq. 1) H = A  ! X left neighbor
+    if ((i-j) .eq. -1) H = B  ! X right neighbor
+    if ((i-j) .eq. nx)    H = D  ! Y down neighbor
+    if ((i-j) .eq. -nx)   H = E  ! Y up neighbor
+    if ((i-j) .eq. (nx*ny)) H = F  ! Z in neighbor
+    if ((i-j) .eq. -(nx*ny)) H = G ! Z out neighbor
+    
+    !** Boundary H matirx
+  
   end subroutine hmatrix
 
   function altmod(a,b) result(c)
