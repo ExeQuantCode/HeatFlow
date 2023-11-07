@@ -57,7 +57,7 @@ module setup
    end subroutine set_global_variables
 
 subroutine SPHM()
-   real(real12) :: H0, HB
+   real(real12) :: H0, HB, B
    integer(int12) :: i, j
    real(real12), dimension(7, NA) :: Hsparse
    do j = 1, NA
