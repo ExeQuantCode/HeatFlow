@@ -3,7 +3,7 @@ module setup
   use constants, only: real12, int12, TINY
   use inputs, only: Lx, Ly, Lz, nx, ny, nz, NA, grid
   use constructions, only: heatblock
-  use hmatrixmod, only: hmatrix
+  use hmatrixmod, only: hmatrix, hmatrixB
   use globe_data, only: H, ra, T, TN, Told,TD,TPD,H
   use sparse, only: SRSin
 
@@ -15,9 +15,9 @@ module setup
    !This sets up the HMatrix global variable so as a Sparse row storage.
    !-----------------------------------------------
    subroutine set_global_variables()
-      real(real12) :: H0, hboundary
+      real(real12) :: H0, HB
       integer(int12) :: i, j
-      real(real12), dimension(7, NA) :: Hsparse
+
       allocate(TN(nx, ny, nz))
       allocate(T(nx, ny, nz))
       allocate(Told(nx, ny, nz))
@@ -31,61 +31,70 @@ module setup
       !-----------------------------------------------
       !H_ij T_i =S_j
       H=0.0
-      hboundary = 0.0
+      HB = 0.0
       do j=1,NA 
          do i=1,NA
-         call hmatrix(i,j,H0)
+           call hmatrix(i,j,H0)
          
-         H(i,j)=H0
+           H(i,j)=H0
 
 
-         !if (HBoundary.eq.1) then
-         !CALL HATRIX_BOUND(i,j,HB)
-         !   H(i,j)=H(i,j)+HB(i,j)
-         !end if
+        
+          call hmatrixB(i,j,HB)
+          print*, 'H0 =  ',H0, ', HB = ', HB
+          H(i,j)=H(i,j)+HB
+
          end do
       end do
-
+      write(*,'(3F9.6)') H
 
       ! Convert the matrix into Sparse Row Storage.
       call SRSin(H,TINY, ra)
-      do j = 1, NA
-         do i = 1, NA
-
-            if (i-j .eq. 0) then
-               call hmatrix(i,j, H0)
-               Hsparse(4, j) = H0  ! Diagonal, major band
-            
-            else if (i-j .eq. 1) then
-               call hmatrix(i,j, H0)
-               Hsparse(3, j) = H0 ! X left neighbor, sub_1 band
-
-            else if (i-j .eq. -1) then 
-               call hmatrix(i,j, H0)
-               Hsparse(5, j) = H0 ! X right neighbor, sup_1 band
-            
-            else if (i-j .eq. nx)  then
-               call hmatrix(i,j, H0)
-               Hsparse(2, j) = H0! Y down neighbor, sub_2 band
-            
-            else if (i-j .eq. -nx) then
-               call hmatrix(i,j, H0)
-               Hsparse(6, j) = H0 ! Y up neighbor, sup_2 band 
-            
-            else if (i-j .eq. nx*ny) then
-               call hmatrix(i,j, H0)
-               Hsparse(1, j) = H0  ! Z in neighbor, sub_3 band
-            
-            else if (i-j .eq. -nx*ny) then
-               call hmatrix(i,j, H0)
-               Hsparse(7, j) = H0 ! Z out neighbor, sup_3 band
-            end if 
-         end do
-      end do
+      !** Never have to make the full H matrix, needs boundarys
+      call SPHM()
       !print*,Hsparse
       
    end subroutine set_global_variables
 
+subroutine SPHM()
+   real(real12) :: H0, HB
+   integer(int12) :: i, j
+   real(real12), dimension(7, NA) :: Hsparse
+   do j = 1, NA
+      do i = 1, NA
+         call hmatrixB(i,j,B)
+         if (i-j .eq. 0) then
+            call hmatrix(i,j, H0)
+            Hsparse(4, j) = H0  ! Diagonal, major band
+         
+         else if (i-j .eq. 1) then
+            call hmatrix(i,j, H0)
+            Hsparse(3, j) = H0 ! X left neighbor, sub_1 band
+
+         else if (i-j .eq. -1) then 
+            call hmatrix(i,j, H0)
+            Hsparse(5, j) = H0 ! X right neighbor, sup_1 band
+         
+         else if (i-j .eq. nx)  then
+            call hmatrix(i,j, H0)
+            Hsparse(2, j) = H0! Y down neighbor, sub_2 band
+         
+         else if (i-j .eq. -nx) then
+            call hmatrix(i,j, H0)
+            Hsparse(6, j) = H0 ! Y up neighbor, sup_2 band 
+         
+         else if (i-j .eq. nx*ny) then
+            call hmatrix(i,j, H0)
+            Hsparse(1, j) = H0  ! Z in neighbor, sub_3 band
+         
+         else if (i-j .eq. -nx*ny) then
+            call hmatrix(i,j, H0)
+            Hsparse(7, j) = H0 ! Z out neighbor, sup_3 band
+         end if 
+      end do
+   end do
+
+end subroutine SPHM
 
 subroutine Initiate()
   integer(int12) :: ix,iy,iz,itime,i,it,j,k
