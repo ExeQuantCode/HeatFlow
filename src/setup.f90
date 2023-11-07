@@ -37,8 +37,7 @@ module setup
          call hmatrix(i,j,H0)
          
          H(i,j)=H0
-         if (i.eq.1 .and. j.eq.2) print*,'Hi',H0
-         if (i.eq.2 .and. j.eq.1) print*,'Hi2',H0
+
 
          !if (HBoundary.eq.1) then
          !CALL HATRIX_BOUND(i,j,HB)
@@ -46,19 +45,8 @@ module setup
          !end if
          end do
       end do
-      write(*,'(3F9.4)') H
-      write(*,'(A)')
-      ! H=0
-      ! H(1,1)=-2
-      ! H(2,1)= 1.000
-      ! H(1,2)= 1.000
-      ! H(2,2) = -2
-      ! H(3,2) = 1.000
-      ! H(2,3) = 1.000
-      ! H(3,3)= -2
-      ! write(*,'(3F9.4)') H
-      ! Convert the matrix into Sparse Diagonal Storage.
-      ! call SDSin(A,TINY, da)
+
+
       ! Convert the matrix into Sparse Row Storage.
       call SRSin(H,TINY, ra)
       do j = 1, NA
