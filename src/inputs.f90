@@ -243,7 +243,7 @@ contains
 
 
 !!!##########################################################################
-! assigns a DP value to variable if the line contains the right keyword
+!!! assigns a DP value to variable if the line contains the right keyword
 !!!##########################################################################
   subroutine read_mesh(unit)
     integer, intent(in) :: unit
@@ -260,6 +260,14 @@ contains
     Na = nx*ny*nz
     ! Allocate Global data arrays
     allocate(grid(nx,ny,nz))
+
+    grid(:,:,:)%Length(1)=real(Lx)/real(nx)
+    grid(:,:,:)%Length(2)=real(Ly)/real(ny)
+    grid(:,:,:)%Length(3)=real(Lz)/real(nz)
+    grid(:,:,:)%area(1)=grid(:,:,:)%Length(2)*grid(:,:,:)%Length(3)
+    grid(:,:,:)%area(2)=grid(:,:,:)%Length(1)*grid(:,:,:)%Length(3)
+    grid(:,:,:)%area(3)=grid(:,:,:)%Length(1)*grid(:,:,:)%Length(2)
+    grid(:,:,:)%volume=grid(:,:,:)%Length(1)*grid(:,:,:)%Length(2)*grid(:,:,:)%Length(3)
 
     do k = 1, nz
        read(unit, '(A)', iostat= Reason) buffer

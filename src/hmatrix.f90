@@ -29,6 +29,9 @@ contains
     E = calculate_conductivity(x, y + 1, z, x, y, z)
     F = calculate_conductivity(x, y, z - 1, x, y, z)
     G = calculate_conductivity(x, y, z + 1, x, y, z)
+    write(*,*) A,B,D
+    write(*,*) E,F,G
+
    
     ! Determine the value of H based on the relationship between i and j
     H = 0
@@ -74,28 +77,32 @@ contains
   end subroutine hmatrixB
 
 
-  function calculate_conductivity(x_in, y_in, z_in, x, y, z) result(conductivity)
-    integer(int12), intent(in) :: x_in, y_in, z_in, x, y, z
-    real(real12) :: kappa1, kappa, kappa3D, h_conv, heat_capacity, rho, sound_speed, tau, kappa_ab
+  function calculate_conductivity(x_in, y_in, z_in, x_out, y_out, z_out) result(conductivity)
+    integer(int12), intent(in) :: x_in, y_in, z_in, x_out, y_out, z_out
+    real(real12) :: kappa_out, kappa_in, kappa3D, h_conv, heat_capacity, rho, sound_speed, tau, kappa_ab
     real(real12) :: conductivity
     real(real12) :: T ! Dummy T value; as it seems unused in the original
 
     if ((x_in .ge. 1) .and. (x_in .le. nx) .and. (y_in .ge. 1) .and. &
          (y_in .le. ny) .and. (z_in .ge. 1) .and. (z_in .le. nz)) then
-       call material(grid(x_in, y_in, z_in)%imaterial_type, T, kappa1, &
+       call material(grid(x_in, y_in, z_in)%imaterial_type, T, kappa_in, &
             kappa3D, h_conv, heat_capacity, rho, sound_speed, tau)
-       call material(grid(x, y, z)%imaterial_type, T, kappa, &
+       call material(grid(x_out, y_out, z_out)%imaterial_type, T, kappa_out, &
             kappa3D, h_conv, heat_capacity, rho, sound_speed, tau)
         !** Check implmentation of rho and heat_capacity
+       write(*,*) 'x_out, x_in', x_out, x_in
+       write(*,*) ''
+       write(*,'(A,I1,A,I1,A)') '    L_in(',x_in,')                     L_out(',x_out,')'
        if(x_in .ne. x) then
-          kappa_ab= ( grid(x_in, y_in, z_in)%Length(1) + grid(x, y, z)%Length(1) )/ &
-               (grid(x_in, y, z)%Length(1)/kappa1 + grid(x, y, z)%Length(1)/kappa )
+          write(*,*) grid(x_in, y_in, z_in)%Length(1), grid(x_out, y_out, z_out)%Length(1)
+          kappa_ab = (grid(x_in, y_in, z_in)%Length(1) + grid(x_out, y_out, z_out)%Length(1))/&
+               (grid(x_in, y_in, z_in)%Length(1)*kappa_out + grid(x_out, y_out, z_out)%Length(1)*kappa_in)
        else if (y_in .ne. y) then
-          kappa_ab= ( grid(x_in, y_in, z_in)%Length(2) + grid(x, y, z)%Length(2) )/ &
-               (grid(x_in, y_in, z_in)%Length(2)/kappa1 + grid(x, y, z)%Length(2)/kappa )
+          kappa_ab = (grid(x_in, y_in, z_in)%Length(2) + grid(x_out, y_out, z_out)%Length(2))/&
+               (grid(x_in, y_in, z_in)%Length(2)*kappa_out + grid(x_out, y_out, z_out)%Length(2)*kappa_in)
        else if (z_in .ne. z) then
-          kappa_ab= ( grid(x_in, y_in, z_in)%Length(3) + grid(x, y, z)%Length(3) )/ &
-               (grid(x_in, y_in, z_in)%Length(3)/kappa1 + grid(x, y, z)%Length(3)/kappa )
+          kappa_ab = (grid(x_in, y_in, z_in)%Length(3) + grid(x_out, y_out, z_out)%Length(3))/&
+               (grid(x_in, y_in, z_in)%Length(3)*kappa_out + grid(x_out, y_out, z_out)%Length(3)*kappa_in)
        end if
        conductivity = (kappa_ab) / (2 * (rho * heat_capacity))
     else

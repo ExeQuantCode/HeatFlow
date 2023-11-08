@@ -33,7 +33,7 @@ module setup
          call build_Hmatrix()
       ! end if
 
-      call setup_grid()
+      !call setup_grid()
 
    end subroutine set_global_variables
 !!!##########################################################################
@@ -59,9 +59,9 @@ module setup
          
            H(i,j)=H0
         
-          call hmatrixB(i,j,HB)
-          print*, 'H0 =  ',H0, ', HB = ', HB
-          H(i,j)=H(i,j)+HB
+          !call hmatrixB(i,j,HB)
+          !print*, 'H0 =  ',H0, ', HB = ', HB
+          !H(i,j)=H(i,j)+HB
 
          end do
       end do
@@ -118,53 +118,53 @@ module setup
 !!!#########################################################################
 !!! This sets up the remaining elements of the gird
 !!!#########################################################################
-   subroutine setup_grid()
-     integer(int12) :: ix,iy,iz,itime,i,it,j,k
-     real(real12), dimension(nx) :: cellengthx
-     real(real12), dimension(ny) :: cellengthy
-     real(real12), dimension(nz) :: cellengthz
-     real(real12) :: pa,pb,A,L
-     integer(int12) :: ii,jj,kk
-     character(len=8192):: string
-
-     ! calculate the cell lengths
-     cellengthx(:) = Lx/real(nx)
-     cellengthy(:) = Ly/real(ny)
-     cellengthz(:) = Lz/real(nz)
-
-
-!!!This section calculates the cell lengths and areas based on inputs above
-     do ix=1,nx
-        do iy=1,ny
-           do iz=1,nz
-              do ii=1,3
-                 if (ii.eq.1) then
-                    grid(ix,iy,iz)%length(ii)=cellengthx(ix)
-                 else if (ii.eq.2) then
-                    grid(ix,iy,iz)%length(ii)=cellengthy(iy)
-                 else if (ii.eq.3) then
-                    grid(ix,iy,iz)%length(ii)=cellengthz(iz)
-
-                 end if
-              end do
-              do ii=1,3
-                 jj=mod(ii+1,3)
-                 if (jj.eq.0) then
-                    jj=3
-                 endif
-                 kk=mod(ii+2,3)
-                 if (kk.eq.0) then
-                    kk=3
-                 end if
-                 grid(ix,iy,iz)%area(ii)=grid(ix,iy,iz)%length(jj)*grid(ix,iy,iz)%length(kk)
-                 grid(ix,iy,iz)%volume=grid(ix,iy,iz)%area(ii)*grid(ix,iy,iz)%length(ii)
-              end do
-           end do
-
-        end do
-     end do
-   end subroutine Setup_grid
-!!!#########################################################################
+!   subroutine setup_grid()
+!     integer(int12) :: ix,iy,iz,itime,i,it,j,k
+!     real(real12), dimension(nx) :: cellengthx
+!     real(real12), dimension(ny) :: cellengthy
+!     real(real12), dimension(nz) :: cellengthz
+!     real(real12) :: pa,pb,A,L
+!     integer(int12) :: ii,jj,kk
+!     character(len=8192):: string
+!
+!     ! calculate the cell lengths
+!     cellengthx(:) = Lx/real(nx)
+!     cellengthy(:) = Ly/real(ny)
+!     cellengthz(:) = Lz/real(nz)
+!
+!
+!!!!This section calculates the cell lengths and areas based on inputs above
+!     do ix=1,nx
+!        do iy=1,ny
+!           do iz=1,nz
+!              do ii=1,3
+!                 if (ii.eq.1) then
+!                    grid(ix,iy,iz)%length(ii)=cellengthx(ix)
+!                 else if (ii.eq.2) then
+!                    grid(ix,iy,iz)%length(ii)=cellengthy(iy)
+!                 else if (ii.eq.3) then
+!                    grid(ix,iy,iz)%length(ii)=cellengthz(iz)
+!
+!                 end if
+!              end do
+!              do ii=1,3
+!                 jj=mod(ii+1,3)
+!                 if (jj.eq.0) then
+!                    jj=3
+!                 endif
+!                 kk=mod(ii+2,3)
+!                 if (kk.eq.0) then
+!                    kk=3
+!                 end if
+!                 grid(ix,iy,iz)%area(ii)=grid(ix,iy,iz)%length(jj)*grid(ix,iy,iz)%length(kk)
+!                 grid(ix,iy,iz)%volume=grid(ix,iy,iz)%area(ii)*grid(ix,iy,iz)%length(ii)
+!              end do
+!           end do
+!
+!        end do
+!     end do
+!   end subroutine Setup_grid
+!!!!#########################################################################
   
   
 end module setup

@@ -8,13 +8,13 @@
     freq = 1     !
     iboundary = 1     !
     icattaneo = 0 !
-    isteady = 0 !
+    isteady = 1 !
     T_Bath = 200     !
     cutoff = 1000     !
     power_in = 1    !
     T_period = 0.1  !
     kappaBoundx = 1  !
-    kappaBoundy = 1     !
-    kappaBoundz = 1    !
+    kappaBoundy = 0     !
+    kappaBoundz = 0    !
 
 

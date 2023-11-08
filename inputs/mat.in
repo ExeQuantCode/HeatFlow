@@ -1,10 +1,10 @@
 1 !unread name
 heat_capacity = 1
-h_conv = 0.0
-kappa  = 1.0
-kappa3D = 0.2
-rho = 1.0
-sound_speed = 8433.0
-tau = 1.0
+h_conv = 1
+kappa  = 1
+kappa3D = 1
+rho = 1
+sound_speed = 1
+tau = 1
 source = .true.
 0
