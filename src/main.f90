@@ -69,7 +69,7 @@ program HEATFLOW_V0_1
    ! calculate end time and print to user                        !
    !-------------------------------------------------------------!
    call cpu_time(rend)                                           !
-   write(*,'(7A,F12.6)') 'time=', rend-rstart                    !
+   write(*,'(A,F12.6)') ' time=', rend-rstart                    !
    !-------------------------------------------------------------!
 
    ! give feedback to user that code has ended
