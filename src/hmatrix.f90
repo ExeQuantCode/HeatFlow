@@ -10,14 +10,14 @@ contains
     integer(int12), intent(in) :: i, j
     integer(int12) :: x, y, z
     real(real12) :: alpha, A, B, D, E, F, G 
+    real(real12) :: kappa_out, kappa_in, kappa3D, h_conv, heat_capacity, rho, sound_speed, tau, kappa_ab
+    real(real12) :: conductivity
+    real(real12) :: T ! Dummy T value; as it seems unused in the original
+
     real(real12), intent(out) :: H
 
-    ! For ease atm
-    if (isteady .eq. 1) then
-      alpha = 0
-    else
-      alpha = (tau + time_step) / (time_step * time_step)
-    end if   
+
+
     ! Calculate x, y, and z based on the 1D index j
     x = altmod(i,nx)
     y = mod((i-altmod(i,nx))/nx,ny)+1
@@ -29,13 +29,23 @@ contains
     E = calculate_conductivity(x, y + 1, z, x, y, z)
     F = calculate_conductivity(x, y, z - 1, x, y, z)
     G = calculate_conductivity(x, y, z + 1, x, y, z)
-    write(*,*) A,B,D
-    write(*,*) E,F,G
+    ! write(*,*) A,B,D
+    ! write(*,*) E,F,G
 
    
     ! Determine the value of H based on the relationship between i and j
     H = 0
-    if ((i-j) .eq. 0)  H = -((A + B + D + E + F + G) - alpha)  ! Diagonal
+    if ((i-j) .eq. 0)  then
+      call material(grid(x, y, z)%imaterial_type, T, kappa_in, &
+      kappa3D, h_conv, heat_capacity, rho, sound_speed, tau)
+      if (isteady .eq. 1) then
+        alpha = 0
+      else
+        alpha = (tau + time_step) / (time_step * time_step)
+      end if   
+      H = -((A + B + D + E + F + G) - alpha)  ! Diagonal
+    end if 
+    
     if ((i-j) .eq. 1)        H = A  ! X left neighbor
     if ((i-j) .eq. -1)       H = B  ! X right neighbor
     if ((i-j) .eq. nx)       H = D  ! Y down neighbor
@@ -89,10 +99,8 @@ contains
             kappa3D, h_conv, heat_capacity, rho, sound_speed, tau)
        call material(grid(x_out, y_out, z_out)%imaterial_type, T, kappa_out, &
             kappa3D, h_conv, heat_capacity, rho, sound_speed, tau)
-        !** Check implmentation of rho and heat_capacity
-       write(*,*) 'x_out, x_in', x_out, x_in
-       write(*,*) ''
-       write(*,'(A,I1,A,I1,A)') '    L_in(',x_in,')                     L_out(',x_out,')'
+
+
        if(x_in .ne. x) then
           write(*,*) grid(x_in, y_in, z_in)%Length(1), grid(x_out, y_out, z_out)%Length(1)
           kappa_ab = (grid(x_in, y_in, z_in)%Length(1) + grid(x_out, y_out, z_out)%Length(1))/&
