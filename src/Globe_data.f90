@@ -4,7 +4,7 @@ module globe_data
   implicit none
   double precision, dimension(:,:), allocatable :: H
   real(real12), dimension(:,:,:), allocatable :: T, TN, Told
-  real(real12), dimension(:), allocatable :: TD, TPD
+  real(real12), dimension(:), allocatable :: TD, TPD, TPPD
   TYPE(sprs2_dp) :: ra !Techniqually rH
   TYPE(diag_sprs_dp) :: da !Techniqually dH
    

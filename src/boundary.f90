@@ -6,7 +6,6 @@ contains
 
   subroutine boundary(B)
     real(real12), dimension(NA), intent(out) :: B
-    real(real12), dimension(NA) :: BA
 
     integer(int12) :: i,j,k, IA
 
@@ -16,65 +15,61 @@ contains
     !these correspond to  Bound_Term(1,1) and Bound_Term(1,2)
 
     real(real12), dimension(3,2) :: BoundTerm
-    B=0
     IA=0
-
-    
-    do i=1,nx
+    BoundTerm = 0
+    do k=1,nz
        do j=1,ny
-          do k=1,nz
+          do i=1,nx
+
              IA=IA+1
              
              if (i.eq.1) then 
                call BoundaryTerms(BoundTerm, i, j, k)
                 B(IA)=B(IA)+BoundTerm(1,1)*T_Bath
-             else if (i.eq.NA) then
+             end if 
+             if (i.eq.nx) then
                call BoundaryTerms(BoundTerm, i, j, k)
-                BA(IA)=B(IA)+BoundTerm(1,2)*T_Bath
+                B(IA)=B(IA)+BoundTerm(1,2)*T_Bath
              end if
 
              if (j.eq.1) then 
                call BoundaryTerms(BoundTerm, i, j, k)
                 B(IA)=B(IA)+BoundTerm(2,1)*T_Bath
-             else if (j.eq.NA) then
+             end if 
+             if (j.eq.ny) then
                call BoundaryTerms(BoundTerm, i, j, k)
-                BA(IA)=B(IA)+BoundTerm(2,2)*T_Bath
+                B(IA)=B(IA)+BoundTerm(2,2)*T_Bath
              end if
+
              if (k.eq.1) then 
                call BoundaryTerms(BoundTerm, i, j, k)
                 B(IA)=B(IA)+BoundTerm(3,1)*T_Bath
-             else if (k.eq.NA) then
+             end if 
+             if (k.eq.nz) then
                call BoundaryTerms(BoundTerm, i, j, k)
-                BA(IA)=B(IA)+BoundTerm(3,2)*T_Bath
+                B(IA)=B(IA)+BoundTerm(3,2)*T_Bath
              end if
-          end do
+
+            end do
        end do
     end do
-
   end subroutine boundary
 
-  subroutine BoundaryTerms(BoundTerm, i, j, k)
+  subroutine BoundaryTerms(BoundTerm, x, y, z)
       real(real12), dimension(3,2), intent(out) :: BoundTerm
-      integer(int12), intent(in) :: i,j,k
+      integer(int12), intent(in) :: x, y, z
       real(real12) :: TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau
 
-      call material(grid(1,j,k)%imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
-      BoundTerm(1,1) = (kappa+kappaBoundx)/(2*rho*heat_capacity)
+      
 
-      call material(grid(nx,j,k)%imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
-      BoundTerm(1,2) = (kappa+kappaBoundx)/(2*rho*heat_capacity) 
 
-      call material(grid(i,1,k)%imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
-      BoundTerm(2,1) = (kappa+kappaBoundy)/(2*rho*heat_capacity)
-
-      call material(grid(i,ny,k)%imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
-      BoundTerm(2,2) = (kappa+kappaBoundy)/(2*rho*heat_capacity) 
-
-      call material(grid(i,j,1)%imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
-      BoundTerm(3,1) = (kappa+kappaBoundz)/(2*rho*heat_capacity) 
-
-      call material(grid(i,j,nz)%imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
-      BoundTerm(3,2) = (kappa+kappaBoundz)/(2*rho*heat_capacity) 
-
+      call material(grid(x,y,z)%imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+      
+      if (x.eq.1) BoundTerm(1,1) = ((2*kappaBoundx*kappa)/(kappaBoundx+kappa))/(rho*heat_capacity)
+      if (x.eq.nx) BoundTerm(1,2) = ((2*kappaBoundx*kappa)/(kappaBoundx+kappa))/(rho*heat_capacity)
+      if (y.eq.1) BoundTerm(2,1) = ((2*kappaBoundy*kappa)/(kappaBoundy+kappa))/(rho*heat_capacity)
+      if (y.eq.ny) BoundTerm(2,2) = ((2*kappaBoundy*kappa)/(kappaBoundy+kappa))/(rho*heat_capacity)
+      if (z.eq.1) BoundTerm(3,1) = ((2*kappaBoundz*kappa)/(kappaBoundz+kappa))/(rho*heat_capacity)
+      if (z.eq.nz) BoundTerm(3,2) = ((2*kappaBoundz*kappa)/(kappaBoundz+kappa))/(rho*heat_capacity)
    end subroutine BoundaryTerms   
 end module boundary_vector

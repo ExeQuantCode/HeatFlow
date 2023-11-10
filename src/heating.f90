@@ -16,12 +16,14 @@ contains
     !real(real12), dimension(NA) :: Q
     time=dt*REAL(iT)
     IA=0
+    Q = 0 
     POWER = power_in
-    do i=1,NX
-       do j=1,NY
-          do k=1,NZ
+    do i=1,nx
+       do j=1,ny
+          do k=1,nz
              IA=IA+1
              call material(grid(i,j,k)%imaterial_type, TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+
              select case(iheater(i,j,k))
                 
                 !NO HEATING

@@ -1,7 +1,7 @@
 module hmatrixmod
   use constants, only: real12, int12
   use materials, only: material
-  use inputs, only: nx, ny, nz, time_step, grid, isteady, kappaBoundx, kappaBoundy, kappaBoundz
+  use inputs, only: nx, ny, nz, time_step, grid, isteady, icattaneo, kappaBoundx, kappaBoundy, kappaBoundz
   use globe_data, only: T
   implicit none
 
@@ -39,12 +39,8 @@ contains
     if ((i-j) .eq. 0)  then
       call material(grid(x, y, z)%imaterial_type, T, kappa_in, &
       kappa3D, h_conv, heat_capacity, rho, sound_speed, tau)
-      if (isteady .eq. 1) then
-        alpha = 0
-      else
-        alpha = (tau + time_step) / (time_step * time_step)
-      end if   
-      H = -((A + B + D + E + F + G) - alpha)  ! Diagonal
+
+      H = -((A + B + D + E + F + G))  ! Diagonal
     end if 
     
     if ((i-j) .eq. 1)        H = A  ! X left neighbor
@@ -55,37 +51,6 @@ contains
     if ((i-j) .eq. -(nx*ny)) H = G  ! Z out neighbor
   end subroutine hmatrix
 
-  subroutine hmatrixB(i,j,B)
-    integer(int12), intent(in) :: i, j
-    integer(int12) :: x, y, z
-    real(real12) :: alpha, A, C, D, E, F, G 
-    real(real12), intent(out) :: B
-  
-    x = altmod(i,nx)
-    y = mod((i-altmod(i,nx))/nx,ny)+1
-    z = (i-altmod(i,nx*ny))/(nx*ny)+1
-
-    A = calculate_conductivity(x - 1, y, z, x, y, z)
-    C = calculate_conductivity(x + 1, y, z, x, y, z)
-    D = calculate_conductivity(x, y - 1, z, x, y, z)
-    E = calculate_conductivity(x, y + 1, z, x, y, z)
-    F = calculate_conductivity(x, y, z - 1, x, y, z)
-    G = calculate_conductivity(x, y, z + 1, x, y, z)
-   
-    ! Determine the value of H based on the relationship between i and j
-    B = 0
-    if (i.eq.j) then
-      if ((x) .eq. 1) B = A  
-      if ((x) .eq. nx) B = C
-      ! if ((y) .eq. 1) B = D  
-      ! if ((y) .eq. ny) B = E 
-      ! if ((z) .eq. 1) B = F
-      ! if ((z) .eq. nz) B = G 
-    else
-      !print*, i,j 
-    end if 
-
-  end subroutine hmatrixB
 
 
   function calculate_conductivity(x_in, y_in, z_in, x_out, y_out, z_out) result(conductivity)

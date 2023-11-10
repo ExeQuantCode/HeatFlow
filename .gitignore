@@ -1,6 +1,7 @@
 *~
 bin/
 obj/
+cases/
 \#*
 .#*
 *.mod
