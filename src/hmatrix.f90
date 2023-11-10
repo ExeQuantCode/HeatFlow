@@ -36,11 +36,15 @@ contains
    
     ! Determine the value of H based on the relationship between i and j
     H = 0
+    alpha = 0 
     if ((i-j) .eq. 0)  then
       call material(grid(x, y, z)%imaterial_type, T, kappa_in, &
       kappa3D, h_conv, heat_capacity, rho, sound_speed, tau)
-
-      H = -((A + B + D + E + F + G))  ! Diagonal
+      if (isteady .eq. 0) then
+        if (icattaneo .eq. 0) tau = 0
+         alpha = (tau + time_step) / (time_step * time_step)
+      end if 
+      H = -(A + B + D + E + F + G )- alpha  ! Diagonal
     end if 
     
     if ((i-j) .eq. 1)        H = A  ! X left neighbor
@@ -69,12 +73,18 @@ contains
        if(x_in .ne. x_out) then
           kappa_ab = (grid(x_in, y_in, z_in)%Length(1) + grid(x_out, y_out, z_out)%Length(1))*kappa_in*kappa_out/&
                (grid(x_in, y_in, z_in)%Length(1)*kappa_out + grid(x_out, y_out, z_out)%Length(1)*kappa_in)
+               !** To be fully implemented 
+               kappa_ab = kappa_ab/(grid(x_out, y_out, z_out)%Length(1))**2
        else if (y_in .ne. y_out) then
           kappa_ab = (grid(x_in, y_in, z_in)%Length(2) + grid(x_out, y_out, z_out)%Length(2))*kappa_in*kappa_out/&
                (grid(x_in, y_in, z_in)%Length(2)*kappa_out + grid(x_out, y_out, z_out)%Length(2)*kappa_in)
+               kappa_ab = kappa_ab/(grid(x_out, y_out, z_out)%Length(2))**2
+
        else if (z_in .ne. z_out) then
           kappa_ab = (grid(x_in, y_in, z_in)%Length(3) + grid(x_out, y_out, z_out)%Length(3))*kappa_in*kappa_out/&
                (grid(x_in, y_in, z_in)%Length(3)*kappa_out + grid(x_out, y_out, z_out)%Length(3)*kappa_in)
+               kappa_ab = kappa_ab/(grid(x_out, y_out, z_out)%Length(3))**2
+
        end if
        conductivity = (kappa_ab) / (rho * heat_capacity)
     else
@@ -100,10 +110,16 @@ contains
     
     if(x_b .ne. x) then
        kappa_ab = (2*kappaBoundx*kappa)/(kappaBoundx+kappa)
+       kappa_ab = kappa_ab/(grid(x, y, z)%Length(1))**2
+
     else if (y_b .ne. y) then
        kappa_ab = (2*kappaBoundy*kappa)/(kappaBoundy+kappa)
+       kappa_ab = kappa_ab/(grid(x, y, z)%Length(2))**2
+
     else if (z_b .ne. z) then
        kappa_ab = (2*kappaBoundz*kappa)/(kappaBoundz+kappa)
+       kappa_ab = kappa_ab/(grid(x, y, z)%Length(3))**2
+
     end if
     
   end subroutine boundry_diag_term
