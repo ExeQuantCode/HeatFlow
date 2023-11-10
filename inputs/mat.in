@@ -5,6 +5,7 @@ kappa  = 1
 kappa3D = 1
 rho = 1
 sound_speed = 1
-tau = 1
+tau = 0.000000001
 source = .true.
 0
+

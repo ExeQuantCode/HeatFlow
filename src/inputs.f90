@@ -6,6 +6,7 @@ module inputs
   use constructions, only: heatblock, material
 
   implicit none
+
   integer :: unit, newunit
   real(real12) :: time_step, T_Bath, freq, power_in, T_period, cutoff, kappaBoundx, kappaBoundy, kappaBoundz
   integer(int12) :: IVERB, icell_mix, ntime, Rel, zpos, ACon, iboundary, nx, ny, nz, icattaneo, isteady, NA
@@ -277,9 +278,7 @@ contains
             call exit
           end if
           read(unit, '(A)', iostat=Reason) array 
-          do i = 1, nx
-            read(array,*,iostat = reason) grid(i,j,k)%imaterial_type
-          end do 
+          read(array,*,iostat = reason) (grid(i,j,k)%imaterial_type, i = 1,nx)
         end do
     end do
   end subroutine read_mesh
@@ -304,11 +303,10 @@ contains
             write(6,*) 'Error: Unexpected EOF heat.in'
             call exit
           end if
-          read(buffer, '(A)', iostat=Reason) array           
-          read(array,*,iostat = reason) (iheater(i,j,k), i=1,nx)
+          read(unit, '(A)', iostat=Reason) array
+          read(array,*,iostat = reason) (iheater(i,j,k), i=1,nx )
         end do
     end do
-
   
   end subroutine read_heat
 !!!##########################################################################
@@ -370,7 +368,6 @@ subroutine read_mat(unit)
        call assignD(buffer,"sound_speed"  ,dum_mat(i)%sound_speed  ,readvar(6))
        call assignD(buffer,"tau"          ,dum_mat(i)%tau          ,readvar(7))
        call assignL(buffer,"source"       ,dum_mat(i)%source       ,readvar(8))
-
     end do read
     
     ! Check for duplicate indices
