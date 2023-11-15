@@ -1,9 +1,9 @@
 module Heating
   use constants, only: real12, int12
   use constructions, only: heatblock
-  use inputs, only: nx,ny,nz, grid, NA, iheater, power_in
+  use inputs, only: nx,ny,nz, grid, NA, iheater, power_in, time_step
   use materials, only: material
-
+  implicit none
 contains
 
 
@@ -11,12 +11,16 @@ contains
   subroutine heater(it,Q)
     integer :: IA
     integer(int12), intent(in) :: it 
+    integer(int12) :: i,j,k
     real(real12) :: time, TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau
+    real(real12) :: PI, dt, PARAM_HEAT_PERIOD, POWER, PARAM_time_pulse
     real(real12), dimension(NA), intent(out) :: Q
     !real(real12), dimension(NA) :: Q
     time=dt*REAL(iT)
     IA=0
     Q = 0 
+    PI = 3.14
+    dt= time_step
     POWER = power_in
     do i=1,nx
        do j=1,ny

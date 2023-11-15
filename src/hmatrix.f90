@@ -42,9 +42,9 @@ contains
       kappa3D, h_conv, heat_capacity, rho, sound_speed, tau)
       if (isteady .eq. 0) then
         if (icattaneo .eq. 0) tau = 0
-         alpha = (tau + time_step) / (time_step * time_step)
+        alpha = (tau + time_step) / (time_step * time_step)
       end if 
-      H = -(A + B + D + E + F + G )- alpha  ! Diagonal
+      H = -(A + B + D + E + F + G ) - alpha  ! Diagonal
     end if 
     
     if ((i-j) .eq. 1)        H = A  ! X left neighbor

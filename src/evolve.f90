@@ -3,7 +3,7 @@ module evolution
   use inputs, only: NA, icattaneo, isteady, nx, ny, nz, T_bath, time_step
   use sptype, only: I4B
   use sparse, only: linbcg
-  use globe_data, only: TD, TPD, TPPD, TN, Told, T, H
+  use globe_data, only: TD, TPD, TPPD, TN, Told, T
   use heating, only: heater
   use boundary_vector, only: boundary
   use cattaneo, only: S_catS
@@ -13,7 +13,7 @@ module evolution
 
   public :: evolve
 
-contains
+  contains
 
 
   subroutine EVOLVE(it)
@@ -38,9 +38,8 @@ contains
     !S_j,cat = cattaneo correction
     !Q_j = heater
     !---------------------------------------------
-        
+    
     !** CALL TP_OLD(j,TO)
-    S=0
     B=0
     !**CALL Boundary
     call boundary(B)
@@ -48,23 +47,23 @@ contains
     call heater(it,Q)
     !**Call S_CAT
     call s_catS(s_cat)
-   
+
     if (iSteady.eq.0) then
        do j=1,NA
-          S(j)=((1/time_step)/TPD(j))-Q(j)-B(j)
+          S(j)=(-(TPD(j)/time_step))-Q(j)-B(j)
           if (iCAttaneo.eq.1)  then 
                S(j)=S(j)+S_cat(j)
           end if
        end do
     else
+      S=0
        do j=1,NA
        	 S(j)=S(j)-Q(j)-B(j)
        end do
     end if
+    ! print*, S
     !**Unfinished implementation of b vector calculation
-    print*, 'S = ',S
-    Print*, 'H matrix =  '
-    write(*, '(3F9.3)') H
+
     !!!#################################################
     !!! Call the CG method to solve the equation Ax=b.
     !!!#################################################
@@ -88,7 +87,6 @@ contains
 	  err=E, iss=int(iss,I4B))
     !!!#################################################
     
-    
 
     call TP_UPDATE(x)
 
@@ -103,8 +101,8 @@ contains
     real(real12), dimension(NA) :: x
     !** This isnt right
     TPPD = TPD
-    TPD = TD
-    TD = x
+    TPD = x
+    
    
     Told = T
     T = TN
