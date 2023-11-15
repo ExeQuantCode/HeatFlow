@@ -2,6 +2,8 @@ module boundary_vector
   use constants, only: real12, int12
   use inputs, only: NA,nx,ny,nz, T_Bath, grid, kappaBoundx, kappaBoundy, kappaBoundz
   use materials, only: material
+
+  implicit none
 contains
 
   subroutine boundary(B)
