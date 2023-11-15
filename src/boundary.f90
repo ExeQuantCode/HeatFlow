@@ -67,11 +67,11 @@ contains
 
       call material(grid(x,y,z)%imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
       
-      if (x.eq.1) BoundTerm(1,1) = ((2*kappaBoundx*kappa)/(kappaBoundx+kappa))/(rho*heat_capacity)
-      if (x.eq.nx) BoundTerm(1,2) = ((2*kappaBoundx*kappa)/(kappaBoundx+kappa))/(rho*heat_capacity)
-      if (y.eq.1) BoundTerm(2,1) = ((2*kappaBoundy*kappa)/(kappaBoundy+kappa))/(rho*heat_capacity)
-      if (y.eq.ny) BoundTerm(2,2) = ((2*kappaBoundy*kappa)/(kappaBoundy+kappa))/(rho*heat_capacity)
-      if (z.eq.1) BoundTerm(3,1) = ((2*kappaBoundz*kappa)/(kappaBoundz+kappa))/(rho*heat_capacity)
-      if (z.eq.nz) BoundTerm(3,2) = ((2*kappaBoundz*kappa)/(kappaBoundz+kappa))/(rho*heat_capacity)
+      if (x.eq.1) BoundTerm(1,1) = ((2*kappaBoundx*kappa)/(kappaBoundx+kappa))/(rho*heat_capacity*(grid(x,y,z)%Length(1)**2))
+      if (x.eq.nx) BoundTerm(1,2) = ((2*kappaBoundx*kappa)/(kappaBoundx+kappa))/(rho*heat_capacity*(grid(x,y,z)%Length(1)**2))
+      if (y.eq.1) BoundTerm(2,1) = ((2*kappaBoundy*kappa)/(kappaBoundy+kappa))/(rho*heat_capacity*(grid(x,y,z)%Length(2)**2))
+      if (y.eq.ny) BoundTerm(2,2) = ((2*kappaBoundy*kappa)/(kappaBoundy+kappa))/(rho*heat_capacity*(grid(x,y,z)%Length(2)**2))
+      if (z.eq.1) BoundTerm(3,1) = ((2*kappaBoundz*kappa)/(kappaBoundz+kappa))/(rho*heat_capacity*(grid(x,y,z)%Length(3)**2))
+      if (z.eq.nz) BoundTerm(3,2) = ((2*kappaBoundz*kappa)/(kappaBoundz+kappa))/(rho*heat_capacity*(grid(x,y,z)%Length(3)**2))
    end subroutine BoundaryTerms   
 end module boundary_vector

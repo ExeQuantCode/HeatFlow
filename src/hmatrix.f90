@@ -113,11 +113,11 @@ contains
        kappa_ab = kappa_ab/(grid(x, y, z)%Length(1))**2
 
     else if (y_b .ne. y) then
-       kappa_ab = (2*kappaBoundy*kappa)/(kappaBoundy+kappa)
+       kappa_ab = ((2)*kappaBoundy*kappa)/(kappaBoundy+kappa)
        kappa_ab = kappa_ab/(grid(x, y, z)%Length(2))**2
 
     else if (z_b .ne. z) then
-       kappa_ab = (2*kappaBoundz*kappa)/(kappaBoundz+kappa)
+       kappa_ab = ((2)*kappaBoundz*kappa)/(kappaBoundz+kappa)
        kappa_ab = kappa_ab/(grid(x, y, z)%Length(3))**2
 
     end if
