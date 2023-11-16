@@ -3,7 +3,7 @@ module evolution
   use inputs, only: NA, icattaneo, isteady, nx, ny, nz, T_bath, time_step
   use sptype, only: I4B
   use sparse, only: linbcg
-  use globe_data, only: TD, TPD, TPPD, TN, Told, T
+  use globe_data, only: TPD, TPPD
   use heating, only: heater
   use boundary_vector, only: boundary
   use cattaneo, only: S_catS
@@ -61,8 +61,7 @@ module evolution
        	 S(j)=S(j)-Q(j)-B(j)
        end do
     end if
-    ! print*, S
-    !**Unfinished implementation of b vector calculation
+    print*, S
 
     !!!#################################################
     !!! Call the CG method to solve the equation Ax=b.
@@ -104,17 +103,8 @@ module evolution
     TPD = x
     
    
-    Told = T
-    T = TN
-    index = 1
-    do k = 1, nz
-      do j = 1, ny
-         do i = 1, nx
-            TN(i,j,k) = X(index)
-            index = index+1
-         end do
-      end do
-    end do 
+    
+
   end subroutine TP_UPDATE
 
 end module evolution

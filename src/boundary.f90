@@ -1,7 +1,6 @@
 module boundary_vector
   use constants, only: real12, int12
   use inputs, only: NA,nx,ny,nz, T_Bath, grid, kappaBoundx, kappaBoundy, kappaBoundz
-  use materials, only: material
 
   implicit none
 contains
@@ -24,31 +23,25 @@ contains
           do i=1,nx
 
              IA=IA+1
-             
+             call BoundaryTerms(BoundTerm, i, j, k)
              if (i.eq.1) then 
-               call BoundaryTerms(BoundTerm, i, j, k)
                 B(IA)=B(IA)+BoundTerm(1,1)*T_Bath
              end if 
              if (i.eq.nx) then
-               call BoundaryTerms(BoundTerm, i, j, k)
                 B(IA)=B(IA)+BoundTerm(1,2)*T_Bath
              end if
 
              if (j.eq.1) then 
-               call BoundaryTerms(BoundTerm, i, j, k)
                 B(IA)=B(IA)+BoundTerm(2,1)*T_Bath
              end if 
              if (j.eq.ny) then
-               call BoundaryTerms(BoundTerm, i, j, k)
                 B(IA)=B(IA)+BoundTerm(2,2)*T_Bath
              end if
 
              if (k.eq.1) then 
-               call BoundaryTerms(BoundTerm, i, j, k)
                 B(IA)=B(IA)+BoundTerm(3,1)*T_Bath
              end if 
              if (k.eq.nz) then
-               call BoundaryTerms(BoundTerm, i, j, k)
                 B(IA)=B(IA)+BoundTerm(3,2)*T_Bath
              end if
 
@@ -60,13 +53,13 @@ contains
   subroutine BoundaryTerms(BoundTerm, x, y, z)
       real(real12), dimension(3,2), intent(out) :: BoundTerm
       integer(int12), intent(in) :: x, y, z
-      real(real12) :: TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau
+      real(real12) :: kappa,heat_capacity,rho
 
       
+      heat_capacity = grid(x,y,z)%heat_capacity
+      rho = grid(x,y,z)%rho
+      kappa = grid(x,y,z)%kappa
 
-
-      call material(grid(x,y,z)%imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
-      
       if (x.eq.1) BoundTerm(1,1) = ((2*kappaBoundx*kappa)/(kappaBoundx+kappa))/(rho*heat_capacity*(grid(x,y,z)%Length(1)**2))
       if (x.eq.nx) BoundTerm(1,2) = ((2*kappaBoundx*kappa)/(kappaBoundx+kappa))/(rho*heat_capacity*(grid(x,y,z)%Length(1)**2))
       if (y.eq.1) BoundTerm(2,1) = ((2*kappaBoundy*kappa)/(kappaBoundy+kappa))/(rho*heat_capacity*(grid(x,y,z)%Length(2)**2))

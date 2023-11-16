@@ -1,7 +1,7 @@
 module initial 
   use constants, only: real12, int12
   use inputs, only: NA, T_Bath
-  use globe_data, only: TD,TPD
+  use globe_data, only: TPD,TPPD
   implicit none
 
   
@@ -11,8 +11,7 @@ contains
     
     !Current version just sets all previous time steps temperatures = heat bath
 
-  
-    TD=T_bath
+    TPPD= 0
     TPD=T_bath
     
     

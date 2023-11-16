@@ -4,9 +4,9 @@ module setup
   use inputs, only: Lx, Ly, Lz, nx, ny, nz, NA, grid, T_Bath
   use constructions, only: heatblock
   use hmatrixmod, only: hmatrix
-  use globe_data, only:  ra, T, TN, Told,TD,TPD, TPPD
+  use globe_data, only:  ra, TN, TPD, TPPD
   use sparse, only: SRSin
-
+  use materials, only: material
   implicit none
   
    contains
@@ -16,14 +16,33 @@ module setup
 !!! This allocates arrays and builds the apropreate H matrix
 !!!##########################################################################
    subroutine set_global_variables()
-
+      integer(int12) :: i,j,k
+      real(real12) :: TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau
       allocate(TN(nx, ny, nz))
-      allocate(T(nx, ny, nz))
-      allocate(Told(nx, ny, nz))
-      allocate(TD(NA))
       allocate(TPD(NA))
       allocate(TPPD(NA))           
 
+      !---------------------------------------------------
+      ! ASign material properties to the grid construction
+      ! can be expanded to include more properties at a 
+      ! later date
+      !---------------------------------------------------
+      do k = 1, nz
+         do j = 1, ny
+            do i = 1, nx
+            call material(grid(i,j,k)%imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+            grid(i,j,k)%kappa = kappa
+            grid(i,j,k)%rho = rho
+            grid(i,j,k)%heat_capacity = heat_capacity
+            grid(i,j,k)%tau = tau
+
+
+            end do               
+         end do
+      end do
+
+
+      !---------------------------------------------------
       TPPD = 0
       TPD = T_Bath
       !** should impliment an if condition for sparse only
