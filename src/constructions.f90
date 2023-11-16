@@ -9,6 +9,7 @@ module constructions
      real(real12) :: volume
      real(real12), dimension(3) :: Length
      real(real12), dimension(3) :: area
+     real(real12) :: kappa, rho, heat_capacity, tau
   end type heatblock
   type material
      integer(int12) :: index

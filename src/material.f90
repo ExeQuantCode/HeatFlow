@@ -1,7 +1,6 @@
 module materials
 
   use constants, only: real12, int12
-  use globe_data, only: T
   use inputs, only: input_materials, grid
   implicit none
 
