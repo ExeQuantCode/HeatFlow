@@ -13,8 +13,8 @@
     cutoff = 1000     !
     power_in =  0  !
     T_period = 0.1  !
-    kappaBoundx = 10  !
-    kappaBoundy = 0    !
-    kappaBoundz = 0    !
+    kappaBoundx = 1  !
+    kappaBoundy = 1    !
+    kappaBoundz = 1    !
 
 
