@@ -60,7 +60,7 @@ $(BUILD_DIR):
 	mkdir -p $@
 
 $(programs) : $(OBJS) | $(BIN_DIR) $(BUILD_DIR)
-	$(FC) -O3 $(MODULEFLAGS) $(BUILD_DIR) $(OBJS) -o $@
+	$(FC) -O3 -fopenmp $(MODULEFLAGS) $(BUILD_DIR) $(OBJS) -o $@
 
 debug :  $(OBJS)
-	$(FC) -O3 -mcmodel=large -fbacktrace -fcheck=all -fbounds-check $(MODULEFLAGS) $(BUILD_DIR) -o $(programs)
+	$(FC) -O3 -mcmodel=large -fbacktrace -fcheck=all -fbounds-check  $(MODULEFLAGS) $(BUILD_DIR) -o $(programs)

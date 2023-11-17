@@ -5,13 +5,13 @@ module hmatrixmod
 
 contains
 
-  subroutine hmatrix(i, j, H)
+  function hmatrixfunc(i, j) result(H)
     integer(int12), intent(in) :: i, j
     integer(int12) :: x, y, z
     real(real12) :: alpha, A, B, D, E, F, G 
     real(real12) ::  tau
     real(real12) :: conductivity
-    real(real12), intent(out) :: H
+    real(real12) :: H
 
 
 
@@ -41,13 +41,53 @@ contains
       H = -(A + B + D + E + F + G ) - alpha  ! Diagonal
     end if 
     
-    if ((i-j) .eq. 1)        H = A  ! X left neighbor
-    if ((i-j) .eq. -1)       H = B  ! X right neighbor
-    if ((i-j) .eq. nx)       H = D  ! Y down neighbor
-    if ((i-j) .eq. -nx)      H = E  ! Y up neighbor
-    if ((i-j) .eq. (nx*ny))  H = F  ! Z in neighbor
-    if ((i-j) .eq. -(nx*ny)) H = G  ! Z out neighbor
-  end subroutine hmatrix
+    if ((i-j) .eq. 1) then
+      if (x .eq. 1) then
+        H=0
+      else
+         H = A  ! X left neighbor
+      end if
+    end if 
+
+    if ((i-j) .eq. -1) then
+      if (x .eq. nx) then
+        H = 0
+      else
+        H = B  ! X right neighbor
+      end if
+    end if
+
+    if ((i-j) .eq. nx) then
+      if (y.eq.1) then
+        H = 0
+      else
+        H = D  ! Y down neighbor
+      end if 
+    end if 
+    if ((i-j) .eq. -nx) then
+      if (y.eq.ny) then
+        H=0
+      else
+        H = E  ! Y up neighbor
+      end if 
+    end if 
+
+    if ((i-j) .eq. (nx*ny)) then
+      if (z.eq. 1) then
+        H=0
+      else
+         H = F  ! Z in neighbor
+      end if
+    end if 
+
+    if ((i-j) .eq. -(nx*ny)) then
+      if (z .eq. nz) then
+        H = 0
+      else  
+        H = G  ! Z out neighbor
+      end if
+    end if 
+  end function hmatrixfunc
 
 
 

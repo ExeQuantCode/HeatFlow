@@ -61,8 +61,7 @@ module evolution
        	 S(j)=S(j)-Q(j)-B(j)
        end do
     end if
-    print*, S
-
+    ! print*, S
     !!!#################################################
     !!! Call the CG method to solve the equation Ax=b.
     !!!#################################################
