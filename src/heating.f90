@@ -13,15 +13,16 @@ contains
     integer(int12), intent(in) :: it 
     integer(int12) :: i,j,k
     real(real12) :: time, TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau
-    real(real12) :: PI, dt, PARAM_HEAT_PERIOD, POWER, PARAM_time_pulse
+    real(real12) :: PI, dt, Heating_f, POWER, PARAM_time_pulse
     real(real12), dimension(NA), intent(out) :: Q
     !real(real12), dimension(NA) :: Q
-    time=dt*REAL(iT)
     IA=0
     Q = 0 
     PI = 3.14
     dt= time_step
     POWER = power_in
+    time=dt*real(it)
+
     do i=1,nx
        do j=1,ny
           do k=1,nz
@@ -44,22 +45,21 @@ contains
              CASE(2)
                 !heater on for a time period
                 if (time.le.PARAM_time_pulse) then
-                   Q=POWER
-		             !Q(IA)=POWER
+		            Q(IA)=POWER
                 else
-		            Q=0.0
-                   !Q(IA)=0.0
+                  Q(IA)=0.0
                 end if
                 
              CASE(3)
                 !OSCCILATORY HEATING
-                Q=POWER*SIN(time*2*PI/PARAM_HEAT_PERIOD)
+                Q=POWER*SIN(time*2*PI*Heating_f)
                 !Q(IA)=POWER*SIN(time*2*PI/PARAM_HEAT_PERIOD)
-                
-             !case(0)
-             !   print(*,*) 'Undefined heater, setting block ', &
-             !        i, j, k, ' to zero'
-             !   Q(IA)=0.0
+               
+               CASE(4)
+                  !sin^2 heating
+                  Q(IA)=POWER*SIN(time*2*PI*Heating_f)**2
+
+
              end select
              Q(IA) = Q(IA)/(rho*heat_capacity)
           end do

@@ -3,7 +3,7 @@ module setup
   use constants, only: real12, int12, TINY
   use inputs, only: Lx, Ly, Lz, nx, ny, nz, NA, grid, T_Bath
   use constructions, only: heatblock
-  use hmatrixmod, only: hmatrix
+  use hmatrixmod, only: hmatrixfunc
   use globe_data, only:  ra, TN, TPD, TPPD
   use sparse, only: SRSin
   use materials, only: material
@@ -51,7 +51,7 @@ module setup
          !call SPHM()
          !print*,Hsparse
       ! else
-         call build_Hmatrix()
+      call build_Hmatrix()
       ! end if
 
       !call setup_grid()
@@ -64,10 +64,19 @@ module setup
 !!! This sets up the H Matrix and converts it into sparse row storage
 !!!#########################################################################
    subroutine build_Hmatrix()
-
+      real(real12), dimension(na,na) :: H
+      real(real12) :: H0
+      integer(int12) :: i,j 
       
+      ! do j=1,na
+      !    do i =1,na
+      !       call hmatrix(i,j,H0)
+      !       h(i,j) = H0
+      !    end do
+      ! end do
+      !write(*,'(27F12.3)') H
       call sparse_Hmatrix()
-    
+      !call SRSin(H, TINY, ra)
    end subroutine build_Hmatrix
 !!!#########################################################################
 
@@ -75,43 +84,49 @@ module setup
 !!!#########################################################################
 !!! This sets up the H Matrix directly in sparse row storage
 !!!#########################################################################
-   subroutine sparse_Hmatrix()
-     real(real12) :: H0
-     integer(int12) :: i, j, len
-      integer(int12), allocatable :: rar(:), rac(:)
-      real(real12), allocatable :: rav(:)
-      len = 0 
-     do j = 1, NA
-        do i = 1, NA
-           call hmatrix(i,j, H0)
-           if (abs(H0).gt. TINY) len=len+1
-        end do
-     end do
-   !   print*, len
-   !   print*, (7*nx*ny*nz)-2*(((ny*nx)+(nx*nz)+(ny*nz)))
-     allocate(rar(len))
-     allocate(rac(len))
-     allocate(rav(len))
-     allocate(ra%val(len),ra%irow(len),ra%jcol(len))
+      subroutine sparse_Hmatrix()
+         ! use omp_lib
+        real(real12) :: H0
+        integer(int12) :: i, j, len
+         integer(int12), dimension(7*NA-2*(nx*ny+ny*nz+nx*nz)) :: rar, rac !7*NA is as big as it could be
+         real(real12), dimension(7*NA-2*(nx*ny+ny*nz+nx*nz)) :: rav
 
-     len = 0
-      do i = 1, NA
-         do j = 1, NA
-            call hmatrix(i,j,H0)
-            if (abs(H0) .gt. TINY) then
-               len = len+1
-               rar(len) = j
-               rac(len) = i
-               rav(len) = H0
-            end if 
-         end do
-      end do 
-      ra%n = NA
-      ra%len = len
-      ra%val = rav
-      ra%irow = rar
-      ra%jcol = rac   
-   end subroutine sparse_Hmatrix
+        len = 0
+        !---------------------------------------------------
+        ! because len is updated in loop can not parallelize
+        ! with ease. Could use atomize but maybe more ...
+        ! ... computationally expensive.
+        !---------------------------------------------------
+      !   call omp_set_num_threads(4)
+!   ! $OMP PARALLEL DO PRIVATE(i,j,H0) SHARED(len,rar,rac,rav)
+         do i = 1, NA
+            h0 = hmatrixfunc(i,i)
+            len = len+1
+            rar(len) = i
+            rac(len) = i
+            rav(len) = H0
+            do j = i+1, NA,1
+               h0 = hmatrixfunc(i,j)
+               if (abs(H0) .gt. TINY) then
+                  len = len+2
+                  rar(len-1) = i
+                  rac(len-1) = j
+                  rav(len-1) = H0
+                  rar(len) = j
+                  rac(len) = i
+                  rav(len) = H0
+               end if 
+            end do
+         end do 
+!   !$OMP END PARALLEL DO
+         allocate(ra%val(len),ra%irow(len),ra%jcol(len))
+         ra%n = NA
+         ra%len = len
+         ra%val = rav(:len)
+         ra%irow = rar(:len)
+         ra%jcol = rac(:len)
+         
+      end subroutine sparse_Hmatrix
 !!!#########################################################################
 
 
