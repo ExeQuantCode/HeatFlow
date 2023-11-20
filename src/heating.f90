@@ -59,7 +59,9 @@ contains
                   !sin^2 heating
                   Q(IA)=POWER*SIN(time*2*PI*Heating_f)**2
 
-
+               ! CASE(5)
+               !    ! Radiative
+               !    Q(IA)= e*eps* T**4
              end select
              Q(IA) = Q(IA)/(rho*heat_capacity)
           end do

@@ -6,13 +6,12 @@ module materials
 
 contains
 
-subroutine material(imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau, Lx, Ly, Lz)
+subroutine material(imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
   
    integer(int12), intent(in) ::imaterial_type
    integer(int12) :: i, tmp
    real(real12) :: volume !!!check intent
-   !TC = Temperature of current cell
-   real(real12), intent(inout) :: kappa3D, kappa, h_conv, heat_capacity, sound_speed, rho, tau,  TC , Lx, Ly, Lz
+   real(real12), intent(inout) :: kappa3D, kappa, h_conv, heat_capacity, sound_speed, rho, tau,  TC
    logical :: found
 
 !!!=============================================
@@ -52,9 +51,7 @@ subroutine material(imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sou
             rho           = input_materials(i)%rho
             sound_speed   = input_materials(i)%sound_speed
             tau           = input_materials(i)%tau
-            Lx            = input_materials(i)%Lx
-            Ly            = input_materials(i)%Ly
-            Lz            = input_materials(i)%Lz
+
             exit mat_loop
          end if
       end do mat_loop
