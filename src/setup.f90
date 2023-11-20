@@ -86,45 +86,42 @@ module setup
 !!!#########################################################################
       subroutine sparse_Hmatrix()
          ! use omp_lib
-        real(real12) :: H0
-        integer(int12) :: i, j, len
-         integer(int12), dimension(7*NA-2*(nx*ny+ny*nz+nx*nz)) :: rar, rac !7*NA is as big as it could be
-         real(real12), dimension(7*NA-2*(nx*ny+ny*nz+nx*nz)) :: rav
-
-        len = 0
-        !---------------------------------------------------
-        ! because len is updated in loop can not parallelize
-        ! with ease. Could use atomize but maybe more ...
-        ! ... computationally expensive.
-        !---------------------------------------------------
-      !   call omp_set_num_threads(4)
-!   ! $OMP PARALLEL DO PRIVATE(i,j,H0) SHARED(len,rar,rac,rav)
-         do i = 1, NA
-            h0 = hmatrixfunc(i,i)
-            len = len+1
-            rar(len) = i
-            rac(len) = i
-            rav(len) = H0
-            do j = i+1, NA,1
-               h0 = hmatrixfunc(i,j)
-               if (abs(H0) .gt. TINY) then
-                  len = len+2
-                  rar(len-1) = i
-                  rac(len-1) = j
-                  rav(len-1) = H0
-                  rar(len) = j
-                  rac(len) = i
-                  rav(len) = H0
-               end if 
-            end do
-         end do 
-!   !$OMP END PARALLEL DO
-         allocate(ra%val(len),ra%irow(len),ra%jcol(len))
+         real(real12) :: H0
+         integer(int12) :: i, j, len, count, k
+         integer, dimension(3) :: addit
+         len = 7*nx*ny*nz - 2*(nx*ny + ny*nz + nz*nx)
          ra%n = NA
          ra%len = len
-         ra%val = rav(:len)
-         ra%irow = rar(:len)
-         ra%jcol = rac(:len)
+         allocate(ra%val(len), ra%irow(len), ra%jcol(len))
+         addit(1) = 1
+         addit(2) = nx
+         addit(3) = nx*ny
+
+
+         count = 0
+         parent_loop: do j = 1, NA
+            i=j
+            count = count + 1
+            H0 = hmatrixfunc(i,j)
+            ra%val(count) = H0
+            ra%irow(count) = i
+            ra%jcol(count) = j
+            neighbour_loop: do k = 1, size(addit,1)
+                i = j + addit(k)
+                if ((i.gt.NA)) cycle parent_loop
+                H0=hmatrixfunc(i,j)
+                if (abs(H0).lt.TINY) cycle neighbour_loop
+                count = count + 1
+                ra%val(count) = H0
+                ra%irow(count) = i
+                ra%jcol(count) = j
+                count = count + 1
+                ra%val(count) = H0
+                ra%irow(count) = j
+                ra%jcol(count) = i
+            end do neighbour_loop
+        end do parent_loop
+
          
       end subroutine sparse_Hmatrix
 !!!#########################################################################
