@@ -17,7 +17,7 @@ module setup
 !!!##########################################################################
    subroutine set_global_variables()
       integer(int12) :: i,j,k
-      real(real12) :: TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau
+      real(real12) :: TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau, Lx, Ly, Lz
       allocate(TN(nx, ny, nz))
       allocate(TPD(NA))
       allocate(TPPD(NA))           
@@ -30,12 +30,14 @@ module setup
       do k = 1, nz
          do j = 1, ny
             do i = 1, nx
-            call material(grid(i,j,k)%imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+            call material(grid(i,j,k)%imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau, Lx, Ly, Lz)
             grid(i,j,k)%kappa = kappa
             grid(i,j,k)%rho = rho
             grid(i,j,k)%heat_capacity = heat_capacity
             grid(i,j,k)%tau = tau
-
+            grid(i,j,k)%Length(1) = Lx
+            grid(i,j,k)%Length(2) = Ly
+            grid(i,j,k)%Length(3) = Lz
 
             end do               
          end do
@@ -45,41 +47,12 @@ module setup
       !---------------------------------------------------
       TPPD = 0
       TPD = T_Bath
-      !** should impliment an if condition for sparse only
-      ! if(sparse_only) then
-         !** Never have to make the full H matrix, needs boundarys
-         !call SPHM()
-         !print*,Hsparse
-      ! else
-      call build_Hmatrix()
-      ! end if
 
-      !call setup_grid()
+      call sparse_Hmatrix()
+
 
    end subroutine set_global_variables
 !!!##########################################################################
-
-
-!!!#########################################################################
-!!! This sets up the H Matrix and converts it into sparse row storage
-!!!#########################################################################
-   subroutine build_Hmatrix()
-      real(real12), dimension(na,na) :: H
-      real(real12) :: H0
-      integer(int12) :: i,j 
-      
-      ! do j=1,na
-      !    do i =1,na
-      !       call hmatrix(i,j,H0)
-      !       h(i,j) = H0
-      !    end do
-      ! end do
-      !write(*,'(27F12.3)') H
-      call sparse_Hmatrix()
-      !call SRSin(H, TINY, ra)
-   end subroutine build_Hmatrix
-!!!#########################################################################
-
 
 !!!#########################################################################
 !!! This sets up the H Matrix directly in sparse row storage

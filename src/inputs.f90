@@ -251,16 +251,17 @@ contains
     integer(int12) :: i, j, k, reason, c
     character(1024) :: buffer, array
     
-    ! read mesh volume dimessions
-    read(unit,'(A)',iostat=Reason) buffer
-    read(buffer,*) Lx, Ly, Lz
-
     ! read mesh cell number
     read(unit,'(A)',iostat=Reason) buffer
     read(buffer,*) nx, ny, nz
     Na = nx*ny*nz
+
     ! Allocate Global data arrays
     allocate(grid(nx,ny,nz))
+    
+    ! read mesh volume dimessions
+    read(unit,'(A)',iostat=Reason) buffer
+    read(buffer,*) Lx, Ly, Lz
 
     grid(:,:,:)%Length(1)=real(Lx)/real(nx)
     grid(:,:,:)%Length(2)=real(Ly)/real(ny)
@@ -321,7 +322,7 @@ subroutine read_mat(unit)
     type(material), dimension(100) :: dum_mat
     character(1024) :: buffer
     integer :: reason, j
-    integer, dimension(8) :: readvar
+    integer, dimension(11) :: readvar
     integer :: i, index
 
     i=0
@@ -367,7 +368,10 @@ subroutine read_mat(unit)
        call assignD(buffer,"rho"          ,dum_mat(i)%rho          ,readvar(5))
        call assignD(buffer,"sound_speed"  ,dum_mat(i)%sound_speed  ,readvar(6))
        call assignD(buffer,"tau"          ,dum_mat(i)%tau          ,readvar(7))
-       call assignL(buffer,"source"       ,dum_mat(i)%source       ,readvar(8))
+       call assignD(buffer,"Lx"           ,dum_mat(i)%Lx           ,readvar(8))
+       call assignD(buffer,"Ly"           ,dum_mat(i)%Ly           ,readvar(9))
+       call assignD(buffer,"Lz"           ,dum_mat(i)%Lz           ,readvar(10))
+       call assignL(buffer,"source"       ,dum_mat(i)%source       ,readvar(11))
     end do read
     
     ! Check for duplicate indices

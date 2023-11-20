@@ -12,7 +12,7 @@ contains
     integer :: IA
     integer(int12), intent(in) :: it 
     integer(int12) :: i,j,k
-    real(real12) :: time, TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau
+    real(real12) :: time, TC,heat_capacity,rho
     real(real12) :: PI, dt, Heating_f, POWER, PARAM_time_pulse
     real(real12), dimension(NA), intent(out) :: Q
     !real(real12), dimension(NA) :: Q
@@ -27,8 +27,8 @@ contains
        do j=1,ny
           do k=1,nz
              IA=IA+1
-             call material(grid(i,j,k)%imaterial_type, TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
-
+               rho = grid(i,j,k)%rho
+               heat_capacity = grid(i,j,k)%heat_capacity
              select case(iheater(i,j,k))
                 
                 !NO HEATING

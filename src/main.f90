@@ -12,7 +12,7 @@ program HEATFLOW_V0_1
   use INITIAL, only: initial_evolve
 
   implicit none
-   real(real12) :: rstart, rend, rprogress
+   real(real12) :: rstart, rend, rprogress, rstart2
    integer(int12) :: it
    integer :: newunit, unit
    !real(real12), dimension(nx, ny,nz) :: T,T0, T00
@@ -31,8 +31,11 @@ program HEATFLOW_V0_1
    ! ... and arrays                                              !
    !-------------------------------------------------------------!
    call read_all_files()                                         !
-                                                                 !
-   call set_global_variables()                                   !
+   
+   call cpu_time(rstart2)                                         !   !
+   call set_global_variables() 
+   call cpu_time(rend)                                           !
+   write(*,'(A,F12.6)') ' time to complete HSparce=', rend-rstart2                    ! 
    !-------------------------------------------------------------!
 
 
