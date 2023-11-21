@@ -8,7 +8,7 @@
     freq = 1     !
     iboundary = 1     !
     icattaneo = 0 !
-    isteady = 1 !
+    isteady = 0 !
     T_Bath = 300     !
     cutoff = 1000     !
     power_in =  0  !

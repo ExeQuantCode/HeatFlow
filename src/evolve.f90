@@ -1,5 +1,5 @@
 module evolution
-  use constants, only: real12, int12
+  use constants, only: real12, int12, TINY
   use inputs, only: NA, icattaneo, isteady, nx, ny, nz, T_bath, time_step
   use sptype, only: I4B
   use sparse, only: linbcg
@@ -25,10 +25,7 @@ module evolution
     real(real12) :: dt, To, Hb, e, err, tol
     
     
-    !-------------------------------
-    !initialise variables
-    !**CALL INIT_EVOLVE(it,TP,TPP)
-    !------------------------
+
 
     !----------------------------------------------
     !Make S-vector
@@ -61,7 +58,6 @@ module evolution
        	 S(j)=S(j)-Q(j)-B(j)
        end do
     end if
-    ! print*, S
     !!!#################################################
     !!! Call the CG method to solve the equation Ax=b.
     !!!#################################################
@@ -73,6 +69,10 @@ module evolution
     ! iter:  Output - gives the number of the final iteration.
     ! err:   Output - records the error of the final iteration.
     ! iss:   Input - sets the Sparse Storage type (1=SRS, 2=SDS).
+    !-------------------------------
+    !initialise variables
+    call INIT_EVOLVE(it,x)
+    !------------------------
     itol=1
     tol=1D-9 
     itmax=5000
@@ -80,7 +80,6 @@ module evolution
     iter=ncg
     err=E
     iss=1
-    x=500
     call linbcg(S,x,itol=int(itol,I4B),tol=1D-9, itmax=int(itmax,I4B), iter=iter, &
 	  err=E, iss=int(iss,I4B))
     !!!#################################################
@@ -93,7 +92,14 @@ module evolution
   end subroutine EVOLVE
 
 
-  
+  subroutine INIT_EVOLVE(it, x)
+    integer(int12), intent(in) :: it
+    real(real12), dimension(NA), intent(out) :: x
+    ! Ask Frank about this, why cant x be equal to T_Bath?
+    if (it .eq. 1) x=T_Bath+1d-13
+
+  end subroutine INIT_EVOLVE
+
   subroutine TP_UPDATE(x)
     integer(int12) :: i, j, k, index
     real(real12), dimension(NA) :: x

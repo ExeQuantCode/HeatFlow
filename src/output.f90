@@ -42,7 +42,7 @@ contains
     end do 
 
     !write(30,*) REAL(it)*time_step, ((T_matrix(i)-T_Bath),i=1,e)
-    write(30,*) REAL(it)*time_step, TN! (TN(nx/2,ny/2,nz/2))   !-293.0
+    write(30,*) REAL(it)*time_step, TN(nx/2,ny/2,:)! (TN(nx/2,ny/2,nz/2))   !-293.0
 
     
     205 format(5f12.6)
