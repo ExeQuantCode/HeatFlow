@@ -1,7 +1,8 @@
 module Heating
   use constants, only: real12, int12
   use constructions, only: heatblock
-  use inputs, only: nx,ny,nz, grid, NA, iheater, power_in, time_step
+  use globe_data, only: TPD, TPPD
+  use inputs, only: nx,ny,nz, grid, NA, iheater, power_in, time_step, T_Bath
   use materials, only: material
   implicit none
 contains
@@ -13,7 +14,7 @@ contains
     integer(int12), intent(in) :: it 
     integer(int12) :: i,j,k
     real(real12) :: time, TC,heat_capacity,rho,m
-    real(real12) :: PI, dt, Heating_f, POWER, PARAM_time_pulse
+    real(real12) :: PI, dt, Heating_f, POWER, time_pulse
     real(real12), dimension(NA), intent(out) :: Q
     !real(real12), dimension(NA) :: Q
     IA=0
@@ -22,7 +23,7 @@ contains
     dt= time_step
     POWER = power_in
     time=dt*real(it)
-
+    time_pulse = 0.5
     do i=1,nx
        do j=1,ny
           do k=1,nz
@@ -45,7 +46,7 @@ contains
                 
              CASE(2)
                 !heater on for a time period
-                if (time.le.PARAM_time_pulse) then
+                if (time.le.time_pulse) then
 		            Q(IA)=POWER
                 else
                   Q(IA)=0.0
@@ -60,9 +61,20 @@ contains
                   !sin^2 heating
                   Q(IA)=POWER*SIN(time*2*PI*Heating_f)**2
 
-               ! CASE(5)
-               !    ! Radiative
-               !    Q(IA)= e*eps* T**4
+               CASE(5)
+                   ! Radiative
+                   !Q(IA)= e*eps* T**4
+               CASE(6)
+                  if (it.eq.1) then
+                     Q(IA)=POWER
+                  else
+                     Q(IA)=0.0
+                  end if
+               case(7)
+                  !Fixed temperature
+                  Q(IA) =0
+                  TPPD = T_Bath+100
+                  TPD(IA) = T_Bath+100
              end select
              Q(IA) = Q(IA)/(m*heat_capacity)
           end do

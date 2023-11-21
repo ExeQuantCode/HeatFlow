@@ -1,6 +1,6 @@
     IVERB = 1     !
     icell_mix = 2     !
-    ntime = 1  !
+    ntime = 10  !
     Rel = 0     !
     zpos = 1     !
     ACon = 1     !
@@ -11,7 +11,7 @@
     isteady = 0 !
     T_Bath = 300     !
     cutoff = 1000     !
-    power_in =  0  !
+    power_in =  100  !
     T_period = 0.1  !
     kappaBoundx = 1  !
     kappaBoundy = 1    !
