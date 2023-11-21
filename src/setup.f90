@@ -43,7 +43,7 @@ module setup
 
 
       !---------------------------------------------------
-      TPPD = 0
+      TPPD = T_Bath
       TPD = T_Bath
       !** should impliment an if condition for sparse only
       ! if(sparse_only) then

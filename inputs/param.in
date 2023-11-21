@@ -9,7 +9,7 @@
     iboundary = 1     !
     icattaneo = 0 !
     isteady = 1 !
-    T_Bath = 150     !
+    T_Bath = 300     !
     cutoff = 1000     !
     power_in =  0  !
     T_period = 0.1  !
