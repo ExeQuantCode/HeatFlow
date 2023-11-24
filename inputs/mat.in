@@ -1,9 +1,9 @@
 1 !silicon
-heat_capacity = 710
+heat_capacity = 1
 h_conv = 100
-kappa  = 400
+kappa  = 1
 kappa3D = 148
-rho = 2329
+rho = 1
 sound_speed = 8430
 tau = 0.000000001
 source = .true.

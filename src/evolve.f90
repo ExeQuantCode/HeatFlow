@@ -71,17 +71,18 @@ module evolution
     ! iss:   Input - sets the Sparse Storage type (1=SRS, 2=SDS).
     !-------------------------------
     !initialise variables
-    call INIT_EVOLVE(it,x)
+    if (it .eq. 1) call INIT_EVOLVE(it,x)
     !------------------------
     itol=1
-    tol=1D-9 
+    tol=1.e-16_real12
     itmax=5000
     ncg = 0
     iter=ncg
     err=E
     iss=1
-    call linbcg(S,x,itol=int(itol,I4B),tol=1D-9, itmax=int(itmax,I4B), iter=iter, &
+    call linbcg(S,x,itol=int(itol,I4B),tol=tol, itmax=int(itmax,I4B), iter=iter, &
 	  err=E, iss=int(iss,I4B))
+    
     !!!#################################################
     
 

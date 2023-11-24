@@ -9,11 +9,13 @@ subroutine S_catS(s_cat)
 
     integer(int12) :: i, x, y, z
     i = 0
+    S_cat = 0._real12
     do z=1,nz
         do y = 1, ny
             do x = 1, nx
                 i = i+1
-                S_cat(i) = (grid(x,y,z)%tau/(grid(x,y,z)%rho*grid(x,y,z)%heat_capacity))*(TPPD(i)-2*TPD(i))/(time_step**2) 
+                S_cat(i) = (grid(x,y,z)%tau/(grid(x,y,z)%rho*grid(x,y,z)%heat_capacity)) * &
+                    ( TPPD(i) - 2._real12 * TPD(i) ) / ( time_step ** 2._real12 ) 
             end do
         end do
     end do

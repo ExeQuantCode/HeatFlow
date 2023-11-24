@@ -1,7 +1,7 @@
 
 module setup
   use constants, only: real12, int12, TINY
-  use inputs, only: Lx, Ly, Lz, nx, ny, nz, NA, grid, T_Bath
+  use inputs, only: Lx, Ly, Lz, nx, ny, nz, NA, grid, T_Bath, time_step, kappaBoundx, kappaBoundy, kappaBoundz
   use constructions, only: heatblock
   use hmatrixmod, only: hmatrixfunc
   use globe_data, only:  ra, TN, TPD, TPPD
@@ -17,11 +17,11 @@ module setup
 !!!##########################################################################
    subroutine set_global_variables()
       integer(int12) :: i,j,k
-      real(real12) :: TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau
+      real(real12) :: TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau, stability, alpha, dt
       allocate(TN(nx, ny, nz))
       allocate(TPD(NA))
       allocate(TPPD(NA))           
-
+      dt = time_step
       !---------------------------------------------------
       ! ASign material properties to the grid construction
       ! can be expanded to include more properties at a 
@@ -36,22 +36,46 @@ module setup
             grid(i,j,k)%heat_capacity = heat_capacity
             grid(i,j,k)%tau = tau
 
+            !---------------------------------------------------
+            ! Check stability condition
+            !---------------------------------------------------
+            alpha = kappa/(rho*heat_capacity)
+            stability =(dt*alpha*(1/(grid(i,j,k)%length(1)**2)+1/(grid(i,j,k)%length(2)**2)+1/(grid(i,j,k)%length(3)**2)))
 
+            if (stability .gt. 1.0/6.0) then
+               print*, "Stability condition not met"
+               print*, "Stability condition = ", stability
+
+               print*, "dt = ", dt
+               print*, "alpha = ", alpha
+               print*, "dx = ", grid(i,j,k)%length(1)
+               print*, "dy = ", grid(i,j,k)%length(2)
+               print*, "dz = ", grid(i,j,k)%length(3)
+            
+               cycle
+            end if
+            if ((i .eq. 1) .or.(j .eq. 1) .or. (k .eq. 1)) then
+               alpha = kappaBoundx/(rho*heat_capacity)
+               stability =(dt*alpha*(1/(grid(i,j,k)%length(1)**2)+1/(grid(i,j,k)%length(2)**2)+1/(grid(i,j,k)%length(3)**2)))
+               if (stability .gt. 1.0/6.0) then
+                  print*, "Stability condition at boundary not met = ", stability
+                  print*, " Boundary kappas = ", kappaBoundx, kappaBoundy, kappaBoundz
+               end if
+            end if 
             end do               
          end do
       end do
-
+      print*, "TBATH", real(T_Bath,real12)
 
       !---------------------------------------------------
-      TPPD = T_Bath
-      TPD = T_Bath
       !** should impliment an if condition for sparse only
       ! if(sparse_only) then
          !** Never have to make the full H matrix, needs boundarys
          !call SPHM()
          !print*,Hsparse
       ! else
-      call build_Hmatrix()
+      call sparse_Hmatrix()
+      ! call build_Hmatrix()
       ! end if
 
       !call setup_grid()
@@ -64,22 +88,62 @@ module setup
 !!! This sets up the H Matrix and converts it into sparse row storage
 !!!#########################################################################
    subroutine build_Hmatrix()
-      real(real12), dimension(na,na) :: H
-      real(real12) :: H0
-      integer(int12) :: i,j 
-      
-      ! do j=1,na
-      !    do i =1,na
-      !       call hmatrix(i,j,H0)
-      !       h(i,j) = H0
-      !    end do
-      ! end do
-      !write(*,'(27F12.3)') H
-      call sparse_Hmatrix()
-      !call SRSin(H, TINY, ra)
+      integer(int12) :: H0, HCheck
+      integer(int12) :: i,j, BCount
+      real(real12) :: H(NA,NA),HT(NA,NA)
+      H=0.0_real12
+      BCount = 0
+      HCheck = 0
+      do j=1,na
+         HCheck = 0
+         do i =1,na
+            H0 = hmatrixfunc(i,j)
+            HCheck = HCheck + H0
+            H(i,j) = H0
+         end do
+         ! if (HCheck.ne.0) then
+         !    BCount = BCount + 1
+         !    print*, 'Boundary = ',BCount
+         ! end if 
+      end do
+      write(*,'(8F12.3)') H
+      call SRSin(H, TINY, ra)
+      call SparseToReal(HT)
+      if (all(abs(H-HT) < TINY)) then
+         print*, "H and HT are the same"
+      else
+         print*, "H and HT are not the same"
+      end if
    end subroutine build_Hmatrix
 !!!#########################################################################
+!!! This sets up the H Matrix and converts it into sparse row storage
+!!!#######################################################################
+subroutine SparseToReal(HT)
+   real(real12) :: H0
+   real(real12), dimension(NA,NA) :: HT
+   integer(int12) :: i, j, len, k
+   integer, dimension(3) :: addit
 
+   addit(1) = 1
+   addit(2) = nx
+   addit(3) = nx*ny
+   HT = 0.0_real12
+   parent_loop: do j = 1, NA
+      i=j
+      H0 = hmatrixfunc(i,j)
+      HT(i,j) = H0
+      neighbour_loop: do k = 1, size(addit,1)
+          i = j + addit(k)
+          if ((i.gt.NA)) cycle parent_loop
+          H0=hmatrixfunc(i,j)
+          if (abs(H0).lt.TINY) cycle neighbour_loop
+          HT(i,j)=H0
+          HT(j,i)=H0
+
+      end do neighbour_loop
+  end do parent_loop
+!   write(*, '(8F12.3)') HT
+end subroutine SparseToReal
 
 !!!#########################################################################
 !!! This sets up the H Matrix directly in sparse row storage
@@ -97,7 +161,7 @@ module setup
          addit(2) = nx
          addit(3) = nx*ny
 
-
+         
          count = 0
          parent_loop: do j = 1, NA
             i=j

@@ -20,9 +20,6 @@ module constructions
      real(real12) :: rho
      real(real12) :: sound_speed
      real(real12) :: tau
-     real(real12) :: Lx
-     real(real12) :: Ly
-     real(real12) :: Lz
      logical :: source
   end type material
 end module constructions
