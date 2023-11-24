@@ -104,12 +104,11 @@ contains
           heat_capacity = grid(x_out,y_out,z_out)%heat_capacity
           rho = grid(x_out,y_out,z_out)%rho
 
-        !** Check implmentation of rho and heat_capacity
        if(x_in .ne. x_out) then
           kappa_ab = (grid(x_in, y_in, z_in)%Length(1) + grid(x_out, y_out, z_out)%Length(1))*kappa_in*kappa_out/&
                (grid(x_in, y_in, z_in)%Length(1)*kappa_out + grid(x_out, y_out, z_out)%Length(1)*kappa_in)
-               !** To be fully implemented 
                kappa_ab = kappa_ab/(grid(x_out, y_out, z_out)%Length(1))**2
+
        else if (y_in .ne. y_out) then
           kappa_ab = (grid(x_in, y_in, z_in)%Length(2) + grid(x_out, y_out, z_out)%Length(2))*kappa_in*kappa_out/&
                (grid(x_in, y_in, z_in)%Length(2)*kappa_out + grid(x_out, y_out, z_out)%Length(2)*kappa_in)

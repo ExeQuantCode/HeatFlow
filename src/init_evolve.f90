@@ -11,9 +11,9 @@ contains
     
     !Current version just sets all previous time steps temperatures = heat bath
 
-    TPPD= 0
-    TPD=T_bath
-    
+    TPPD= 400._real12
+    TPD= 400._real12
+    ! print*,'Initial Temperature = ',TPD
     
   end subroutine initial_evolve
 end module initial

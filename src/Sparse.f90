@@ -1,11 +1,12 @@
 MODULE sputil
+   use constants, only: real12
   USE sptype !Parameters for crossover from serial to parallel algorithms (these are used only within this sputil module):
   IMPLICIT NONE
   INTEGER(I4B), PARAMETER :: NPAR_ARTH=16,NPAR2_ARTH=8
 
   !Routines that move data:
   INTERFACE array_copy
-     MODULE PROCEDURE array_copy_r, array_copy_d, array_copy_i
+     MODULE PROCEDURE array_copy_r, array_copy_i
   END INTERFACE array_copy
 
   INTERFACE assert_eq
@@ -13,19 +14,19 @@ MODULE sputil
   END INTERFACE assert_eq
 
   INTERFACE arth
-     MODULE PROCEDURE arth_r, arth_d, arth_i
+     MODULE PROCEDURE arth_r, arth_i
   END INTERFACE arth
 
   INTERFACE scatter_add
-     MODULE PROCEDURE scatter_add_r,scatter_add_d
+     MODULE PROCEDURE scatter_add_r
   END INTERFACE scatter_add
   
 CONTAINS
   !Routines that move data:
   SUBROUTINE array_copy_r(src,dest,n_copied,n_not_copied)
     !Copy array where size of source not known in advance.
-    REAL(SP), DIMENSION(:), INTENT(IN) :: src
-    REAL(SP), DIMENSION(:), INTENT(OUT) :: dest 
+    real(real12), DIMENSION(:), INTENT(IN) :: src
+    real(real12), DIMENSION(:), INTENT(OUT) :: dest 
     INTEGER(I4B), INTENT(OUT) :: n_copied, n_not_copied
     n_copied=min(size(src),size(dest))
     n_not_copied=size(src)-n_copied
@@ -33,8 +34,8 @@ CONTAINS
   END SUBROUTINE array_copy_r
   
   SUBROUTINE array_copy_d(src,dest,n_copied,n_not_copied)
-    REAL(DP), DIMENSION(:), INTENT(IN) :: src
-    REAL(DP), DIMENSION(:), INTENT(OUT) :: dest
+    real(real12), DIMENSION(:), INTENT(IN) :: src
+    real(real12), DIMENSION(:), INTENT(OUT) :: dest
     INTEGER(I4B), INTENT(OUT) :: n_copied, n_not_copied
     n_copied=min(size(src),size(dest))
     n_not_copied=size(src)-n_copied
@@ -111,11 +112,11 @@ CONTAINS
 
   FUNCTION arth_r(first,increment,n)
     !Array function returning an arithmetic progression.
-    REAL(SP), INTENT(IN) :: first,increment
+    real(real12), INTENT(IN) :: first,increment
     INTEGER(I4B), INTENT(IN) :: n
-    REAL(SP), DIMENSION(n) :: arth_r 
+    real(real12), DIMENSION(n) :: arth_r 
     INTEGER(I4B) :: k,k2
-    REAL(SP) :: temp
+    real(real12) :: temp
     if (n > 0) arth_r(1)=first
     if (n <= NPAR_ARTH) then
        do k=2,n
@@ -139,11 +140,11 @@ CONTAINS
 
   
   FUNCTION arth_d(first,increment,n)
-    REAL(DP), INTENT(IN) :: first,increment
+    real(real12), INTENT(IN) :: first,increment
     INTEGER(I4B), INTENT(IN) :: n
-    REAL(DP), DIMENSION(n) :: arth_d
+    real(real12), DIMENSION(n) :: arth_d
     INTEGER(I4B) :: k,k2
-    REAL(DP) :: temp
+    real(real12) :: temp
     if (n > 0) arth_d(1)=first
     if (n <= NPAR_ARTH) then
        do k=2,n
@@ -191,15 +192,15 @@ CONTAINS
   END FUNCTION arth_i
 
   FUNCTION outerdiff_r(a,b)
-    REAL(SP), DIMENSION(:), INTENT(IN) :: a,b
-    REAL(SP), DIMENSION(size(a),size(b)) :: outerdiff_r
+    real(real12), DIMENSION(:), INTENT(IN) :: a,b
+    real(real12), DIMENSION(size(a),size(b)) :: outerdiff_r
     outerdiff_r = spread(a,dim=2,ncopies=size(b)) - &
          spread(b,dim=1,ncopies=size(a))
   END FUNCTION outerdiff_r
 
   FUNCTION outerdiff_d(a,b)
-    REAL(DP), DIMENSION(:), INTENT(IN) :: a,b
-    REAL(DP), DIMENSION(size(a),size(b)) :: outerdiff_d
+    real(real12), DIMENSION(:), INTENT(IN) :: a,b
+    real(real12), DIMENSION(size(a),size(b)) :: outerdiff_d
     outerdiff_d = spread(a,dim=2,ncopies=size(b)) - &
          spread(b,dim=1,ncopies=size(a))
   END FUNCTION outerdiff_d
@@ -213,8 +214,8 @@ CONTAINS
   
   !Routines for scatter-with-combine.
   SUBROUTINE scatter_add_r(dest,source,dest_index)
-    REAL(SP), DIMENSION(:), INTENT(OUT) :: dest
-    REAL(SP), DIMENSION(:), INTENT(IN) :: source
+    real(real12), DIMENSION(:), INTENT(OUT) :: dest
+    real(real12), DIMENSION(:), INTENT(IN) :: source
     INTEGER(I4B), DIMENSION(:), INTENT(IN) :: dest_index
     INTEGER(I4B) :: m,n,j,i
     n=assert_eq2(size(source),size(dest_index),'scatter_add_r')
@@ -226,8 +227,8 @@ CONTAINS
   END SUBROUTINE scatter_add_r
 
   SUBROUTINE scatter_add_d(dest,source,dest_index)
-    REAL(DP), DIMENSION(:), INTENT(OUT) :: dest
-    REAL(DP), DIMENSION(:), INTENT(IN) :: source
+    real(real12), DIMENSION(:), INTENT(OUT) :: dest
+    real(real12), DIMENSION(:), INTENT(IN) :: source
     INTEGER(I4B), DIMENSION(:), INTENT(IN) :: dest_index
     INTEGER(I4B) :: m,n,j,i
     n=assert_eq2(size(source),size(dest_index),'scatter_add_d')
@@ -266,8 +267,8 @@ contains
   SUBROUTINE SRSin(a,thresh,ra)
     USE sptype; USE sputil, ONLY : arth,assert_eq
     IMPLICIT NONE
-    REAL(DP), DIMENSION(:,:), INTENT(IN) :: a
-    REAL(DP), INTENT(IN) :: thresh
+    real(real12), DIMENSION(:,:), INTENT(IN) :: a
+    real(real12), INTENT(IN) :: thresh
     TYPE(sprs2_dp), INTENT(OUT) :: ra
     INTEGER(I4B) :: n,len
     logical, DIMENSION(size(a,1),size(a,2)) :: mask
@@ -289,8 +290,8 @@ contains
     USE sptype; 
     USE sputil, ONLY : arth, assert_eq, find_index
     IMPLICIT NONE
-    REAL(DP), DIMENSION(:,:), INTENT(IN) :: a
-    REAL(DP), INTENT(IN) :: thresh
+    real(real12), DIMENSION(:,:), INTENT(IN) :: a
+    real(real12), INTENT(IN) :: thresh
     TYPE(diag_sprs_dp), INTENT(OUT) :: da
     INTEGER(I4B) :: n, d, ndiags
     logical, DIMENSION(size(a,1),size(a,2)) :: mask
@@ -354,8 +355,8 @@ contains
     USE sptype; USE sputil, ONLY : assert_eq
     IMPLICIT NONE
     TYPE(sprs2_dp), INTENT(IN) :: ra
-    REAL(DP), DIMENSION (:), INTENT(IN) :: x
-    REAL(DP), DIMENSION (:), INTENT(OUT) :: b
+    real(real12), DIMENSION (:), INTENT(IN) :: x
+    real(real12), DIMENSION (:), INTENT(OUT) :: b
     INTEGER(I4B) :: ndum, j, i, m, n
 
     ndum = assert_eq(ra%n, size(x), size(b), 'SRSax')
@@ -376,8 +377,8 @@ contains
     use sputil, only : assert_eq
     implicit none
     type(diag_sprs_dp), intent(IN) :: da
-    real(DP), dimension (:), intent(IN) :: x
-    real(DP), dimension (:), intent(OUT) :: b
+    real(real12), dimension (:), intent(IN) :: x
+    real(real12), dimension (:), intent(OUT) :: b
     integer(I4B) :: ndum, n, i, j, col
     ndum = assert_eq(size(x), size(b), 'SDSax')
     n=da%n
@@ -398,8 +399,8 @@ contains
     USE sptype; USE sputil, ONLY : assert_eq,scatter_add
     IMPLICIT NONE
     type(sprs2_dp), intent(IN) :: ra
-    real(DP), dimension (:), intent(IN) :: x
-    real(DP), dimension (:), intent(OUT) :: b
+    real(real12), dimension (:), intent(IN) :: x
+    real(real12), dimension (:), intent(OUT) :: b
     integer(I4B) :: ndum,i,j,n,m
     ndum=assert_eq(ra%n,size(x),size(b),'SRStx')
     b=0.0_dp
@@ -418,8 +419,8 @@ SUBROUTINE SDStx(da, x, b)
     use sputil, only : assert_eq
     implicit none
     type(diag_sprs_dp), intent(IN) :: da
-    real(DP), dimension (:), intent(IN) :: x
-    real(DP), dimension (:), intent(OUT) :: b
+    real(real12), dimension (:), intent(IN) :: x
+    real(real12), dimension (:), intent(OUT) :: b
     integer(I4B) :: n, i, j, col
     n = assert_eq(da%n, size(x), size(b), 'SDSax')
     b = 0.0_dp
@@ -449,8 +450,8 @@ SUBROUTINE SDStx(da, x, b)
     USE sptype; USE sputil, ONLY : array_copy,assert_eq
     IMPLICIT NONE
     TYPE(sprs2_dp), INTENT(IN) :: ra
-    REAL(DP), DIMENSION(:), INTENT(OUT) :: b
-    REAL(DP), DIMENSION(size(b)) :: val
+    real(real12), DIMENSION(:), INTENT(OUT) :: b
+    real(real12), DIMENSION(size(b)) :: val
     INTEGER(I4B) :: k,l,ndum,nerr
     INTEGER(I4B), DIMENSION(size(b)) :: i
     LOGICAL(LGT), DIMENSION(:), ALLOCATABLE :: mask
@@ -470,7 +471,7 @@ SUBROUTINE SDStx(da, x, b)
     USE sputil, ONLY : assert_eq
     IMPLICIT NONE
     TYPE(diag_sprs_dp), INTENT(IN) :: da
-    REAL(DP), DIMENSION(:), INTENT(OUT) :: b
+    real(real12), DIMENSION(:), INTENT(OUT) :: b
     integer(I4B) :: ndum, d
     ndum=assert_eq(da%n,size(b),'SDSdiag')
     d=find_index(da%diag_offsets, 0)
@@ -487,16 +488,16 @@ SUBROUTINE SDStx(da, x, b)
   SUBROUTINE linbcg(b,x,itol,tol,itmax,iter,err,iss)
     USE sptype; USE sputil, ONLY : assert_eq,nrerror
     IMPLICIT NONE
-    REAL(DP), DIMENSION(:), INTENT(IN) :: b
-    REAL(DP), DIMENSION(:), INTENT(INOUT) :: x
+    real(real12), DIMENSION(:), INTENT(IN) :: b
+    real(real12), DIMENSION(:), INTENT(INOUT) :: x
     INTEGER(I4B), INTENT(IN) :: itol,itmax,iss
-    REAL(DP), INTENT(IN) :: tol
+    real(real12), INTENT(IN) :: tol
     INTEGER(I4B), INTENT(INOUT) :: iter
-    REAL(DP), INTENT(OUT) :: err
-    REAL(DP), PARAMETER :: EPS=1.0e-14_dp
+    real(real12), INTENT(OUT) :: err
+    real(real12), PARAMETER :: EPS=1.0e-14_dp
     INTEGER(I4B) :: n
-    REAL(DP) :: ak,akden,bk,bkden,bknum,bnrm,dxnrm,xnrm,zm1nrm,znrm
-    REAL(DP), DIMENSION(size(b)) :: p,pp,r,rr,z,zz
+    real(real12) :: ak,akden,bk,bkden,bknum,bnrm,dxnrm,xnrm,zm1nrm,znrm
+    real(real12), DIMENSION(size(b)) :: p,pp,r,rr,z,zz
     n=assert_eq(size(b),size(x),'linbcg')
     !iter=0
     !Calculate initial residual. Input to atimes is
@@ -558,7 +559,7 @@ SUBROUTINE SDStx(da, x, b)
           err=sqrt(dot_product(z,z))/bnrm
        end select
 
-       !write (*,*) ' iter=',iter,' err=',err
+      !  write (*,*) ' iter=',iter,' err=',err, tol
        if (err.le.tol) exit
     end do solve_loop
   END SUBROUTINE linbcg
@@ -567,8 +568,8 @@ SUBROUTINE SDStx(da, x, b)
     USE sptype 
     USE sputil, ONLY : assert_eq,nrerror
     USE globe_data !The matrix is accessed through this module.
-    REAL(DP), DIMENSION(:), INTENT(IN) :: x
-    REAL(DP), DIMENSION(:), INTENT(OUT) :: r
+    real(real12), DIMENSION(:), INTENT(IN) :: x
+    real(real12), DIMENSION(:), INTENT(OUT) :: r
     INTEGER(I4B), INTENT(IN) :: itrnsp,iss
     INTEGER(I4B) :: n
     n=assert_eq(size(x),size(r),'atimes')
@@ -594,8 +595,8 @@ SUBROUTINE SDStx(da, x, b)
     USE sptype
     USE sputil, ONLY : assert_eq,nrerror
     USE globe_data !The matrix is accessed through this module.
-    REAL(DP), DIMENSION(:), INTENT(IN) :: b
-    REAL(DP), DIMENSION(:), INTENT(OUT) :: x
+    real(real12), DIMENSION(:), INTENT(IN) :: b
+    real(real12), DIMENSION(:), INTENT(OUT) :: x
     INTEGER(I4B), INTENT(IN) :: itrnsp,iss
     INTEGER(I4B) :: ndum
     ndum=assert_eq(size(b),size(x),'asolve')

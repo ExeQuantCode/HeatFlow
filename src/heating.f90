@@ -2,7 +2,7 @@ module Heating
   use constants, only: real12, int12
   use constructions, only: heatblock
   use globe_data, only: TPD, TPPD
-  use inputs, only: nx,ny,nz, grid, NA, iheater, power_in, time_step, T_Bath
+  use inputs, only: nx,ny,nz, grid, NA, iheater, power_in, time_step, T_Bath, freq
   use materials, only: material
   implicit none
 contains
@@ -14,7 +14,7 @@ contains
     integer(int12), intent(in) :: it 
     integer(int12) :: i,j,k
     real(real12) :: time, TC,heat_capacity,rho,m
-    real(real12) :: PI, dt, Heating_f, POWER, time_pulse
+    real(real12) :: PI, dt, POWER, time_pulse
     real(real12), dimension(NA), intent(out) :: Q
     !real(real12), dimension(NA) :: Q
     IA=0
@@ -54,12 +54,12 @@ contains
                 
              CASE(3)
                 !OSCCILATORY HEATING
-                Q=POWER*SIN(time*2*PI*Heating_f)
+                Q(IA)=POWER*abs(SIN(time*2*PI*freq))
                 !Q(IA)=POWER*SIN(time*2*PI/PARAM_HEAT_PERIOD)
                
                CASE(4)
                   !sin^2 heating
-                  Q(IA)=POWER*SIN(time*2*PI*Heating_f)**2
+                  Q(IA)=POWER*SIN(time*2*PI*freq)**2
 
                CASE(5)
                    ! Radiative

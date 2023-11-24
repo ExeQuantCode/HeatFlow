@@ -10,7 +10,8 @@ module inputs
   integer :: unit, newunit
   real(real12) :: time_step, T_Bath, freq, power_in, T_period, cutoff, kappaBoundx, kappaBoundy, kappaBoundz
   integer(int12) :: IVERB, icell_mix, ntime, Rel, zpos, ACon, iboundary, nx, ny, nz, icattaneo, isteady, NA
-  logical, parameter :: verbose = .TRUE.
+  logical :: Check_Sparse_Full
+  logical, parameter :: verbose = .TRUE. 
   type(heatblock), dimension(:,:,:), allocatable :: grid
   integer(int12), dimension(:,:,:), allocatable :: iheater
   type(material), dimension(:), allocatable :: input_materials
@@ -151,6 +152,7 @@ contains
        write(6,'(A)')        ' vebose printing option'
        write(6,'(A)')        ' running calculation with :'
        write(6,'(A35,I6)')   '   IVERB      = ',IVERB
+       write(6,'(A35,L1)')   '   _Check_Sparse_Full  = ',Check_Sparse_Full
        write(6,'(A35,I6)')   '   icell_mix  = ',icell_mix
        write(6,'(A35,I6)')   '   ntime      = ',ntime
        write(6,'(A35,I6)')   '   Rel        = ', Rel
@@ -180,7 +182,7 @@ contains
 !!!##########################################################################
   subroutine read_param(unit)
     integer::unit,Reason, i
-    integer,dimension(18)::readvar
+    integer,dimension(19)::readvar
     character(1024)::buffer
     logical::ex
     readvar=0
@@ -188,6 +190,7 @@ contains
     ! assign defaults
     !------------------------------------------
     IVERB = 1
+    Check_Sparse_Full = .FALSE.
     icell_mix = 2
     ntime = 10
     Rel = 0
@@ -218,7 +221,7 @@ contains
        ! assignI for integers
        !---------------------------------------
        ! looks for all the keywords relating to inputs and defines their variables
-       call assignI(buffer,"IVERB",IVERB,readvar(1))         
+       call assignI(buffer,"IVERB",IVERB,readvar(1))
        call assignI(buffer,"icell_mix",icell_mix,readvar(2))             
        call assignI(buffer,"ntime",ntime,readvar(3))           
        call assignI(buffer,"Rel",Rel,readvar(4))       
@@ -236,6 +239,8 @@ contains
        call assignD(buffer,"kappaBoundx",kappaBoundx,readvar(16))
        call assignD(buffer,"kappaBoundy",kappaBoundy,readvar(17))    
        call assignD(buffer,"kappaBoundz",kappaBoundz,readvar(18))
+       call assignL(buffer,"_Check_Sparse_Full",Check_Sparse_Full,readvar(19))         
+
     end do
     call check_param(readvar,size(readvar,1))
 
