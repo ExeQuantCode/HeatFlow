@@ -12,7 +12,7 @@ contains
     real(real12) ::  tau
     real(real12) :: conductivity
     real(real12) :: H
-
+    implicit none
 
 
     ! Calculate x, y, and z based on the 1D index j
@@ -36,7 +36,7 @@ contains
 
       if (isteady .eq. 0) then
         if (icattaneo .eq. 0) tau = 0
-        alpha = (tau + time_step) / (time_step * time_step)
+        alpha = ((tau / time_step**2) +(1/time_step))*(1/(rho*heat_capacity))
       end if 
       H = -(A + B + D + E + F + G ) - alpha  ! Diagonal
     end if 
