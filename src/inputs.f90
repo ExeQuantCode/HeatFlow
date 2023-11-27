@@ -10,8 +10,8 @@ module inputs
   integer :: unit, newunit
   real(real12) :: time_step, T_Bath, freq, power_in, T_period, cutoff, kappaBoundx, kappaBoundy, kappaBoundz
   integer(int12) :: IVERB, icell_mix, ntime, Rel, zpos, ACon, iboundary, nx, ny, nz, icattaneo, isteady, NA
-  logical :: Check_Sparse_Full
-  logical, parameter :: verbose = .TRUE. 
+  logical :: Check_Sparse_Full, Check_Stability, Check_Steady_State
+  logical :: verbose = .TRUE. 
   type(heatblock), dimension(:,:,:), allocatable :: grid
   integer(int12), dimension(:,:,:), allocatable :: iheater
   type(material), dimension(:), allocatable :: input_materials
@@ -34,6 +34,7 @@ contains
     ! get data from param.in
     !-----------------------------------------------
     ! name infile
+    !path = "./inputs/param.in"
     param_infile = "./inputs/param.in"
 
     ! check if file is there
@@ -49,6 +50,15 @@ contains
     open(newunit=unit, file=param_infile, iostat=reason)
     call read_param(unit)
     close(unit)
+    if (Check_Steady_State) then
+      write(6,*) '!!!Model Steady state check!!!'
+      verbose=.FALSE.
+      param_infile = "./Tests/inputs/param_steady.in"
+      open(newunit=unit, file=param_infile, iostat=reason)
+      call read_param(unit) 
+      close(unit)
+    end if
+
     !-----------------------------------------------
 
 
@@ -56,7 +66,11 @@ contains
     ! get data from mat.in
     !-----------------------------------------------
     ! name infile
-    mat_infile = "./inputs/mat.in"
+    if (Check_Steady_State) then
+        mat_infile = "./Tests/inputs/mat_steady.in"
+    else
+        mat_infile = "./inputs/mat.in"
+    end if
 
     ! check if file is there
     inquire(file=mat_infile, exist=file_exists)
@@ -78,7 +92,11 @@ contains
     ! get data from geom.in
     !-----------------------------------------------
     ! name infile
-    mesh_infile = "./inputs/geom.in"
+    if (Check_Steady_State) then
+        mesh_infile = "./Tests/inputs/geom_steady.in"
+    else
+        mesh_infile = "./inputs/geom.in"
+    end if
 
     ! check if file is there
     inquire(file=mesh_infile, exist=file_exists)
@@ -99,7 +117,11 @@ contains
     ! get data from heat.in
     !-----------------------------------------------
     ! name infile
-    mesh_infile = "./inputs/heat.in"
+    if (Check_Steady_State) then
+        mesh_infile = "./Tests/inputs/heat_steady.in"
+    else
+        mesh_infile = "./inputs/heat.in"
+    end if
 
     ! check if file is there
     inquire(file=mesh_infile, exist=file_exists)
@@ -153,6 +175,8 @@ contains
        write(6,'(A)')        ' running calculation with :'
        write(6,'(A35,I6)')   '   IVERB      = ',IVERB
        write(6,'(A35,L1)')   '   _Check_Sparse_Full  = ',Check_Sparse_Full
+       write(6,'(A35,L1)')   '   _Check_Stability         = ',Check_Stability
+       write(6,'(A35,L1)')   '   _Check_Steady_State      = ',Check_Steady_State
        write(6,'(A35,I6)')   '   icell_mix  = ',icell_mix
        write(6,'(A35,I6)')   '   ntime      = ',ntime
        write(6,'(A35,I6)')   '   Rel        = ', Rel
@@ -182,7 +206,7 @@ contains
 !!!##########################################################################
   subroutine read_param(unit)
     integer::unit,Reason, i
-    integer,dimension(19)::readvar
+    integer,dimension(21)::readvar
     character(1024)::buffer
     logical::ex
     readvar=0
@@ -191,6 +215,8 @@ contains
     !------------------------------------------
     IVERB = 1
     Check_Sparse_Full = .FALSE.
+    Check_Stability = .FALSE.
+    Check_Steady_State = .FALSE.
     icell_mix = 2
     ntime = 10
     Rel = 0
@@ -239,7 +265,9 @@ contains
        call assignD(buffer,"kappaBoundx",kappaBoundx,readvar(16))
        call assignD(buffer,"kappaBoundy",kappaBoundy,readvar(17))    
        call assignD(buffer,"kappaBoundz",kappaBoundz,readvar(18))
-       call assignL(buffer,"_Check_Sparse_Full",Check_Sparse_Full,readvar(19))         
+       call assignL(buffer,"_Check_Sparse_Full",Check_Sparse_Full,readvar(19))
+       call assignL(buffer,"_Check_Stability",Check_Stability,readvar(20))
+       call assignL(buffer,"_Check_Steady_State",Check_Steady_State,readvar(21))    
 
     end do
     call check_param(readvar,size(readvar,1))

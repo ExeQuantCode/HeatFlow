@@ -1,7 +1,8 @@
 
 module setup
   use constants, only: real12, int12, TINY
-  use inputs, only: Lx, Ly, Lz, nx, ny, nz, NA, grid, T_Bath, time_step, kappaBoundx, kappaBoundy, kappaBoundz
+  use inputs, only: Lx, Ly, Lz, nx, ny, nz, NA, grid, T_Bath, time_step, kappaBoundx, kappaBoundy, kappaBoundz &
+                     ,Check_Sparse_Full, Check_Stability
   use constructions, only: heatblock
   use hmatrixmod, only: hmatrixfunc
   use globe_data, only:  ra, TN, TPD, TPPD
@@ -39,27 +40,30 @@ module setup
             !---------------------------------------------------
             ! Check stability condition
             !---------------------------------------------------
-            alpha = kappa/(rho*heat_capacity)
-            stability =(dt*alpha*(1/(grid(i,j,k)%length(1)**2)+1/(grid(i,j,k)%length(2)**2)+1/(grid(i,j,k)%length(3)**2)))
-
-            if (stability .gt. 1.0/6.0) then
-               print*, "Stability condition not met"
-               print*, "Stability condition = ", stability
-
-               print*, "dt = ", dt
-               print*, "alpha = ", alpha
-               print*, "dx = ", grid(i,j,k)%length(1)
-               print*, "dy = ", grid(i,j,k)%length(2)
-               print*, "dz = ", grid(i,j,k)%length(3)
-            
-               cycle
-            end if
-            if ((i .eq. 1) .or.(j .eq. 1) .or. (k .eq. 1)) then
-               alpha = kappaBoundx/(rho*heat_capacity)
+            if (Check_Stability) then
+               alpha = kappa/(rho*heat_capacity)
                stability =(dt*alpha*(1/(grid(i,j,k)%length(1)**2)+1/(grid(i,j,k)%length(2)**2)+1/(grid(i,j,k)%length(3)**2)))
+
                if (stability .gt. 1.0/6.0) then
-                  print*, "Stability condition at boundary not met = ", stability
-                  print*, " Boundary kappas = ", kappaBoundx, kappaBoundy, kappaBoundz
+                  print*, "Stability condition not met"
+                  print*, "Stability condition = ", stability
+
+                  print*, "dt = ", dt
+                  print*, "alpha = ", alpha
+                  print*, "dx = ", grid(i,j,k)%length(1)
+                  print*, "dy = ", grid(i,j,k)%length(2)
+                  print*, "dz = ", grid(i,j,k)%length(3)
+               
+                  exit
+               end if
+               if ((i .eq. 1) .or.(j .eq. 1) .or. (k .eq. 1)) then
+                  alpha = kappaBoundx/(rho*heat_capacity)
+                  stability =(dt*alpha*(1/(grid(i,j,k)%length(1)**2)+1/(grid(i,j,k)%length(2)**2)+1/(grid(i,j,k)%length(3)**2)))
+                  if (stability .gt. 1.0/6.0) then
+                     print*, "Stability condition at boundary not met = ", stability
+                     print*, " Boundary kappas = ", kappaBoundx, kappaBoundy, kappaBoundz
+                     exit
+                  end if
                end if
             end if 
             end do               
@@ -74,9 +78,12 @@ module setup
          !call SPHM()
          !print*,Hsparse
       ! else
-      call sparse_Hmatrix()
-      ! call build_Hmatrix()
-      ! end if
+      if (Check_Sparse_Full) then
+         call build_Hmatrix()
+      else
+         call sparse_Hmatrix()
+      end if
+
 
       !call setup_grid()
 
@@ -106,7 +113,7 @@ module setup
          !    print*, 'Boundary = ',BCount
          ! end if 
       end do
-      write(*,'(8F12.3)') H
+      ! write(*,'(8F12.3)') H
       call SRSin(H, TINY, ra)
       call SparseToReal(HT)
       if (all(abs(H-HT) < TINY)) then

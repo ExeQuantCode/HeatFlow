@@ -48,8 +48,14 @@ module evolution
     if (iSteady.eq.0) then
        do j=1,NA
           S(j)=(-(TPD(j)/time_step))-Q(j)-B(j)
-          if (iCAttaneo.eq.1)  then 
-               S(j)=S(j)+S_cat(j)
+          if (iCAttaneo.eq.1)  then
+              ! print*, it
+              ! print*, TPD(j)-TPPD(j)
+              ! print*, 's_cat= ' ,s_cat(j)
+              ! print*, 'S= ',S(j)
+              ! print*, time_step
+              ! print*, (time_step ** 2._real12)
+               S(j)=S(j)-S_cat(j)
           end if
        end do
     else
@@ -74,8 +80,8 @@ module evolution
     if (it .eq. 1) call INIT_EVOLVE(it,x)
     !------------------------
     itol=1
-    tol=1.e-16_real12
-    itmax=5000
+    tol=1.e-32_real12
+    itmax=50000
     ncg = 0
     iter=ncg
     err=E
