@@ -57,7 +57,7 @@ contains
         end if
       end if
     end if 
-    write(30,*) real((it-1)*(time_step)),(TN(nx/2,ny/2,:))   !-293.0
+    write(30,*) real((it-1)*(time_step)),TN!(TN(nx/2,ny/2,:))   !-293.0
     if (it == ntime) then
         close(30)
         ! print*, 'TH after ', real((it-1)*(time_step)), ' seconds is ', TN(6,6,6)
