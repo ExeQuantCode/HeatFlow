@@ -6,13 +6,13 @@ module hmatrixmod
 contains
 
   function hmatrixfunc(i, j) result(H)
+    implicit none
     integer(int12), intent(in) :: i, j
     integer(int12) :: x, y, z
     real(real12) :: alpha, A, B, D, E, F, G 
     real(real12) ::  tau
     real(real12) :: conductivity
     real(real12) :: H
-    implicit none
 
 
     ! Calculate x, y, and z based on the 1D index j
@@ -36,7 +36,7 @@ contains
 
       if (isteady .eq. 0) then
         if (icattaneo .eq. 0) tau = 0
-        alpha = ((tau / time_step**2) +(1/time_step))*(1/(rho*heat_capacity))
+        alpha = ((tau / time_step**2) +(1/time_step))
       end if 
       H = -(A + B + D + E + F + G ) - alpha  ! Diagonal
     end if 
