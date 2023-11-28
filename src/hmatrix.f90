@@ -36,7 +36,7 @@ contains
 
       if (isteady .eq. 0) then
         if (icattaneo .eq. 0) tau = 0
-        alpha = ((tau / time_step**2) +(1/time_step))
+        alpha = ((tau / time_step**2) +(1/(2*time_step)))
       end if 
       H = -(A + B + D + E + F + G ) - alpha  ! Diagonal
     end if 

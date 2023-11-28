@@ -47,7 +47,7 @@ module evolution
 
     if (iSteady.eq.0) then
        do j=1,NA
-          S(j)=(-(TPD(j)/time_step))-Q(j)-B(j)
+          S(j)=(-(TPPD(j)/(2*time_step)))-Q(j)-B(j)
           if (iCAttaneo.eq.1)  then
               ! print*, it
               ! print*, TPD(j)-TPPD(j)
@@ -64,6 +64,7 @@ module evolution
        	 S(j)=S(j)-Q(j)-B(j)
        end do
     end if
+    
     !!!#################################################
     !!! Call the CG method to solve the equation Ax=b.
     !!!#################################################

@@ -2,12 +2,12 @@ module output
   use constants, only: real12, int12, TINY
   use inputs, only: nx,ny,nz, time_step, zpos, grid, NA, Check_Steady_State, ntime
   use constructions, only: heatblock
-  use globe_data, only: TN,TPD,TPPD
+  use globe_data, only: TPD,TPPD
   implicit none
   
 contains
   subroutine plot(it)
-    
+    implicit none
     ! real(real12), dimension(nx, ny,nz) :: T
     integer :: new, newunit
    !  real(real12), dimension(e) :: T_matrix
@@ -16,7 +16,7 @@ contains
     integer(int12) :: flag, index
     !integer :: zpos = 508
     integer(int12), intent(in) :: it
-    real(real12) :: CT(nx,ny,nz)
+    real(real12) :: CT(nx,ny,nz), TN(nx,ny,nz)
     integer(int12) :: i,j,k,ix
 
     
@@ -57,11 +57,11 @@ contains
         end if
       end if
     end if 
-    write(30,*) real((it-1)*(time_step)),TN(nx/2, ny/2, :)! (TN(nx/2,ny/2,nz/2))   !-293.0
+    write(30,*) real((it-1)*(time_step)),(TN(nx/2,ny/2,:))   !-293.0
     if (it == ntime) then
         close(30)
-        print*, 'TH after ', real((it-1)*(time_step)), ' seconds is ', TN(6,6,6)
-        print*, 'TM after ', real((it-1)*(time_step)), ' seconds is ', TN(9,9,9)
+        ! print*, 'TH after ', real((it-1)*(time_step)), ' seconds is ', TN(6,6,6)
+        ! print*, 'TM after ', real((it-1)*(time_step)), ' seconds is ', TN(9,9,9)
     end if
 
     call PlotdeltaT(it)
