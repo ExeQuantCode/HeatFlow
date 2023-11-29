@@ -18,11 +18,13 @@ module setup
 !!!##########################################################################
    subroutine set_global_variables()
       integer(int12) :: i,j,k
+      logical :: print1
       real(real12) :: TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau, stability, alpha, dt
       allocate(TN(nx, ny, nz))
       allocate(TPD(NA))
       allocate(TPPD(NA))           
       dt = time_step
+      print1 = .true.
       !---------------------------------------------------
       ! ASign material properties to the grid construction
       ! can be expanded to include more properties at a 
@@ -35,7 +37,7 @@ module setup
             grid(i,j,k)%kappa = kappa
             grid(i,j,k)%rho = rho
             grid(i,j,k)%heat_capacity = heat_capacity
-            grid(i,j,k)%tau = tau
+            grid(i,j,k)%tau = tau/(time_step**2.0_real12)
 
             !---------------------------------------------------
             ! Check stability condition
@@ -43,8 +45,11 @@ module setup
             if (Check_Stability) then
                alpha = kappa/(rho*heat_capacity)
                stability =(dt*alpha*(1/(grid(i,j,k)%length(1)**2)+1/(grid(i,j,k)%length(2)**2)+1/(grid(i,j,k)%length(3)**2)))
-
-               if (stability .gt. 1.0/6.0) then
+               if (print1) then
+                  print*, "Stability condition = ", stability
+                  print1 = .false.
+               end if
+               if (stability .gt. 1.0/12.0) then
                   print*, "Stability condition not met"
                   print*, "Stability condition = ", stability
 
@@ -54,15 +59,15 @@ module setup
                   print*, "dy = ", grid(i,j,k)%length(2)
                   print*, "dz = ", grid(i,j,k)%length(3)
                
-                  exit
+                  stop
                end if
                if ((i .eq. 1) .or.(j .eq. 1) .or. (k .eq. 1)) then
                   alpha = kappaBoundx/(rho*heat_capacity)
                   stability =(dt*alpha*(1/(grid(i,j,k)%length(1)**2)+1/(grid(i,j,k)%length(2)**2)+1/(grid(i,j,k)%length(3)**2)))
-                  if (stability .gt. 1.0/6.0) then
+                  if (stability .gt. 1.0/12.0) then
                      print*, "Stability condition at boundary not met = ", stability
                      print*, " Boundary kappas = ", kappaBoundx, kappaBoundy, kappaBoundz
-                     exit
+                     stop
                   end if
                end if
             end if 
@@ -95,9 +100,9 @@ module setup
 !!! This sets up the H Matrix and converts it into sparse row storage
 !!!#########################################################################
    subroutine build_Hmatrix()
-      integer(int12) :: H0, HCheck
+      integer(int12) ::  HCheck
       integer(int12) :: i,j, BCount
-      real(real12) :: H(NA,NA),HT(NA,NA)
+      real(real12) :: H(NA,NA),HT(NA,NA), H0
       H=0.0_real12
       BCount = 0
       HCheck = 0
@@ -113,7 +118,7 @@ module setup
          !    print*, 'Boundary = ',BCount
          ! end if 
       end do
-      ! write(*,'(8F12.3)') H
+      ! write(*,'(3F12.3)') H
       call SRSin(H, TINY, ra)
       call SparseToReal(HT)
       if (all(abs(H-HT) < TINY)) then
@@ -149,7 +154,7 @@ subroutine SparseToReal(HT)
 
       end do neighbour_loop
   end do parent_loop
-!   write(*, '(8F12.3)') HT
+  write(*, '(3F12.3)') HT
 end subroutine SparseToReal
 
 !!!#########################################################################

@@ -1,23 +1,23 @@
     IVERB = 1     !
-    _Check_Sparse_Full = .False. !Only for small System sizes
+    _Check_Sparse_Full = .True. !Only for small System sizes
     _Check_Stability = .True.
     _Check_Steady_State = .False. !Steady State power off, none of the other paramters change steady state test
     icell_mix = 2     !
-    ntime = 1000 !10000  !
+    ntime = 300 !10000  !
     Rel = 0     !
     zpos = 1     !
     ACon = 1     !
-    time_step = 0.000001     !
+    time_step = 0.00001     !
     freq = 0     !
     iboundary = 1     !
-    icattaneo = 0 !
+    icattaneo = 1 !
     isteady = 0 !
     T_Bath = 300     !
     cutoff = 10000     !
     power_in =  0000  !
     T_period = 0.1  !
-    kappaBoundx = 1  !
-    kappaBoundy = 1  !
-    kappaBoundz = 1    !
+    kappaBoundx = 400  !
+    kappaBoundy = 400  !
+    kappaBoundz = 400    !
 
 

@@ -55,7 +55,7 @@ module evolution
               ! print*, 'S= ',S(j)
               ! print*, time_step
               ! print*, (time_step ** 2._real12)
-               S(j)=S(j)-S_cat(j)
+               S(j)=S(j)+S_cat(j)
           end if
        end do
     else
@@ -81,7 +81,7 @@ module evolution
     if (it .eq. 1) call INIT_EVOLVE(it,x)
     !------------------------
     itol=1
-    tol=1.e-32_real12
+    tol=1.e-12_real12
     itmax=50000
     ncg = 0
     iter=ncg
@@ -91,7 +91,7 @@ module evolution
 	  err=E, iss=int(iss,I4B))
     
     !!!#################################################
-    
+
 
     call TP_UPDATE(x)
 
@@ -112,6 +112,8 @@ module evolution
     integer(int12) :: i, j, k, index
     real(real12), dimension(NA) :: x
     !** This isnt right
+    ! print*, x-TPD
+    if (any(abs(x-TPD).lt.1e-9_real12)) x=TPD
     TPPD = TPD
     TPD = x
     x=x+1d-12

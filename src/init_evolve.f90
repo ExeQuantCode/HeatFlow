@@ -23,8 +23,8 @@ contains
     !   end do
     ! end do
     ! TPPD=TPD
-    ! TPPD= 400._real12
-    ! TPD= 400._real12
+    ! TPPD= 310._real12
+    ! TPD= 310._real12
     TPD = T_Bath
     TPPD = T_Bath
     ! print*,'Initial Temperature = ',TPD
