@@ -3,7 +3,7 @@ module evolution
   use inputs, only: NA, icattaneo, isteady, nx, ny, nz, T_bath, time_step
   use sptype, only: I4B
   use sparse, only: linbcg
-  use globe_data, only: TPD, TPPD
+  use globe_data, only: TPD, TPPD, inverse_time
   use heating, only: heater
   use boundary_vector, only: boundary
   use cattaneo, only: S_catS
@@ -47,7 +47,9 @@ module evolution
 
     if (iSteady.eq.0) then
        do j=1,NA
-          S(j)=(-(TPPD(j)/(2.0_real12*time_step)))-Q(j)-B(j)
+          S(j)=(-(TPPD(j)*inverse_time/(2.0_real12)))-Q(j)-B(j)
+          ! print*,B
+          ! print*,S_CAT
           if (iCAttaneo.eq.1)  then
               ! print*, it
               ! print*, TPD(j)-TPPD(j)
@@ -113,7 +115,7 @@ module evolution
     real(real12), dimension(NA) :: x
     !** This isnt right
     ! print*, x-TPD
-    if (any(abs(x-TPD).lt.1e-9_real12)) x=TPD
+    ! if (any(abs(x-TPD).lt.1e-9_real12)) x=TPD
     TPPD = TPD
     TPD = x
     x=x+1d-12

@@ -5,7 +5,7 @@ module setup
                      ,Check_Sparse_Full, Check_Stability
   use constructions, only: heatblock
   use hmatrixmod, only: hmatrixfunc
-  use globe_data, only:  ra, TN, TPD, TPPD
+  use globe_data, only:  ra, TN, TPD, TPPD,inverse_time
   use sparse, only: SRSin
   use materials, only: material
   implicit none
@@ -25,6 +25,7 @@ module setup
       allocate(TPPD(NA))           
       dt = time_step
       print1 = .true.
+      inverse_time = 1.0_real12/dt
       !---------------------------------------------------
       ! ASign material properties to the grid construction
       ! can be expanded to include more properties at a 
@@ -37,7 +38,7 @@ module setup
             grid(i,j,k)%kappa = kappa
             grid(i,j,k)%rho = rho
             grid(i,j,k)%heat_capacity = heat_capacity
-            grid(i,j,k)%tau = tau/(time_step**2.0_real12)
+            grid(i,j,k)%tau = tau*inverse_time*inverse_time
 
             !---------------------------------------------------
             ! Check stability condition
@@ -154,7 +155,7 @@ subroutine SparseToReal(HT)
 
       end do neighbour_loop
   end do parent_loop
-  write(*, '(3F12.3)') HT
+   write(*, '(3F15.9)') HT
 end subroutine SparseToReal
 
 !!!#########################################################################

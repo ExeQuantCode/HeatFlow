@@ -26,10 +26,7 @@ contains
        open(unit=30,file='./outputs/Temperature.txt')
     end if
     
-    r(1)=grid(1,ny/2,zpos)%length(1)
-    do ix=2,nx
-       r(ix)=grid(ix,ny/2,zpos)%length(1)+r(ix-1)
-    end do
+
 
     index=1
     do k = 1, nz
@@ -57,7 +54,7 @@ contains
         end if
       end if
     end if 
-    write(30,*) real((it-1)*(time_step)),TN!(TN(nx/2,ny/2,:))   !-293.0
+    write(30,*) real((it-1)*(time_step)),(TN(nx/2,ny/2,:))   !-293.0
     if (it == ntime) then
         close(30)
         ! print*, 'TH after ', real((it-1)*(time_step)), ' seconds is ', TN(6,6,6)

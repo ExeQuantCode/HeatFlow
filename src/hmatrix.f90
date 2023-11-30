@@ -1,6 +1,7 @@
 module hmatrixmod
   use constants, only: real12, int12
   use inputs, only: nx, ny, nz, time_step, grid, isteady, icattaneo, kappaBoundx, kappaBoundy, kappaBoundz
+  use globe_data, only: inverse_time
   implicit none
 
 contains
@@ -20,6 +21,7 @@ contains
     y = mod((i-altmod(i,nx))/nx,ny)+1
     z = (i-altmod(i,nx*ny))/(nx*ny)+1
 
+    Alpha = calculate_alpha(x,y,z)
     A = calculate_conductivity(x - 1, y, z, x, y, z)
     B = calculate_conductivity(x + 1, y, z, x, y, z)
     D = calculate_conductivity(x, y - 1, z, x, y, z)
@@ -29,21 +31,15 @@ contains
 
    
     ! Determine the value of H based on the relationship between i and j
-    H = 0
-    alpha = 0 
+    H=0.0_real12
     if ((i-j) .eq. 0)  then
-      tau = grid(x,y,z)%tau
 
-      if (isteady .eq. 0) then
-        if (icattaneo .eq. 0) tau = 0
-        alpha = ((tau) + (1.0_real12/(2.0_real12*time_step)))
-      end if 
       H = -(A + B + D + E + F + G ) - alpha  ! Diagonal
     end if 
     
     if ((i-j) .eq. 1) then
       if (x .eq. 1) then
-        H=0
+        H=0.0_real12
       else
          H = A  ! X left neighbor
       end if
@@ -51,7 +47,7 @@ contains
 
     if ((i-j) .eq. -1) then
       if (x .eq. nx) then
-        H = 0
+        H=0.0_real12
       else
         H = B  ! X right neighbor
       end if
@@ -59,14 +55,14 @@ contains
 
     if ((i-j) .eq. nx) then
       if (y.eq.1) then
-        H = 0
+        H=0.0_real12
       else
         H = D  ! Y down neighbor
       end if 
     end if 
     if ((i-j) .eq. -nx) then
       if (y.eq.ny) then
-        H=0
+        H=0.0_real12
       else
         H = E  ! Y up neighbor
       end if 
@@ -74,7 +70,7 @@ contains
 
     if ((i-j) .eq. (nx*ny)) then
       if (z.eq. 1) then
-        H=0
+        H=0.0_real12
       else
          H = F  ! Z in neighbor
       end if
@@ -82,14 +78,23 @@ contains
 
     if ((i-j) .eq. -(nx*ny)) then
       if (z .eq. nz) then
-        H = 0
+        H=0.0_real12
       else  
         H = G  ! Z out neighbor
       end if
     end if 
   end function hmatrixfunc
 
-
+  function calculate_alpha(x, y, z) result(alpha)
+    integer(int12), intent(in) :: x, y, z
+    real(real12) :: tau, alpha
+    tau = grid(x,y,z)%tau
+    if (isteady .eq. 0) then
+      if (icattaneo .eq. 0) tau = 0.0_real12
+      alpha = (tau/(grid(x,y,z)%rho*grid(x,y,z)%heat_capacity)) + (inverse_time/(2.0_real12))
+    end if 
+    
+  end function calculate_alpha
 
   function calculate_conductivity(x_in, y_in, z_in, x_out, y_out, z_out) result(conductivity)
     integer(int12), intent(in) :: x_in, y_in, z_in, x_out, y_out, z_out
