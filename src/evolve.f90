@@ -115,6 +115,11 @@ module evolution
     real(real12), dimension(NA) :: x
     !** This isnt right
     ! print*, x-TPD
+    do index =1, NA
+      if (abs(x(index)-TPD(index)) .lt. 1e-12_real12) then
+        x(index)=TPD(index)
+      end if
+    end do
     ! if (any(abs(x-TPD).lt.1e-9_real12)) x=TPD
     TPPD = TPD
     TPD = x

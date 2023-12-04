@@ -10,7 +10,7 @@ module inputs
   integer :: unit, newunit
   real(real12) :: time_step, T_Bath, freq, power_in, T_period, cutoff, kappaBoundx, kappaBoundy, kappaBoundz
   integer(int12) :: IVERB, icell_mix, ntime, Rel, zpos, ACon, iboundary, nx, ny, nz, icattaneo, isteady, NA
-  logical :: Check_Sparse_Full, Check_Stability, Check_Steady_State
+  logical :: Check_Sparse_Full, Check_Stability, Check_Steady_State, WriteToTxt
   logical :: verbose = .TRUE. 
   type(heatblock), dimension(:,:,:), allocatable :: grid
   integer(int12), dimension(:,:,:), allocatable :: iheater
@@ -177,6 +177,7 @@ contains
        write(6,'(A35,L1)')   '   _Check_Sparse_Full  = ',Check_Sparse_Full
        write(6,'(A35,L1)')   '   _Check_Stability         = ',Check_Stability
        write(6,'(A35,L1)')   '   _Check_Steady_State      = ',Check_Steady_State
+       write(6,'(A35,L1)')   '   _WriteToTxt         = ',WriteToTxt
        write(6,'(A35,I6)')   '   icell_mix  = ',icell_mix
        write(6,'(A35,I6)')   '   ntime      = ',ntime
        write(6,'(A35,I6)')   '   Rel        = ', Rel
@@ -206,7 +207,7 @@ contains
 !!!##########################################################################
   subroutine read_param(unit)
     integer::unit,Reason, i
-    integer,dimension(21)::readvar
+    integer,dimension(22)::readvar
     character(1024)::buffer
     logical::ex
     readvar=0
@@ -217,6 +218,7 @@ contains
     Check_Sparse_Full = .FALSE.
     Check_Stability = .FALSE.
     Check_Steady_State = .FALSE.
+    WriteToTxt = .FALSE.
     icell_mix = 2
     ntime = 10
     Rel = 0
@@ -267,7 +269,8 @@ contains
        call assignD(buffer,"kappaBoundz",kappaBoundz,readvar(18))
        call assignL(buffer,"_Check_Sparse_Full",Check_Sparse_Full,readvar(19))
        call assignL(buffer,"_Check_Stability",Check_Stability,readvar(20))
-       call assignL(buffer,"_Check_Steady_State",Check_Steady_State,readvar(21))    
+       call assignL(buffer,"_Check_Steady_State",Check_Steady_State,readvar(21))
+       call assignL(buffer,"_WriteToTxt",WriteToTxt,readvar(22))
 
     end do
     call check_param(readvar,size(readvar,1))

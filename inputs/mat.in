@@ -5,6 +5,6 @@ kappa  = 400
 kappa3D = 148
 rho = 2329
 sound_speed = 8430
-tau = 0.000000001
+tau = 0.000001
 source = .true.
 0

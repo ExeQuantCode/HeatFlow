@@ -1,6 +1,6 @@
 module output
   use constants, only: real12, int12, TINY
-  use inputs, only: nx,ny,nz, time_step, zpos, grid, NA, Check_Steady_State, ntime
+  use inputs, only: nx,ny,nz, time_step, zpos, grid, NA, Check_Steady_State, ntime, WriteToTxt
   use constructions, only: heatblock
   use globe_data, only: TPD,TPPD
   implicit none
@@ -54,11 +54,11 @@ contains
         end if
       end if
     end if 
-    write(30,*) real((it-1)*(time_step)),(TN(nx/2,ny/2,:))   !-293.0
+    if (WriteToTxt) write(30,*) real((it-1)*(time_step)),(TN(nx/2,ny/2,:))   !-293.0
     if (it == ntime) then
         close(30)
-        ! print*, 'TH after ', real((it-1)*(time_step)), ' seconds is ', TN(6,6,6)
-        ! print*, 'TM after ', real((it-1)*(time_step)), ' seconds is ', TN(9,9,9)
+        print*, 'TH after ', real((it-1)*(time_step)), ' seconds is ', TN(6,6,6)
+        print*, 'TM after ', real((it-1)*(time_step)), ' seconds is ', TN(9,9,9)
     end if
 
     call PlotdeltaT(it)
