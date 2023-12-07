@@ -2,7 +2,7 @@ module output
   use constants, only: real12, int12, TINY
   use inputs, only: nx,ny,nz, time_step, zpos, grid, NA, Check_Steady_State, ntime, WriteToTxt
   use constructions, only: heatblock
-  use globe_data, only: TPD,TPPD
+  use globe_data, only: TPD,TPPD, heatcheck
   implicit none
   
 contains
@@ -54,11 +54,14 @@ contains
         end if
       end if
     end if 
-    if (WriteToTxt) write(30,*) real((it-1)*(time_step)),(TN(nx/2,ny/2,:))   !-293.0
+    if (WriteToTxt) write(30,*) real((it-1)*(time_step)),(TN(6,6,:))   !-293.0
     if (it == ntime) then
         close(30)
-        print*, 'TH after ', real((it-1)*(time_step)), ' seconds is ', TN(6,6,6)
-        print*, 'TM after ', real((it-1)*(time_step)), ' seconds is ', TN(9,9,9)
+        print*, 'TH after ', real((it)*(time_step)), ' seconds is ', TN(6,6,6)
+        print*, 'TM after ', real((it)*(time_step)), ' seconds is ', TN(9,6,6)
+        print*, 'Sum of heat input', sum(heatcheck)
+        print*, 'Total energy input', sum(heatcheck)*time_step
+
     end if
 
     call PlotdeltaT(it)
@@ -87,6 +90,6 @@ contains
     if (it == 1) then
        open(unit=31,file='./outputs/DTemperature.txt')
     end if
-    write(31,*) REAL(it)*time_step, TO(:,ny/2,ny/2)
+    write(31,*) REAL(it)*time_step, TO(:,1,1)
   end subroutine PlotdeltaT
 end module output

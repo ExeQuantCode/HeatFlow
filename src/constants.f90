@@ -5,7 +5,7 @@ module constants
   integer, parameter :: int12  = Selected_int_kind(12)
   !!!Defines necessary constants for the heat flow process
   real(real12), parameter :: k_b = 1.3806503e-23_real12
-  real(real12), parameter :: pi = 3.14159265_real12
+  real(real12), parameter :: pi = 3.141592653589793_real12
   real(real12), parameter :: hbar = 1.05457148e-34_real12
   !real, parameter :: h = 6.626068e-34
   real(real12), parameter :: atomic_mass=1.67262158e-27_real12

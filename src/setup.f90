@@ -2,10 +2,10 @@
 module setup
   use constants, only: real12, int12, TINY
   use inputs, only: Lx, Ly, Lz, nx, ny, nz, NA, grid, T_Bath, time_step, kappaBoundx, kappaBoundy, kappaBoundz &
-                     ,Check_Sparse_Full, Check_Stability
+                     ,Check_Sparse_Full, Check_Stability, ntime
   use constructions, only: heatblock
   use hmatrixmod, only: hmatrixfunc
-  use globe_data, only:  ra, TN, TPD, TPPD,inverse_time
+  use globe_data, only:  ra, TN, TPD, TPPD,inverse_time, heatcheck
   use sparse, only: SRSin
   use materials, only: material
   implicit none
@@ -22,7 +22,8 @@ module setup
       real(real12) :: TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau, stability, alpha, dt
       allocate(TN(nx, ny, nz))
       allocate(TPD(NA))
-      allocate(TPPD(NA))           
+      allocate(TPPD(NA))
+      allocate(heatcheck(ntime))
       dt = time_step
       print1 = .true.
       inverse_time = 1.0_real12/dt
@@ -155,7 +156,7 @@ subroutine SparseToReal(HT)
 
       end do neighbour_loop
   end do parent_loop
-   write(*, '(3F15.9)') HT
+   write(*, '(3F15.4)') HT
 end subroutine SparseToReal
 
 !!!#########################################################################
