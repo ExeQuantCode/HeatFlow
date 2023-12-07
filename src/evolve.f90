@@ -3,7 +3,7 @@ module evolution
   use inputs, only: NA, icattaneo, isteady, nx, ny, nz, T_bath, time_step
   use sptype, only: I4B
   use sparse, only: linbcg
-  use globe_data, only: TPD, TPPD, inverse_time
+  use globe_data, only: TPD, TPPD, inverse_time, heatcheck
   use heating, only: heater
   use boundary_vector, only: boundary
   use cattaneo, only: S_catS
@@ -37,16 +37,18 @@ module evolution
     !---------------------------------------------
     
     !** CALL TP_OLD(j,TO)
-    B=0
+    B=0.0_real12
+    Q=0.0_real12
+    s_cat=0.0_real12
     !**CALL Boundary
     call boundary(B)
     !**CALL HEATER
     call heater(it,Q)
     !**Call S_CAT
     call s_catS(s_cat)
-
+    heatcheck(it)=sum(Q)
     if (iSteady.eq.0) then
-       do j=1,NA
+       do j=1, NA
           S(j)=(-(TPPD(j)*inverse_time/(2.0_real12)))-Q(j)-B(j)
           ! print*,B
           ! print*,S_CAT
@@ -61,9 +63,9 @@ module evolution
           end if
        end do
     else
-      S=0
+      S=0.0_real12
        do j=1,NA
-       	 S(j)=S(j)-Q(j)-B(j)
+       	 S(j)=-Q(j)-B(j)
        end do
     end if
     ! print*,TPD
@@ -91,6 +93,8 @@ module evolution
     iss=1
     call linbcg(S,x,itol=int(itol,I4B),tol=tol, itmax=int(itmax,I4B), iter=iter, &
 	  err=E, iss=int(iss,I4B))
+    ! write(*,*) 'iter= ', iter
+    ! write(*,*) 'err= ', err
     
     !!!#################################################
 
@@ -106,7 +110,7 @@ module evolution
     integer(int12), intent(in) :: it
     real(real12), dimension(NA), intent(out) :: x
     ! Ask Frank about this, why cant x be equal to T_Bath?
-    if (it .eq. 1) x=T_Bath+1d-13
+    if (it .eq. 1) x = T_Bath !+ 1e-12_real12
 
   end subroutine INIT_EVOLVE
 
@@ -115,7 +119,7 @@ module evolution
     real(real12), dimension(NA) :: x
     !** This isnt right
     ! print*, x-TPD
-    do index =1, NA
+    do index = 1, NA
       if (abs(x(index)-TPD(index)) .lt. 1e-12_real12) then
         x(index)=TPD(index)
       end if
@@ -123,7 +127,7 @@ module evolution
     ! if (any(abs(x-TPD).lt.1e-9_real12)) x=TPD
     TPPD = TPD
     TPD = x
-    x=x+1d-12
+    !x = x + 1e-12_real12
    
     
 

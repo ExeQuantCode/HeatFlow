@@ -5,6 +5,7 @@ module globe_data
   real(real12), dimension(:,:,:), allocatable :: TN
   real(real12), dimension(:), allocatable :: TPD, TPPD
   real(real12) :: inverse_time
+  real(real12), dimension(:), allocatable :: heatcheck
   TYPE(sprs2_dp) :: ra !Techniqually rH
   TYPE(diag_sprs_dp) :: da !Techniqually dH
    
