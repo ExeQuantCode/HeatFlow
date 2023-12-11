@@ -2,7 +2,7 @@ module output
   use constants, only: real12, int12, TINY
   use inputs, only: nx,ny,nz, time_step, zpos, grid, NA, Check_Steady_State, ntime, WriteToTxt
   use constructions, only: heatblock
-  use globe_data, only: TPD,TPPD, heatcheck
+  use globe_data, only: TPD,TPPD, heat
   implicit none
   
 contains
@@ -18,15 +18,20 @@ contains
     integer(int12), intent(in) :: it
     real(real12) :: CT(nx,ny,nz), TN(nx,ny,nz)
     integer(int12) :: i,j,k,ix
+    real(real12), dimension(ntime) :: TotalPower
+    real(real12) :: totaltime
+    totaltime=real(ntime)*time_step
 
     
     xlen= 1.0*0.333
     flag=0
     if (it.eq.1) then
        open(unit=30,file='./outputs/Temperature.txt')
+       open(unit=33,file='./outputs/Power.txt')
     end if
     
-
+    write(33,*) REAL(it)*time_step, heat(799)
+    TotalPower(it)=heat(799)
 
     index=1
     do k = 1, nz
@@ -57,11 +62,10 @@ contains
     if (WriteToTxt) write(30,*) real((it-1)*(time_step)),(TN(6,6,:))   !-293.0
     if (it == ntime) then
         close(30)
-        print*, 'TH after ', real((it)*(time_step)), ' seconds is ', TN(6,6,6)
-        print*, 'TM after ', real((it)*(time_step)), ' seconds is ', TN(9,6,6)
-        print*, 'Sum of heat input', sum(heatcheck)
-        print*, 'Total energy input', sum(heatcheck)*time_step
-
+        print*, 'TH after ', real((it-1)*(time_step)), ' seconds is ', TN(6,6,6)
+        print*, 'TM after ', real((it-1)*(time_step)), ' seconds is ', TN(9,9,9)
+        print*, 'Total Power is ', sum(-1.0_real12*TotalPower/totaltime)
+        print*, 'Total Energy is ', sum(-1.0_real12*TotalPower*totaltime)
     end if
 
     call PlotdeltaT(it)

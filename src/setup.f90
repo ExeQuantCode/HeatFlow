@@ -5,7 +5,7 @@ module setup
                      ,Check_Sparse_Full, Check_Stability, ntime
   use constructions, only: heatblock
   use hmatrixmod, only: hmatrixfunc
-  use globe_data, only:  ra, TN, TPD, TPPD,inverse_time, heatcheck
+  use globe_data, only:  ra, TN, TPD, TPPD,inverse_time, heat
   use sparse, only: SRSin
   use materials, only: material
   implicit none
@@ -23,7 +23,8 @@ module setup
       allocate(TN(nx, ny, nz))
       allocate(TPD(NA))
       allocate(TPPD(NA))
-      allocate(heatcheck(ntime))
+      allocate(heat(NA))
+      heat = 0.0_real12
       dt = time_step
       print1 = .true.
       inverse_time = 1.0_real12/dt

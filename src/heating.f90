@@ -1,8 +1,8 @@
 module Heating
   use constants, only: real12, int12, pi
   use constructions, only: heatblock
-  use globe_data, only: TPD, TPPD
-  use inputs, only: nx,ny,nz, grid, NA, iheater, power_in, time_step, T_Bath, freq
+  use globe_data, only: TPD, TPPD, Heat
+  use inputs, only: nx,ny,nz, grid, NA, iheater, power_in, time_step, T_Bath, freq, ntime
   use materials, only: material
   implicit none
 contains
@@ -12,9 +12,9 @@ contains
   subroutine heater(it,Q)
     integer :: IA
     integer(int12), intent(in) :: it 
-    integer(int12) :: i,j,k
-    real(real12) :: time, TC,heat_capacity,rho,m
-    real(real12) :: dt, POWER, time_pulse, x
+    integer(int12) :: i,j,k,ierr
+    real(real12) :: time, TC,heat_capacity,rho,m, totaltime
+    real(real12) :: PI, dt, POWER, time_pulse
     real(real12), dimension(NA), intent(out) :: Q
     !real(real12), dimension(NA) :: Q
     IA = 0
@@ -23,6 +23,7 @@ contains
     POWER = power_in
     time = dt * real(it,real12)
     time_pulse = 0.5_real12
+
     do i=1,nx
        do j=1,ny
           do k=1,nz
@@ -50,22 +51,17 @@ contains
                   Q(IA)=0.0_real12
                 end if
                 
-             case(3)
-                !OSCCILATORY HEATING
-               !sin^2(x)
-               x = 2._real12 * pi * freq
-               Q(IA) = POWER*(sin(x*time))**2
-               ! Q(IA)= 0.5_real12*((x*(time))-sin(x*(time))*cos(x*(time)))
-               ! Q(IA)= 0.5_real12*((x*(time)-x*time)-sin(x*(time+dt))*cos(x*(time+dt))+sin(x*time)*cos(x*time))
-               !  if (x.ge.0) then
-               !    Q(IA)=POWER*((-1*cos((time+dt)*2.0_real12*pi*freq))+cos((time)*2.0_real12*pi*freq))
-               !  else
-               !    Q(IA)=POWER*(cos((time+dt)*2.0_real12*pi*freq)-cos((time)*2.0_real12*pi*freq))
-               !  end if
-               !Integral of power between time steps
-               ! x = 2*PI*freq
-               ! Q(IA)=POWER*(abs(-cos((time+dt)*2*PI*freq)+cos((time)*2*PI*freq)))
-               ! Q(IA) = POWER*(2/pi)*(x*time-x*(time-dt)- cos(x*time)+cos(x*(time-dt)))
+             CASE(3)
+                !AC OSCCILATORY HEATING
+            !  Q(IA)=POWER*(SIN(time*2*PI*freq)**2)
+               !  Q(IA)= POWER*cos(time*2*PI*freq)**2
+               Q(IA) = POWER*0.5*((2*PI*freq)*(dt)+SIN(time*2*PI*freq)*cos(time*2*PI*freq)&
+               -SIN((time-dt)*2*PI*freq)*cos((time-dt)*2*PI*freq))/dt
+               Heat(IA) = Q(IA)
+               
+               ! Q(IA)=POWER*0.5*((2*PI*freq)*(dt)-SIN((time+dt)*2*PI*freq)*cos((time+dt)*2*PI*freq) &
+               !    +SIN((time)*2*PI*freq)*cos((time)*2*PI*freq))/dt
+                !Q(IA)=POWER*SIN(time*2*PI/PARAM_HEAT_PERIOD)
                
              case(4)
 

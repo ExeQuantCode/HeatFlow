@@ -3,7 +3,11 @@ module evolution
   use inputs, only: NA, icattaneo, isteady, nx, ny, nz, T_bath, time_step
   use sptype, only: I4B
   use sparse, only: linbcg
+<<<<<<< HEAD
   use globe_data, only: TPD, TPPD, inverse_time, heatcheck
+=======
+  use globe_data, only: TPD, TPPD, inverse_time, heat
+>>>>>>> e4d6b0b (Add some prints to debug error in heating)
   use heating, only: heater
   use boundary_vector, only: boundary
   use cattaneo, only: S_catS
@@ -20,7 +24,7 @@ module evolution
     real(real12), dimension(NA) :: S, x, Q, S_CAT
     real(real12), dimension(NA) :: B
     integer(int12), intent(in) :: it
-    integer(int12) :: i,j, ncg, itol, itmax, iss
+    integer(int12) :: i,j, ncg, itol, itmax, iss, ierr
     integer(I4B) :: iter
     real(real12) :: dt, To, Hb, e, err, tol
     
@@ -44,6 +48,7 @@ module evolution
     call boundary(B)
     !**CALL HEATER
     call heater(it,Q)
+
     !**Call S_CAT
     call s_catS(s_cat)
     heatcheck(it)=sum(Q)

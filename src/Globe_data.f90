@@ -3,7 +3,7 @@ module globe_data
   use constants, only: real12
   implicit none
   real(real12), dimension(:,:,:), allocatable :: TN
-  real(real12), dimension(:), allocatable :: TPD, TPPD
+  real(real12), dimension(:), allocatable :: TPD, TPPD, heat
   real(real12) :: inverse_time
   real(real12), dimension(:), allocatable :: heatcheck
   TYPE(sprs2_dp) :: ra !Techniqually rH
