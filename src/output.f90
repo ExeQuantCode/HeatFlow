@@ -10,11 +10,11 @@ contains
     implicit none
     ! real(real12), dimension(nx, ny,nz) :: T
     integer :: new, newunit
-   !  real(real12), dimension(e) :: T_matrix
+    ! real(real12), dimension(e) :: T_matrix
     real(real12), dimension(nx) :: R
     real(real12) :: xlen
     integer(int12) :: flag, index
-    !integer :: zpos = 508
+    ! integer :: zpos = 508
     integer(int12), intent(in) :: it
     real(real12) :: CT(nx,ny,nz), TN(nx,ny,nz)
     integer(int12) :: i,j,k,ix

@@ -14,7 +14,7 @@ contains
     integer(int12), intent(in) :: it 
     integer(int12) :: i,j,k,ierr
     real(real12) :: time, TC,heat_capacity,rho,m, totaltime
-    real(real12) :: PI, dt, POWER, time_pulse
+    real(real12) ::  dt, POWER, time_pulse, x, x2
     real(real12), dimension(NA), intent(out) :: Q
     !real(real12), dimension(NA) :: Q
     IA = 0
@@ -52,16 +52,17 @@ contains
                 end if
                 
              CASE(3)
-                !AC OSCCILATORY HEATING
-            !  Q(IA)=POWER*(SIN(time*2*PI*freq)**2)
+               !  AC OSCCILATORY HEATING
+               !  Q(IA)=POWER*(SIN(time*2*PI*freq)**2)
                !  Q(IA)= POWER*cos(time*2*PI*freq)**2
-               Q(IA) = POWER*0.5*((2*PI*freq)*(dt)+SIN(time*2*PI*freq)*cos(time*2*PI*freq)&
-               -SIN((time-dt)*2*PI*freq)*cos((time-dt)*2*PI*freq))/dt
+               x = time*2.0_real12*PI*freq
+               x2 = (dt)*2.0_real12*PI*freq
+               Q(IA) = POWER*0.5_real12*((x2)-SIN(x+x2)*cos(x+x2)+SIN((x))*cos((x)))/x2
                Heat(IA) = Q(IA)
                
                ! Q(IA)=POWER*0.5*((2*PI*freq)*(dt)-SIN((time+dt)*2*PI*freq)*cos((time+dt)*2*PI*freq) &
                !    +SIN((time)*2*PI*freq)*cos((time)*2*PI*freq))/dt
-                !Q(IA)=POWER*SIN(time*2*PI/PARAM_HEAT_PERIOD)
+               ! Q(IA)=POWER*SIN(time*2*PI/PARAM_HEAT_PERIOD)
                
              case(4)
 

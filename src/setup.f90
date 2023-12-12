@@ -205,8 +205,4 @@ end subroutine SparseToReal
       end subroutine sparse_Hmatrix
 !!!#########################################################################
 
-
-
-  
-  
 end module setup

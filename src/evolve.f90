@@ -3,11 +3,7 @@ module evolution
   use inputs, only: NA, icattaneo, isteady, nx, ny, nz, T_bath, time_step
   use sptype, only: I4B
   use sparse, only: linbcg
-<<<<<<< HEAD
-  use globe_data, only: TPD, TPPD, inverse_time, heatcheck
-=======
   use globe_data, only: TPD, TPPD, inverse_time, heat
->>>>>>> e4d6b0b (Add some prints to debug error in heating)
   use heating, only: heater
   use boundary_vector, only: boundary
   use cattaneo, only: S_catS
@@ -51,7 +47,6 @@ module evolution
 
     !**Call S_CAT
     call s_catS(s_cat)
-    heatcheck(it)=sum(Q)
     if (iSteady.eq.0) then
        do j=1, NA
           S(j)=(-(TPPD(j)*inverse_time/(2.0_real12)))-Q(j)-B(j)
