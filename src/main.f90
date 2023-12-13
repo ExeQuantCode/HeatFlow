@@ -55,8 +55,8 @@ program HEATFLOW_V0_1
 
       if (iverb.eq.1) then
          if (percentage) then 
-            progress = real(it/ntime)*100.0
-            write(*,'(A,A,F12.5,A)', advance = 'no') achar(13), 'Evolving system, timestep = ', progress, '%'
+            progress = real(it)/real(ntime)*100.0
+            write(*,'(A,A,F12.4,A)', advance = 'no') achar(13), 'Evolving system, timestep = ', progress, '%'
          end if 
          if ((mod(it,10000) .eq.0).and. (percentage .neqv. .True. )) &
             write(*,'(A,A,I12)', advance = 'no') achar(13), 'Evolving system, timestep = ', it
