@@ -64,11 +64,11 @@ contains
         close(30)
         print*, 'TH after ', real((it-1)*(time_step)), ' seconds is ', TN(6,6,6)
         print*, 'TM after ', real((it-1)*(time_step)), ' seconds is ', TN(9,9,9)
-        print*, 'Total Power is ', sum(-1.0_real12*TotalPower/totaltime)
-        print*, 'Total Energy is ', sum(-1.0_real12*TotalPower*totaltime)
+        print*, 'Average Power is ', (-1.0_real12*sum(TotalPower))
+        print*, 'Total Energy is ', (-1.0_real12*sum(TotalPower)*totaltime)
     end if
 
-    call PlotdeltaT(it)
+    ! call PlotdeltaT(it)
     205 format(5f12.6)
 
   end subroutine plot

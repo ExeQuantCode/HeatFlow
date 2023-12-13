@@ -12,7 +12,7 @@ program HEATFLOW_V0_1
   use INITIAL, only: initial_evolve
 
   implicit none
-   real(real12) :: rstart, rend, rprogress, rstart2
+   real(real12) :: rstart, rend, rprogress, rstart2, progress
    integer(int12) :: it
    integer :: newunit, unit
    !real(real12), dimension(nx, ny,nz) :: T,T0, T00
@@ -51,9 +51,10 @@ program HEATFLOW_V0_1
    !-------------------------------------------------------------!
    ! run simulation for 'ntime' time steps                       !
    !-------------------------------------------------------------!
-   do it=1,ntime                                                 !
+   do it=1,ntime 
+      progress = (it/ntime)*100                                             !
       if (iverb.eq.1) then                                       !
-         if (mod(it,10000) .eq.0) write(*,'(TL20,A,I12)') 'Evolving system, timestep = ', it
+         if (mod(it,10000) .eq.0) write(*,'(A,A,F12.5,A)', advance = 'no') achar(13), 'Evolving system, timestep = ', progress, '%' 
       end if                                                           !
 
       ! Temp will be moved to evolve eventually                  !

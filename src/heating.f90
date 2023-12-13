@@ -57,7 +57,7 @@ contains
                !  Q(IA)= POWER*cos(time*2*PI*freq)**2
                x = time*2.0_real12*PI*freq
                x2 = (dt)*2.0_real12*PI*freq
-               Q(IA) = POWER*0.5_real12*((x2)-SIN(x+x2)*cos(x+x2)+SIN((x))*cos((x)))/x2
+               Q(IA) = POWER*0.5_real12*((x2)-sin(x+x2)*cos(x+x2)+sin((x))*cos((x)))/x2
                Heat(IA) = Q(IA)
                
                ! Q(IA)=POWER*0.5*((2*PI*freq)*(dt)-SIN((time+dt)*2*PI*freq)*cos((time+dt)*2*PI*freq) &

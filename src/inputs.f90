@@ -179,11 +179,11 @@ contains
        write(6,'(A35,L1)')   '   _Check_Steady_State      = ',Check_Steady_State
        write(6,'(A35,L1)')   '   _WriteToTxt         = ',WriteToTxt
        write(6,'(A35,I6)')   '   icell_mix  = ',icell_mix
-       write(6,'(A35,I6)')   '   ntime      = ',ntime
+       write(6,'(A35,I12)')   '   ntime      = ',ntime
        write(6,'(A35,I6)')   '   Rel        = ', Rel
        write(6,'(A35,I6)')   '   zpos       = ',zpos
        write(6,'(A35,I6)')   '   ACon       = ',ACon       
-       write(6,'(A35,F12.5)')'   Time_step  = ',time_step
+       write(6,'(A35,F20.15)')'   Time_step  = ',time_step
        write(6,'(A35,F12.5)')'   frequency  = ',freq
        write(6,'(A35,I6)')   '   iboundary  = ',iboundary
        write(6,'(A35,I6)')   '   icattaneo  = ' , icattaneo
