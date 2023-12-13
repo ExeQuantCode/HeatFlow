@@ -64,7 +64,7 @@ contains
         close(30)
         print*, 'TH after ', real((it-1)*(time_step)), ' seconds is ', TN(6,6,6)
         print*, 'TM after ', real((it-1)*(time_step)), ' seconds is ', TN(9,9,9)
-        print*, 'Average Power is ', (-1.0_real12*sum(TotalPower))
+        print*, 'Average Power is ', (-1.0_real12*sum(TotalPower)/ntime)
         print*, 'Total Energy is ', (-1.0_real12*sum(TotalPower)*totaltime)
     end if
 

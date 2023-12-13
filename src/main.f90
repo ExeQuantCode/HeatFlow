@@ -6,7 +6,7 @@ program HEATFLOW_V0_1
   use constants, only: real12, int12
   use constructions, only: heatblock
   use output, only: plot
-  use inputs, only: read_all_files, nx, ny, nz, NA, iverb, ntime, grid
+  use inputs, only: read_all_files, nx, ny, nz, NA, iverb, ntime, grid, Percentage
   use evolution, only: evolve
   use setup, only: set_global_variables
   use INITIAL, only: initial_evolve
@@ -52,9 +52,14 @@ program HEATFLOW_V0_1
    ! run simulation for 'ntime' time steps                       !
    !-------------------------------------------------------------!
    do it=1,ntime 
-      progress = (it/ntime)*100                                             !
-      if (iverb.eq.1) then                                       !
-         if (mod(it,10000) .eq.0) write(*,'(A,A,F12.5,A)', advance = 'no') achar(13), 'Evolving system, timestep = ', progress, '%' 
+
+      if (iverb.eq.1) then
+         if (percentage) then 
+            progress = real(it/ntime)*100.0
+            write(*,'(A,A,F12.5,A)', advance = 'no') achar(13), 'Evolving system, timestep = ', progress, '%'
+         end if 
+         if ((mod(it,10000) .eq.0).and. (percentage .neqv. .True. )) &
+            write(*,'(A,A,I12)', advance = 'no') achar(13), 'Evolving system, timestep = ', it
       end if                                                           !
 
       ! Temp will be moved to evolve eventually                  !
