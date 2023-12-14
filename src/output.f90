@@ -1,6 +1,7 @@
 module output
   use constants, only: real12, int12, TINY
   use inputs, only: nx,ny,nz, time_step, zpos, grid, NA, Check_Steady_State, ntime, WriteToTxt
+  use inputs, only: Test_Run
   use constructions, only: heatblock
   use globe_data, only: TPD,TPPD, heat
   implicit none
@@ -26,7 +27,9 @@ contains
     xlen= 1.0*0.333
     flag=0
     if (it.eq.1) then
-       open(unit=30,file='./outputs/Temperature.txt')
+
+       if (Test_Run .neqv. .True.) open(unit=30,file='./outputs/Test.txt')
+       if (Test_Run .eqv. .False.) open(unit=30,file='./outputs/Temperature.txt')
        open(unit=33,file='./outputs/Power.txt')
     end if
     

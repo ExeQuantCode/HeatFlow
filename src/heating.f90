@@ -65,6 +65,9 @@ contains
                ! Q(IA)=POWER*SIN(time*2*PI/PARAM_HEAT_PERIOD)
                
              case(4)
+              !  AC OSCCILATORY HEATING raw
+            
+              Q(IA)=POWER*(SIN(time*2*PI*freq)**2)
 
 
              case(5)

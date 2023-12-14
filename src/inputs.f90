@@ -11,7 +11,7 @@ module inputs
   real(real12) :: time_step, T_Bath, freq, power_in, T_period, cutoff, kappaBoundx, kappaBoundy, kappaBoundz
   integer(int12) :: IVERB, icell_mix, ntime, Rel, zpos, ACon, iboundary, nx, ny, nz, icattaneo, isteady, NA
   logical :: Check_Sparse_Full, Check_Stability, Check_Steady_State, WriteToTxt, Percentage
-  logical :: verbose = .TRUE. 
+  logical :: verbose = .TRUE., Test_Run = .FALSE.
   type(heatblock), dimension(:,:,:), allocatable :: grid
   integer(int12), dimension(:,:,:), allocatable :: iheater
   type(material), dimension(:), allocatable :: input_materials
@@ -178,6 +178,7 @@ contains
        write(6,'(A35,L1)')   '   _Check_Stability         = ',Check_Stability
        write(6,'(A35,L1)')   '   _Check_Steady_State      = ',Check_Steady_State
        write(6,'(A35,L1)')   '   _Percentage_Completion         = ',Percentage
+       write(6,'(A35,L1)')   '   _Test_Run         = ',Test_Run
        write(6,'(A35,L1)')   '   _WriteToTxt         = ',WriteToTxt
        write(6,'(A35,I6)')   '   icell_mix  = ',icell_mix
        write(6,'(A35,I12)')   '   ntime      = ',ntime
@@ -208,7 +209,7 @@ contains
 !!!##########################################################################
   subroutine read_param(unit)
     integer::unit,Reason, i
-    integer,dimension(23)::readvar
+    integer,dimension(24)::readvar
     character(1024)::buffer
     logical::ex
     readvar=0
@@ -220,6 +221,7 @@ contains
     Check_Stability = .FALSE.
     Check_Steady_State = .FALSE.
     Percentage = .FALSE.
+    Test_Run = .FALSE.
     WriteToTxt = .FALSE.
     icell_mix = 2
     ntime = 10
@@ -274,6 +276,7 @@ contains
        call assignL(buffer,"_Check_Steady_State",Check_Steady_State,readvar(21))
        call assignL(buffer,"_WriteToTxt",WriteToTxt,readvar(22))
        call assignL(buffer,"_Percentage_Completion",Percentage,readvar(23))
+        call assignL(buffer,"_Test_Run",Test_Run,readvar(24))
 
     end do
     call check_param(readvar,size(readvar,1))
