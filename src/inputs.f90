@@ -9,6 +9,7 @@ module inputs
 
   integer :: unit, newunit
   real(real12) :: time_step, T_Bath, freq, power_in, T_period, cutoff, kappaBoundx, kappaBoundy, kappaBoundz
+  real(real12) :: mixing
   integer(int12) :: IVERB, icell_mix, ntime, Rel, zpos, ACon, iboundary, nx, ny, nz, icattaneo, isteady, NA
   logical :: Check_Sparse_Full, Check_Stability, Check_Steady_State, WriteToTxt, Percentage
   logical :: verbose = .TRUE., Test_Run = .FALSE.
@@ -177,13 +178,13 @@ contains
        write(6,'(A35,L1)')   '   _Check_Sparse_Full  = ',Check_Sparse_Full
        write(6,'(A35,L1)')   '   _Check_Stability         = ',Check_Stability
        write(6,'(A35,L1)')   '   _Check_Steady_State      = ',Check_Steady_State
-       write(6,'(A35,L1)')   '   _Percentage_Completion         = ',Percentage
+       write(6,'(A35,L1)')   '  _Percentage_Completion         = ',Percentage
        write(6,'(A35,L1)')   '   _Test_Run         = ',Test_Run
        write(6,'(A35,L1)')   '   _WriteToTxt         = ',WriteToTxt
        write(6,'(A35,I6)')   '   icell_mix  = ',icell_mix
        write(6,'(A35,I12)')   '   ntime      = ',ntime
        write(6,'(A35,I6)')   '   Rel        = ', Rel
-       write(6,'(A35,I6)')   '   zpos       = ',zpos
+       write(6,'(A35,F10.12)')   '   Mixing       = ',mixing
        write(6,'(A35,I6)')   '   ACon       = ',ACon       
        write(6,'(A35,F20.15)')'   Time_step  = ',time_step
        write(6,'(A35,F12.5)')'   frequency  = ',freq
@@ -226,7 +227,7 @@ contains
     icell_mix = 2
     ntime = 10
     Rel = 0
-    zpos = 1
+    mixing = 0.5  
     ACon = 0
     time_step = 1.0
     freq = 1
@@ -257,7 +258,7 @@ contains
        call assignI(buffer,"icell_mix",icell_mix,readvar(2))             
        call assignI(buffer,"ntime",ntime,readvar(3))           
        call assignI(buffer,"Rel",Rel,readvar(4))       
-       call assignI(buffer,"zpos",zpos,readvar(5))      
+       call assignD(buffer,"mixing",mixing,readvar(5))      
        call assignI(buffer,"ACon",ACon,readvar(6))         
        call assignD(buffer,"time_step",time_step,readvar(7))   
        call assignD(buffer,"freq",freq,readvar(8))       

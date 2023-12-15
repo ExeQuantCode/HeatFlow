@@ -1,6 +1,6 @@
 module evolution
   use constants, only: real12, int12, TINY
-  use inputs, only: NA, icattaneo, isteady, nx, ny, nz, T_bath, time_step
+  use inputs, only: NA, icattaneo, isteady, nx, ny, nz, T_bath, time_step, mixing
   use sptype, only: I4B
   use sparse, only: linbcg
   use globe_data, only: TPD, TPPD, inverse_time, heat
@@ -49,7 +49,7 @@ module evolution
     call s_catS(s_cat)
     if (iSteady.eq.0) then
        do j=1, NA
-          S(j)=(-(TPPD(j)*inverse_time/(2.0_real12)))-Q(j)-B(j)
+          S(j)=(-(TPPD(j)*(1-mixing)*inverse_time/(2.0_real12)))-(TPD(j)*inverse_time*mixing)-Q(j)-B(j)
           ! print*,B
           ! print*,S_CAT
           if (iCAttaneo.eq.1)  then

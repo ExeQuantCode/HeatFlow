@@ -1,6 +1,6 @@
 module hmatrixmod
   use constants, only: real12, int12
-  use inputs, only: nx, ny, nz, time_step, grid, isteady, icattaneo, kappaBoundx, kappaBoundy, kappaBoundz
+  use inputs, only: nx, ny, nz, time_step, grid, isteady, icattaneo, kappaBoundx, kappaBoundy, kappaBoundz, mixing
   use globe_data, only: inverse_time
   implicit none
 
@@ -91,7 +91,7 @@ contains
     tau = grid(x,y,z)%tau
     if (isteady .eq. 0) then
       if (icattaneo .eq. 0) tau = 0.0_real12
-      alpha = (tau/(grid(x,y,z)%rho*grid(x,y,z)%heat_capacity)) + (inverse_time/(2.0_real12))
+      alpha = (tau/(grid(x,y,z)%rho*grid(x,y,z)%heat_capacity)) + (1+mixing)*(inverse_time/(2.0_real12))
     end if 
     
   end function calculate_alpha
