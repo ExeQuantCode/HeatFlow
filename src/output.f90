@@ -1,7 +1,7 @@
 module output
   use constants, only: real12, int12, TINY
   use inputs, only: nx,ny,nz, time_step, zpos, grid, NA, Check_Steady_State, ntime, WriteToTxt
-  use inputs, only: Test_Run, freq, RunName
+  use inputs, only: Test_Run, freq, RunName, FullRestart
   use constructions, only: heatblock
   use globe_data, only: TPD,TPPD, heat
   implicit none
@@ -98,6 +98,14 @@ contains
         open(unit=34,file='./outputs/TempDis.dat')
         write(34,*) TPD(:)
         close(34)
+        if (FullRestart) then
+          open(unit=35,file='./outputs/TempDisTPD.dat')
+          write(35,*) TPD(:)
+          close(35)
+          open(unit=36,file='./outputs/TempDisTPPD.dat')
+          write(36,*) TPPD(:)
+          close(36)
+        end if
     end if
 
     ! call PlotdeltaT(it)
