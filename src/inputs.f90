@@ -11,7 +11,7 @@ module inputs
   real(real12) :: time_step, T_Bath, freq, power_in, T_period, cutoff, kappaBoundx, kappaBoundy, kappaBoundz
   real(real12) :: mixing
   integer(int12) :: IVERB, icell_mix, ntime, Rel, zpos, ACon, iboundary, nx, ny, nz, icattaneo, isteady, NA
-  logical :: Check_Sparse_Full, Check_Stability, Check_Steady_State, WriteToTxt, Percentage
+  logical :: Check_Sparse_Full, Check_Stability, Check_Steady_State, WriteToTxt, Percentage, InputTempDis
   logical :: verbose = .TRUE., Test_Run = .FALSE.
   type(heatblock), dimension(:,:,:), allocatable :: grid
   integer(int12), dimension(:,:,:), allocatable :: iheater
@@ -180,11 +180,12 @@ contains
        write(6,'(A35,L1)')   '   _Check_Steady_State      = ',Check_Steady_State
        write(6,'(A35,L1)')   '  _Percentage_Completion         = ',Percentage
        write(6,'(A35,L1)')   '   _Test_Run         = ',Test_Run
+       write(6,'(A35,L1)')   '   _InputTempDis         = ',InputTempDis
        write(6,'(A35,L1)')   '   _WriteToTxt         = ',WriteToTxt
        write(6,'(A35,I6)')   '   icell_mix  = ',icell_mix
        write(6,'(A35,I12)')   '   ntime      = ',ntime
        write(6,'(A35,I6)')   '   Rel        = ', Rel
-       write(6,'(A35,F10.12)')   '   Mixing       = ',mixing
+       write(6,'(A35,F12.5)')'   Mixing       = ',mixing
        write(6,'(A35,I6)')   '   ACon       = ',ACon       
        write(6,'(A35,F20.15)')'   Time_step  = ',time_step
        write(6,'(A35,F12.5)')'   frequency  = ',freq
@@ -209,8 +210,8 @@ contains
 !!! ... by the variable i.e. 1, 2, .TRUE., 5D-15
 !!!##########################################################################
   subroutine read_param(unit)
-    integer::unit,Reason, i
-    integer,dimension(24)::readvar
+    integer::unit, Reason, i
+    integer,dimension(25)::readvar
     character(1024)::buffer
     logical::ex
     readvar=0
@@ -223,6 +224,7 @@ contains
     Check_Steady_State = .FALSE.
     Percentage = .FALSE.
     Test_Run = .FALSE.
+    InputTempDis = .FALSE.
     WriteToTxt = .FALSE.
     icell_mix = 2
     ntime = 10
@@ -238,9 +240,9 @@ contains
     cutoff = 1e12
     power_in = 0
     T_period = 1
-    kappaBoundx = 0.22
-    kappaBoundy = 0.22
-    kappaBoundz = 0.22
+    kappaBoundx = 400
+    kappaBoundy = 400
+    kappaBoundz = 400
     !------------------------------------------
     do
        read(unit,'(A)',iostat=Reason) buffer
@@ -277,7 +279,8 @@ contains
        call assignL(buffer,"_Check_Steady_State",Check_Steady_State,readvar(21))
        call assignL(buffer,"_WriteToTxt",WriteToTxt,readvar(22))
        call assignL(buffer,"_Percentage_Completion",Percentage,readvar(23))
-        call assignL(buffer,"_Test_Run",Test_Run,readvar(24))
+       call assignL(buffer,"_Test_Run",Test_Run,readvar(24))
+       call assignL(buffer,"_InputTempDis",InputTempDis,readvar(25))
 
     end do
     call check_param(readvar,size(readvar,1))
