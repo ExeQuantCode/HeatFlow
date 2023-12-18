@@ -1,47 +1,72 @@
 module output
   use constants, only: real12, int12, TINY
   use inputs, only: nx,ny,nz, time_step, zpos, grid, NA, Check_Steady_State, ntime, WriteToTxt
-  use inputs, only: Test_Run
+  use inputs, only: Test_Run, freq, RunName
   use constructions, only: heatblock
   use globe_data, only: TPD,TPPD, heat
   implicit none
   
 contains
   subroutine plot(it)
-    implicit none
-    ! real(real12), dimension(nx, ny,nz) :: T
-    integer :: new, newunit
-    ! real(real12), dimension(e) :: T_matrix
-    real(real12), dimension(nx) :: R
-    real(real12) :: xlen
-    integer(int12) :: flag, index
-    ! integer :: zpos = 508
-    integer(int12), intent(in) :: it
-    real(real12) :: CT(nx,ny,nz), TN(nx,ny,nz)
-    integer(int12) :: i,j,k,ix
-    real(real12), dimension(ntime) :: TotalPower
-    real(real12) :: totaltime
-    totaltime=real(ntime)*time_step
+     implicit none
+     ! real(real12), dimension(nx, ny,nz) :: T
+     integer :: new, newunit
+     ! real(real12), dimension(e) :: T_matrix
+     real(real12), dimension(nx) :: R
+     real(real12) :: xlen
+     integer(int12) :: indexA
+     ! integer :: zpos = 508
+     integer(int12), intent(in) :: it
+     real(real12) :: CT(nx,ny,nz), TN(nx,ny,nz)
+     character(len=1024) :: filename
+     integer(int12) :: i,j,k,ix
+     real(real12), dimension(ntime) :: TotalPower
+     real(real12) :: totaltime
+     logical :: flag
+     character(len=1024) :: file_prefix
+     character(len=1024) :: file_extension
+     character(len=1024) :: file_name
+     
+     totaltime=real(ntime)*time_step
+     file_prefix = 'Temperture_'
+     xlen= 1.0*0.333
 
-    
-    xlen= 1.0*0.333
-    flag=0
-    if (it.eq.1) then
-
+      if (it == 1) then
        if (Test_Run .neqv. .True.) open(unit=30,file='./outputs/Test.txt')
-       if (Test_Run .eqv. .False.) open(unit=30,file='./outputs/Temperature.txt')
+       if (Test_Run .eqv. .False.) then
+           ! Create the file name using timestep, frequency, and tau variables
+           write(file_prefix, '(A, A, A, F0.2)') 'output_', trim(RunName), '_freq_', freq
+           file_extension = '.txt'
+           file_name = trim(file_prefix) // trim(file_extension)
+            ! Check if the file already exists
+            inquire(file=file_name, exist=flag)
+            do while (flag .eqv. .True.)
+              ! If the file exists, increment the file number
+              ix = index(file_name, '_')
+              write(file_prefix, '(A, A, A, I0.2, A, F0.2)') 'output_', trim(RunName), '_', freq, '_', ix+1
+              file_extension = '.txt'
+              file_name = trim(file_prefix) // trim(file_extension)
+              inquire(file=file_name, exist=flag)
+            end do
+            if (flag .eqv. .False.) then
+              ! If the file does not exist, create it
+              open(newunit, file='./outputs/' // file_name)
+            end if
+         end if
        open(unit=33,file='./outputs/Power.txt')
-    end if
+
+     end if
+
     
     write(33,*) REAL(it)*time_step, heat(799)
     TotalPower(it)=heat(799)
 
-    index=1
+    indexA=1
     do k = 1, nz
       do j = 1, ny
          do i = 1, nx
-            TN(i,j,k) = TPPD(index)
-            index = index+1
+            TN(i,j,k) = TPPD(indexA)
+            indexA = indexA+1
          end do
       end do
     end do 
@@ -62,7 +87,7 @@ contains
         end if
       end if
     end if 
-    if (WriteToTxt) write(30,*) real((it-1)*(time_step)),(TN(6,6,:))   !-293.0
+    if (WriteToTxt) write(newunit,*) real((it-1)*(time_step)),(TN(6,6,:))   !-293.0
     if (it == ntime) then
         close(30)
         print*, 'TH after ', real((it-1)*(time_step)), ' seconds is ', TN(6,6,6)

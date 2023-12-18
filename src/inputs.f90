@@ -13,6 +13,7 @@ module inputs
   integer(int12) :: IVERB, icell_mix, ntime, Rel, zpos, ACon, iboundary, nx, ny, nz, icattaneo, isteady, NA
   logical :: Check_Sparse_Full, Check_Stability, Check_Steady_State, WriteToTxt, Percentage, InputTempDis
   logical :: verbose = .TRUE., Test_Run = .FALSE.
+  character(20) :: RunName
   type(heatblock), dimension(:,:,:), allocatable :: grid
   integer(int12), dimension(:,:,:), allocatable :: iheater
   type(material), dimension(:), allocatable :: input_materials
@@ -181,6 +182,7 @@ contains
        write(6,'(A35,L1)')   '  _Percentage_Completion         = ',Percentage
        write(6,'(A35,L1)')   '   _Test_Run         = ',Test_Run
        write(6,'(A35,L1)')   '   _InputTempDis         = ',InputTempDis
+       write(6,'(A35,A)')   '    _RunName         = ',RunName
        write(6,'(A35,L1)')   '   _WriteToTxt         = ',WriteToTxt
        write(6,'(A35,I6)')   '   icell_mix  = ',icell_mix
        write(6,'(A35,I12)')   '   ntime      = ',ntime
@@ -211,7 +213,7 @@ contains
 !!!##########################################################################
   subroutine read_param(unit)
     integer::unit, Reason, i
-    integer,dimension(25)::readvar
+    integer,dimension(26)::readvar
     character(1024)::buffer
     logical::ex
     readvar=0
@@ -225,6 +227,7 @@ contains
     Percentage = .FALSE.
     Test_Run = .FALSE.
     InputTempDis = .FALSE.
+    RunName = 'default'
     WriteToTxt = .FALSE.
     icell_mix = 2
     ntime = 10
@@ -281,6 +284,7 @@ contains
        call assignL(buffer,"_Percentage_Completion",Percentage,readvar(23))
        call assignL(buffer,"_Test_Run",Test_Run,readvar(24))
        call assignL(buffer,"_InputTempDis",InputTempDis,readvar(25))
+       call assignS(buffer,"_RunName",RunName,readvar(26))
 
     end do
     call check_param(readvar,size(readvar,1))
