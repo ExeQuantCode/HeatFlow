@@ -33,6 +33,7 @@ contains
         call exit
       end if
       read(buffer,*) (TPD(index), index = 1, NA)
+      TPPD = TPD
       close(10)
     else 
       TPD = T_Bath
