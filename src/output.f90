@@ -98,14 +98,12 @@ contains
         open(unit=34,file='./outputs/TempDis.dat')
         write(34,*) TPD(:)
         close(34)
-        if (FullRestart) then
           open(unit=35,file='./outputs/TempDisTPD.dat')
           write(35,*) TPD(:)
           close(35)
           open(unit=36,file='./outputs/TempDisTPPD.dat')
           write(36,*) TPPD(:)
           close(36)
-        end if
     end if
 
     ! call PlotdeltaT(it)
