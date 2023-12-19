@@ -26,7 +26,8 @@ contains
      character(len=1024) :: file_prefix
      character(len=1024) :: file_extension
      character(len=1024) :: file_name
-     
+     character(len=1024) :: folder_path
+     character(len=1024) :: full_file_path
      totaltime=real(ntime)*time_step
      file_prefix = 'Temperture_'
      xlen= 1.0*0.333
@@ -39,11 +40,22 @@ contains
            file_extension = '.txt'
            file_name = trim(file_prefix) // trim(file_extension)
             ! Check if the file already exists
+
             inquire(file=file_name, exist=flag)
+            ix = 0
+
+            ! Specify the folder path where the file is located
+            folder_path = './outputs/'
+
+            ! Create the full file path by concatenating the folder path and file name
+            full_file_path = trim(folder_path) // trim(file_name)
+
+            ! Check if the file exists in the different folder
+            inquire(file=full_file_path, exist=flag)
             do while (flag .eqv. .True.)
               ! If the file exists, increment the file number
-              ix = index(file_name, '_')
-              write(file_prefix, '(A, A, A, I0.2, A, F0.2)') 'output_', trim(RunName), '_', freq, '_', ix+1
+              ix = ix+1
+              write(file_prefix, '(A, A, A, F0.2, A, I2)') 'output_', trim(RunName), '_', freq, '_', ix+1
               file_extension = '.txt'
               file_name = trim(file_prefix) // trim(file_extension)
               inquire(file=file_name, exist=flag)
@@ -52,6 +64,7 @@ contains
               ! If the file does not exist, create it
               open(newunit, file='./outputs/' // file_name)
             end if
+         
          end if
        open(unit=33,file='./outputs/Power.txt')
 
