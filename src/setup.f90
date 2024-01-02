@@ -1,7 +1,7 @@
 
 module setup
   use constants, only: real12, int12, TINY
-  use inputs, only: Lx, Ly, Lz, nx, ny, nz, NA, grid, T_Bath, time_step, kappaBoundx, kappaBoundy, kappaBoundz &
+  use inputs, only: Lx, Ly, Lz, nx, ny, nz, NA, grid, time_step, kappaBoundx, kappaBoundy, kappaBoundz &
                      ,Check_Sparse_Full, Check_Stability, ntime
   use constructions, only: heatblock
   use hmatrixmod, only: hmatrixfunc
@@ -77,7 +77,6 @@ module setup
             end do               
          end do
       end do
-      print*, "TBATH", real(T_Bath,real12)
 
       !---------------------------------------------------
       !** should impliment an if condition for sparse only

@@ -25,7 +25,7 @@ contains
      logical :: flag
      character(len=1024) :: file_prefix
      character(len=1024) :: file_extension
-     character(len=1024) :: file_name
+     character(len=2028) :: file_name
      character(len=1024) :: folder_path
      character(len=1024) :: full_file_path
      totaltime=real(ntime)*time_step

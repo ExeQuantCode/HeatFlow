@@ -1,6 +1,6 @@
 module evolution
   use constants, only: real12, int12, TINY
-  use inputs, only: NA, icattaneo, isteady, nx, ny, nz, T_bath, time_step, mixing
+  use inputs, only: NA, icattaneo, isteady, nx, ny, nz, T_System, time_step, mixing
   use sptype, only: I4B
   use sparse, only: linbcg
   use globe_data, only: TPD, TPPD, inverse_time, heat
@@ -110,7 +110,7 @@ module evolution
     integer(int12), intent(in) :: it
     real(real12), dimension(NA), intent(out) :: x
     ! Ask Frank about this, why cant x be equal to T_Bath?
-    if (it .eq. 1) x = T_Bath !+ 1e-12_real12
+    if (it .eq. 1) x = T_System !+ 1e-12_real12
 
   end subroutine INIT_EVOLVE
 

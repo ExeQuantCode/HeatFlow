@@ -1,6 +1,6 @@
 module initial 
   use constants, only: real12, int12
-  use inputs, only: NA, T_Bath, nx, ny, nz, InputTempDis, FullRestart
+  use inputs, only: NA, nx, ny, nz, InputTempDis, FullRestart, T_System
   use globe_data, only: TPD,TPPD
   implicit none
 
@@ -59,8 +59,8 @@ contains
       TPPD = TPD
       close(10)
     else 
-      TPD = T_Bath
-      TPPD = T_Bath
+      TPD = T_System
+      TPPD = T_System
     end if
 
     ! print*,'Initial Temperature = ',TPD

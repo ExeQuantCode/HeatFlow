@@ -2,7 +2,7 @@ module Heating
   use constants, only: real12, int12, pi
   use constructions, only: heatblock
   use globe_data, only: TPD, TPPD, Heat
-  use inputs, only: nx,ny,nz, grid, NA, iheater, power_in, time_step, T_Bath, freq, ntime
+  use inputs, only: nx,ny,nz, grid, NA, iheater, power_in, time_step, T_System, freq, ntime
   use materials, only: material
   implicit none
 contains
@@ -79,13 +79,15 @@ contains
                else
                   Q(IA)=0.0
                end if
-             case(7)
-               !Fixed temperature
-               Q(IA) =0
-               TPPD = T_Bath+100
-               TPD(IA) = T_Bath+100
+            !  case(7)
+            !    !Fixed temperature
+            !    Q(IA) =0
+            !    TPPD = T_Bath+100
+            !    TPD(IA) = T_Bath+100
              end select
              Q(IA) = Q(IA)/(m*heat_capacity)
+            !  if (Q(IA) .gt. 0) print*, "Q(IA)=",Q(IA) 
+          
           end do
        end do
     end do

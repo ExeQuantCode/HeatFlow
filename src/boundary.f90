@@ -1,6 +1,7 @@
 module boundary_vector
   use constants, only: real12, int12
-  use inputs, only: NA,nx,ny,nz, T_Bath, grid, kappaBoundx, kappaBoundy, kappaBoundz
+  use inputs, only: NA,nx,ny,nz, T_Bathx1, grid, kappaBoundx, kappaBoundy, kappaBoundz
+  use inputs, only: T_Bathx2, T_Bathy1, T_Bathy2, T_Bathz1, T_Bathz2
   implicit none
 contains
 
@@ -27,37 +28,37 @@ contains
              select case (x) 
                case (1) 
                 B(I)=B(I)+((2*kappaBoundx*kappa)/(kappaBoundx+kappa))/(rho*heat_capacity*&
-                (grid(x,y,z)%Length(1)**2))*T_Bath
+                (grid(x,y,z)%Length(1)**2))*T_Bathx1
                end select
 
               select case(nx-x) 
                case(0) 
                B(I)=B(I)+((2*kappaBoundx*kappa)/(kappaBoundx+kappa))/(rho*heat_capacity*&
-                (grid(x,y,z)%Length(1)**2))*T_Bath
+                (grid(x,y,z)%Length(1)**2))*T_Bathx2
                end select
 
              select case (y)
              case (1)
                 B(I)=B(I)+((2*kappaBoundy*kappa)/(kappaBoundy+kappa))/(rho*heat_capacity*&
-                (grid(x,y,z)%Length(2)**2))*T_Bath
+                (grid(x,y,z)%Length(2)**2))*T_Bathy1
             end select
 
              select case(ny-y)
              case(0)
                B(I)=B(I)+((2*kappaBoundy*kappa)/(kappaBoundy+kappa))/(rho*heat_capacity*&
-                (grid(x,y,z)%Length(2)**2))*T_Bath
+                (grid(x,y,z)%Length(2)**2))*T_Bathy2
              end select
 
              select case (z) 
              case (1)
                 B(I)=B(I)+((2*kappaBoundz*kappa)/(kappaBoundz+kappa))/(rho*heat_capacity*&
-                (grid(x,y,z)%Length(3)**2))*T_Bath
+                (grid(x,y,z)%Length(3)**2))*T_Bathz1
                end select
 
             select case(nz-z)  
              case(0)
                 B(I)=B(I)+((2*kappaBoundz*kappa)/(kappaBoundz+kappa))/(rho*heat_capacity*&
-                 (grid(x,y,z)%Length(3)**2))*T_Bath
+                 (grid(x,y,z)%Length(3)**2))*T_Bathz2
             end select
           end do
       end do
