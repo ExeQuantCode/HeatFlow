@@ -1,11 +1,12 @@
 module evolution
   use constants, only: real12, int12, TINY
-  use inputs, only: NA, icattaneo, isteady, nx, ny, nz, T_System, time_step, mixing
+  use inputs, only: NA, icattaneo, isteady, nx, ny, nz, T_System, time_step, mixing, grid
   use sptype, only: I4B
   use sparse, only: linbcg
   use globe_data, only: TPD, TPPD, inverse_time, heat
   use heating, only: heater
   use boundary_vector, only: boundary
+  use hmatrixmod, only: altmod
   use cattaneo, only: S_catS
   implicit none
 
@@ -20,9 +21,10 @@ module evolution
     real(real12), dimension(NA) :: S, x, Q, S_CAT
     real(real12), dimension(NA) :: B
     integer(int12), intent(in) :: it
-    integer(int12) :: i,j, ncg, itol, itmax, iss, ierr
+    integer(int12) :: i,j, ncg, itol, itmax, iss, ierr, xc , yc, zc
     integer(I4B) :: iter
     real(real12) :: dt, To, Hb, e, err, tol
+    real(real12) :: rho, heat_capacity
     
     
 
@@ -42,6 +44,7 @@ module evolution
     s_cat=0.0_real12
     !**CALL Boundary
     call boundary(B)
+    ! print*, B
     !**CALL HEATER
     call heater(it,Q)
 
@@ -49,7 +52,13 @@ module evolution
     call s_catS(s_cat)
     if (iSteady.eq.0) then
        do j=1, NA
-          S(j)=(-(TPPD(j)*(1-mixing)*inverse_time/(2.0_real12)))-(TPD(j)*inverse_time*mixing)-Q(j)-B(j)
+        xc = altmod(j,nx)
+        yc = mod((j-altmod(j,nx))/nx,ny)+1
+        zc = (j-altmod(j,nx*ny))/(nx*ny)+1
+        rho = grid(xc,yc,zc)%rho
+        heat_capacity = grid(xc,yc,zc)%heat_capacity
+          S(j)=(-(TPPD(j)*(1-mixing)*inverse_time/(2.0_real12))*rho*heat_capacity)-&
+            (TPD(j)*inverse_time*mixing*rho*heat_capacity)-Q(j)-B(j)
           ! print*,B
           ! print*,S_CAT
           if (iCAttaneo.eq.1)  then
@@ -68,6 +77,7 @@ module evolution
        	 S(j)=-Q(j)-B(j)
        end do
     end if
+    ! print*,S
     ! print*,TPD
     !!!#################################################
     !!! Call the CG method to solve the equation Ax=b.

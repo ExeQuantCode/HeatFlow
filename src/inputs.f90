@@ -182,7 +182,7 @@ contains
        write(6,'(A35,L1)')   '  _Percentage_Completion         = ',Percentage
        write(6,'(A35,L1)')   '   _Test_Run         = ',Test_Run
        write(6,'(A35,L1)')   '   _InputTempDis         = ',InputTempDis
-       write(6,'(A35,A)')   '    _FullRestart         = ',FullRestart
+       write(6,'(A35,L1)')   '    _FullRestart         = ',FullRestart
        write(6,'(A35,A)')   '    _RunName         = ',trim(RunName)
        write(6,'(A35,L1)')   '   _WriteToTxt         = ',WriteToTxt
        write(6,'(A35,I6)')   '   icell_mix  = ',icell_mix

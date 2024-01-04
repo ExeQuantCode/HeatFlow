@@ -23,7 +23,7 @@ module setup
       allocate(TN(nx, ny, nz))
       allocate(TPD(NA))
       allocate(TPPD(NA))
-      allocate(heat(NA))
+      allocate(heat(NA*ntime))
       heat = 0.0_real12
       dt = time_step
       print1 = .true.
@@ -152,11 +152,12 @@ subroutine SparseToReal(HT)
           H0=hmatrixfunc(i,j)
           if (abs(H0).lt.TINY) cycle neighbour_loop
           HT(i,j)=H0
+          H0=hmatrixfunc(j,i)
           HT(j,i)=H0
 
       end do neighbour_loop
   end do parent_loop
-   write(*, '(3F15.4)') HT
+   write(*, '(10F15.4)') HT
 end subroutine SparseToReal
 
 !!!#########################################################################

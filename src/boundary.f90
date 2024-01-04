@@ -7,7 +7,7 @@ contains
 
   pure subroutine boundary(B)
     real(real12), dimension(NA), intent(out) :: B
-    real(real12) :: kappa,heat_capacity,rho
+    real(real12) :: kappa
     integer(int12) :: i,x,y,z
 
 
@@ -21,43 +21,41 @@ contains
             do x= 1,nx
          i = i+1
 
-            heat_capacity = grid(x,y,z)%heat_capacity
-            rho = grid(x,y,z)%rho
             kappa = grid(x,y,z)%kappa
 
              select case (x) 
                case (1) 
-                B(I)=B(I)+((2*kappaBoundx*kappa)/(kappaBoundx+kappa))/(rho*heat_capacity*&
+                B(I)=B(I)+((2*kappaBoundx*kappa)/(kappaBoundx+kappa))/(&
                 (grid(x,y,z)%Length(1)**2))*T_Bathx1
                end select
 
               select case(nx-x) 
                case(0) 
-               B(I)=B(I)+((2*kappaBoundx*kappa)/(kappaBoundx+kappa))/(rho*heat_capacity*&
+               B(I)=B(I)+((2*kappaBoundx*kappa)/(kappaBoundx+kappa))/(&
                 (grid(x,y,z)%Length(1)**2))*T_Bathx2
                end select
 
              select case (y)
              case (1)
-                B(I)=B(I)+((2*kappaBoundy*kappa)/(kappaBoundy+kappa))/(rho*heat_capacity*&
+                B(I)=B(I)+((2*kappaBoundy*kappa)/(kappaBoundy+kappa))/(&
                 (grid(x,y,z)%Length(2)**2))*T_Bathy1
             end select
 
              select case(ny-y)
              case(0)
-               B(I)=B(I)+((2*kappaBoundy*kappa)/(kappaBoundy+kappa))/(rho*heat_capacity*&
+               B(I)=B(I)+((2*kappaBoundy*kappa)/(kappaBoundy+kappa))/(&
                 (grid(x,y,z)%Length(2)**2))*T_Bathy2
              end select
 
              select case (z) 
              case (1)
-                B(I)=B(I)+((2*kappaBoundz*kappa)/(kappaBoundz+kappa))/(rho*heat_capacity*&
+                B(I)=B(I)+((2*kappaBoundz*kappa)/(kappaBoundz+kappa))/(&
                 (grid(x,y,z)%Length(3)**2))*T_Bathz1
                end select
 
             select case(nz-z)  
              case(0)
-                B(I)=B(I)+((2*kappaBoundz*kappa)/(kappaBoundz+kappa))/(rho*heat_capacity*&
+                B(I)=B(I)+((2*kappaBoundz*kappa)/(kappaBoundz+kappa))/(&
                  (grid(x,y,z)%Length(3)**2))*T_Bathz2
             end select
           end do

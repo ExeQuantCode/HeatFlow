@@ -15,9 +15,8 @@ subroutine S_catS(s_cat)
         do y = 1, ny
             do x = 1, nx
                 i = i+1
-                S_cat(i) = ( TPPD(i) - 2._real12 * TPD(i) ) /(grid(x,y,z)%rho*grid(x,y,z)%heat_capacity) !
+                S_cat(i) = ( TPPD(i) - 2._real12 * TPD(i) ) * ( grid(x,y,z)%tau )  !
 
-                S_cat(i) = S_cat(i) * ( grid(x,y,z)%tau ) 
             end do
         end do
     end do
