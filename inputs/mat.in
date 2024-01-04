@@ -1,4 +1,4 @@
-1 !silicon
+4 !silicon
 heat_capacity = 710
 h_conv = 100
 kappa  = 400
@@ -6,5 +6,27 @@ kappa3D = 148
 rho = 2329
 sound_speed = 8430
 tau = 0.001
+source = .true.
+0
+
+3 !also silicon
+heat_capacity = 710
+h_conv = 100
+kappa  = 400
+kappa3D = 148
+rho = 2329
+sound_speed = 8430
+tau = 0.001
+source = .true.
+0
+
+1 !SU8
+heat_capacity = 1500
+kappa  = 0.2
+rho = 1200
+tau = 1E-9
+h_conv = 1
+kappa3D = 1
+sound_speed = 8
 source = .true.
 0

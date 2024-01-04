@@ -6,3 +6,5 @@ cases/
 .#*
 *.mod
 build/
+inputs/
+outputs/

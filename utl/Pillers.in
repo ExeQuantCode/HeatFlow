@@ -1,0 +1,90 @@
+! all values are taken to be in the possitive ...
+! ... octant of a graph. for visualisation ...
+! ... x to right y up z into screen
+! code
+VOLUME 
+       X = 750
+       Y = 750
+       Z = 375
+       Fill = 1
+       !units are meters by default
+       Units = 1E-9
+       dim = 3
+       grid = 100 100 50
+END
+
+CUBOID
+	origin = 0 0 0
+	Dimensions: 750 750 10
+	Fill = 3
+END
+
+CYLINDER
+	start = 125 125 10
+	Radius = 50
+	length = 365
+	direction = 0 0 1 
+	Fill =  4
+END
+
+CYLINDER
+	start = 125 375 10
+	Radius = 50
+	length = 365
+	direction = 0 0 1 
+	Fill =  4
+END
+
+CYLINDER
+	start = 125 625 10
+	Radius = 50
+	length = 365
+	direction = 0 0 1 
+	Fill =  4
+END
+CYLINDER
+	start = 375 125 10
+	Radius = 50
+	length = 365
+	direction = 0 0 1 
+	Fill =  4
+END
+
+CYLINDER
+	start = 375 375 10
+	Radius = 50
+	length = 365
+	direction = 0 0 1 
+	Fill =  4
+END
+
+CYLINDER
+	start = 375 625 10
+	Radius = 50
+	length = 365
+	direction = 0 0 1 
+	Fill =  4
+END
+CYLINDER
+	start = 625 125 10
+	Radius = 50
+	length = 365
+	direction = 0 0 1 
+	Fill =  4
+END
+
+CYLINDER
+	start = 625 375 10
+	Radius = 50
+	length = 365
+	direction = 0 0 1 
+	Fill =  4
+END
+
+CYLINDER
+	start = 625 625 10
+	Radius = 50
+	length = 365
+	direction = 0 0 1 
+	Fill =  4
+END
