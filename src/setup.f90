@@ -23,8 +23,8 @@ module setup
       allocate(TN(nx, ny, nz))
       allocate(TPD(NA))
       allocate(TPPD(NA))
-      allocate(heat(NA*ntime))
-      heat = 0.0_real12
+      ! allocate(heat(NA*ntime))
+      ! heat = 0.0_real12
       dt = time_step
       print1 = .true.
       inverse_time = 1.0_real12/dt

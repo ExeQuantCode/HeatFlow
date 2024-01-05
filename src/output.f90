@@ -71,8 +71,8 @@ contains
      end if
 
     
-    write(33,*) REAL(it)*time_step, heat(799)
-    TotalPower(it)=heat(799)
+    ! write(33,*) REAL(it)*time_step, heat(799)
+    ! TotalPower(it)=heat(799)
 
     indexA=1
     do k = 1, nz

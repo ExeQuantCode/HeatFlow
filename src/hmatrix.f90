@@ -12,7 +12,7 @@ contains
     integer(int12) :: x, y, z
     real(real12) :: alpha, A, B, D, E, F, G 
     real(real12) ::  tau
-    real(real12) :: conductivity
+    real(real12) :: conductivity, rho, heat_capacity
     real(real12) :: H
 
 
@@ -87,11 +87,15 @@ contains
 
   function calculate_alpha(x, y, z) result(alpha)
     integer(int12), intent(in) :: x, y, z
-    real(real12) :: tau, alpha
+    real(real12) :: tau, alpha, rho, heat_capacity
     tau = grid(x,y,z)%tau
     if (isteady .eq. 0) then
+      rho = grid(x,y,z)%rho
+      heat_capacity = grid(x,y,z)%heat_capacity
       if (icattaneo .eq. 0) tau = 0.0_real12
-      alpha = (tau) + (1+mixing)*(inverse_time*grid(x,y,z)%rho*grid(x,y,z)%heat_capacity/(2.0_real12))
+      alpha = (tau) + (1+mixing)*(inverse_time*rho*heat_capacity/(2.0_real12)) !tau is already divided by time_step**2
+    else
+      alpha = 0.0_real12
     end if 
     
   end function calculate_alpha
