@@ -1,25 +1,25 @@
 module boundary_vector
   use constants, only: real12, int12
-  use inputs, only: NA,nx,ny,nz, T_Bathx1, grid, kappaBoundx, kappaBoundy, kappaBoundz
-  use inputs, only: T_Bathx2, T_Bathy1, T_Bathy2, T_Bathz1, T_Bathz2
+  use inputs, only: NA,nx,ny,nz, grid, kappaBoundx, kappaBoundy, kappaBoundz
+  use inputs, only: T_Bathx1, T_Bathx2, T_Bathy1, T_Bathy2, T_Bathz1, T_Bathz2
   implicit none
 contains
 
   pure subroutine boundary(B)
     real(real12), dimension(NA), intent(out) :: B
     real(real12) :: kappa
-    integer(int12) :: i,x,y,z
+    integer(int12) :: I,x,y,z
 
 
     !Bound term has a correction for the x,y,z edges of our grid (first vector) and this can be both edges (second vector)
     !for example, the x-axis has a left and right boundary,
     !these correspond to  Bound_Term(1,1) and Bound_Term(1,2)
 
-    i = 0
+    I = 0
       do z= 1,nz
          do y= 1,ny
             do x= 1,nx
-         i = i+1
+              I = I+1
 
             kappa = grid(x,y,z)%kappa
 
