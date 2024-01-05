@@ -167,14 +167,17 @@ end subroutine SparseToReal
          ! use omp_lib
          real(real12) :: H0
          integer(int12) :: i, j, len, count, k
-         integer, dimension(3) :: addit
+         integer(int12), allocatable, dimension(:) :: addit
          len = 7*nx*ny*nz - 2*(nx*ny + ny*nz + nz*nx)
          ra%n = NA
          ra%len = len
          allocate(ra%val(len), ra%irow(len), ra%jcol(len))
-         addit(1) = 1
-         addit(2) = nx
-         addit(3) = nx*ny
+
+         addit = [1]
+         if (nx .gt. 1) addit = [addit, nx]
+         if (ny .gt. 1) addit = [addit, nx*ny]
+
+
 
          
          count = 0
