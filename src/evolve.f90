@@ -47,6 +47,7 @@ module evolution
     ! print*, B
     !**CALL HEATER
     call heater(it,Q)
+
     !**Call S_CAT
     call s_catS(s_cat)
     if (iSteady.eq.0) then
@@ -76,7 +77,7 @@ module evolution
        	 S(j)=-Q(j)-B(j)
        end do
     end if
-    ! print*,Q
+    ! print*,S
     ! print*,TPD
     !!!#################################################
     !!! Call the CG method to solve the equation Ax=b.

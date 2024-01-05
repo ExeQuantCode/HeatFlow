@@ -368,7 +368,7 @@ contains
 
     ! Allocate Global data arrays
     allocate(iheater(nx,ny,nz))
-    iheater(:,:,:) = 0.0_real12
+
     do k = 1, nz
        read(unit, '(A)', iostat= Reason) buffer
        do j = 1, ny

@@ -24,16 +24,14 @@ contains
     time = dt * real(it,real12)
     time_pulse = 0.5_real12
 
-    do k=1,nz
+    do k=1,nx
        do j=1,ny
-          do i=1,nx
+          do i=1,nz
              IA=IA+1
                rho = grid(i,j,k)%rho
                volume   = grid(i,j,k)%volume
                heat_capacity = grid(i,j,k)%heat_capacity
-
              select case(iheater(i,j,k))
-        
              case(0)
                !NO HEATING
                
@@ -89,8 +87,7 @@ contains
              end select
              Q(IA) = Q(IA)/(volume)
             !  if (Q(IA) .gt. 0) print*, "Q(IA)=",Q(IA) 
-
-
+          
           end do
        end do
     end do
