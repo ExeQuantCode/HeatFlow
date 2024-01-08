@@ -23,7 +23,7 @@ module setup
       allocate(TN(nx, ny, nz))
       allocate(TPD(NA))
       allocate(TPPD(NA))
-      ! allocate(heat(NA*ntime))
+      allocate(heat(ntime))
       ! heat = 0.0_real12
       dt = time_step
       print1 = .true.
@@ -141,6 +141,7 @@ subroutine SparseToReal(HT)
    addit(1) = 1
    addit(2) = nx
    addit(3) = nx*ny
+   
    HT = 0.0_real12
    parent_loop: do j = 1, NA
       i=j

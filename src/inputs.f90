@@ -334,7 +334,7 @@ contains
     ! read mesh volume dimessions
     read(unit,'(A)',iostat=Reason) buffer
     read(buffer,*) Lx, Ly, Lz
-
+    print*, Lx/nx, Ly/ny, Lz/nz
     grid(:,:,:)%Length(1)=real(Lx)/real(nx)
     grid(:,:,:)%Length(2)=real(Ly)/real(ny)
     grid(:,:,:)%Length(3)=real(Lz)/real(nz)

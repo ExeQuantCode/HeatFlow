@@ -1,7 +1,7 @@
 module output
   use constants, only: real12, int12, TINY
   use inputs, only: nx,ny,nz, time_step, zpos, grid, NA, Check_Steady_State, ntime, WriteToTxt
-  use inputs, only: Test_Run, freq, RunName, FullRestart
+  use inputs, only: Test_Run, freq, RunName, FullRestart, Lx, Ly, Lz
   use constructions, only: heatblock
   use globe_data, only: TPD,TPPD, heat
   implicit none
@@ -20,7 +20,7 @@ contains
      real(real12) :: CT(nx,ny,nz), TN(nx,ny,nz)
      character(len=1024) :: filename
      integer(int12) :: i,j,k,ix
-     real(real12), dimension(ntime) :: TotalPower
+     real(real12) :: TotalPower, vol
      real(real12) :: totaltime
      logical :: flag
      character(len=1024) :: file_prefix
@@ -72,7 +72,7 @@ contains
 
     
     ! write(33,*) REAL(it)*time_step, heat(799)
-    ! TotalPower(it)=heat(799)
+    TotalPower=sum(heat)
 
     indexA=1
     do k = 1, nz
@@ -103,10 +103,12 @@ contains
     if (WriteToTxt) write(newunit,*) real((it-1)*(time_step)),(TN(6,6,:))   !-293.0
     if (it == ntime) then
         close(30)
-        print*, 'TH after ', real((it-1)*(time_step)), ' seconds is ', TN(6,6,6)
-        print*, 'TM after ', real((it-1)*(time_step)), ' seconds is ', TN(6,6,9)
-        print*, 'Average Power is ', (sum(TotalPower)/ntime)
-        print*, 'Total Energy is ', (sum(TotalPower)*totaltime)
+        vol = real(Lx*Ly*Lz,real12)/real(nx*ny*nz,real12)
+        ! print*, 'TH after ', real((it-1)*(time_step)), ' seconds is ', TN(6,6,6)
+        ! print*, 'TM after ', real((it-1)*(time_step)), ' seconds is ', TN(6,6,9)
+        print*, 'Total Power is ', TotalPower*vol
+        print*, 'Average Power is ', (TotalPower*vol/ntime)
+        print*, 'Total Energy is ', (TotalPower*vol/ntime)*totaltime
 
         open(unit=34,file='./outputs/TempDis.dat')
         write(34,*) TPD(:)

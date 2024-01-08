@@ -13,7 +13,7 @@ contains
     integer :: IA
     integer(int12), intent(in) :: it 
     integer(int12) :: i,j,k,ierr
-    real(real12) :: time, TC,heat_capacity,rho,volume, totaltime
+    real(real12) :: time, TC,heat_capacity,rho,volume, totaltime, area
     real(real12) ::  dt, POWER, time_pulse, x, x2
     real(real12), dimension(NA), intent(out) :: Q
     !real(real12), dimension(NA) :: Q
@@ -31,6 +31,7 @@ contains
                rho = grid(i,j,k)%rho
                volume   = grid(i,j,k)%volume
                heat_capacity = grid(i,j,k)%heat_capacity
+                area = grid(i,j,k)%area(1)
 
              select case(iheater(i,j,k))
         

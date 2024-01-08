@@ -47,6 +47,8 @@ module evolution
     ! print*, B
     !**CALL HEATER
     call heater(it,Q)
+    heat(it) = sum(Q)
+  
     !**Call S_CAT
     call s_catS(s_cat)
     if (iSteady.eq.0) then
