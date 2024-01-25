@@ -8,12 +8,12 @@ module inputs
   implicit none
 
   integer :: unit, newunit
-  real(real12) :: time_step, T_Bath, freq, power_in, T_period, cutoff, kappaBoundx, kappaBoundy, kappaBoundz
-  real(real12) :: mixing
+  real(real12) :: time_step, freq, power_in, T_period, cutoff, kappaBoundx, kappaBoundy, kappaBoundz
+  real(real12) :: mixing, T_Bathx1, T_Bathx2, T_Bathy1, T_Bathy2, T_Bathz1, T_Bathz2, T_System
   integer(int12) :: IVERB, icell_mix, ntime, Rel, zpos, ACon, iboundary, nx, ny, nz, icattaneo, isteady, NA
   logical :: Check_Sparse_Full, Check_Stability, Check_Steady_State, WriteToTxt, Percentage, InputTempDis
   logical :: verbose = .TRUE., Test_Run = .FALSE., FullRestart
-  character(20) :: RunName
+  character(1024) :: RunName
   type(heatblock), dimension(:,:,:), allocatable :: grid
   integer(int12), dimension(:,:,:), allocatable :: iheater
   type(material), dimension(:), allocatable :: input_materials
@@ -182,8 +182,8 @@ contains
        write(6,'(A35,L1)')   '  _Percentage_Completion         = ',Percentage
        write(6,'(A35,L1)')   '   _Test_Run         = ',Test_Run
        write(6,'(A35,L1)')   '   _InputTempDis         = ',InputTempDis
-       write(6,'(A35,A)')   '    _FullRestart         = ',FullRestart
-       write(6,'(A35,A)')   '    _RunName         = ',RunName
+       write(6,'(A35,L1)')   '    _FullRestart         = ',FullRestart
+       write(6,'(A35,A)')   '    _RunName         = ',trim(RunName)
        write(6,'(A35,L1)')   '   _WriteToTxt         = ',WriteToTxt
        write(6,'(A35,I6)')   '   icell_mix  = ',icell_mix
        write(6,'(A35,I12)')   '   ntime      = ',ntime
@@ -195,7 +195,13 @@ contains
        write(6,'(A35,I6)')   '   iboundary  = ',iboundary
        write(6,'(A35,I6)')   '   icattaneo  = ' , icattaneo
        write(6,'(A35,I6)')   '   isteady    = ', isteady
-       write(6,'(A35,F12.5)')'   T_Bath     = ', T_Bath
+       write(6,'(A35,F12.5)')'   T_System   = ', T_System
+       write(6,'(A35,F12.5)')'   T_Bathx1     = ', T_Bathx1
+       write(6,'(A35,F12.5)')'   T_Bathx2     = ', T_Bathx2
+       write(6,'(A35,F12.5)')'   T_Bathy1     = ', T_Bathy1
+       write(6,'(A35,F12.5)')'   T_Bathy2     = ', T_Bathy2
+       write(6,'(A35,F12.5)')'   T_Bathz1     = ', T_Bathz1
+       write(6,'(A35,F12.5)')'   T_Bathz2     = ', T_Bathz2
        write(6,'(A35,F16.5)')'   cutoff     = ',cutoff
        write(6,'(A35,F12.5)')'   power_in   = ',power_in
        write(6,'(A35,F12.5)')'   T_period   = ',T_period
@@ -214,7 +220,7 @@ contains
 !!!##########################################################################
   subroutine read_param(unit)
     integer::unit, Reason, i
-    integer,dimension(27)::readvar
+    integer,dimension(33)::readvar
     character(1024)::buffer
     logical::ex
     readvar=0
@@ -230,6 +236,7 @@ contains
     InputTempDis = .FALSE.
     FullRestart = .FALSE.
     RunName = 'default'
+    RunName = trim(adjustl(RunName))
     WriteToTxt = .FALSE.
     icell_mix = 2
     ntime = 10
@@ -241,7 +248,13 @@ contains
     iboundary = 1
     icattaneo = 1
     isteady = 0
-    T_Bath = 300
+    T_System = 300
+    T_Bathx1 = 300
+    T_Bathx2 = 300
+    T_Bathy1 = 300
+    T_Bathy2 = 300
+    T_Bathz1 = 300
+    T_Bathz2 = 300
     cutoff = 1e12
     power_in = 0
     T_period = 1
@@ -272,7 +285,7 @@ contains
        call assignI(buffer,"iboundary",iboundary,readvar(9))   
        call assignI(buffer,"icattaneo", icattaneo, readvar(10))
        call assignI(buffer,"isteady", isteady, readvar(11))
-       call assignD(buffer,"T_Bath",T_Bath,readvar(12)) 
+       call assignD(buffer,"T_Bathx1",T_Bathx1,readvar(12)) 
        call assignD(buffer,"cutoff",cutoff,readvar(13))    
        call assignD(buffer,"power_in",power_in,readvar(14))       
        call assignD(buffer,"T_period",T_period,readvar(15))       
@@ -288,6 +301,12 @@ contains
        call assignL(buffer,"_InputTempDis",InputTempDis,readvar(25))
        call assignS(buffer,"_RunName",RunName,readvar(26))
         call assignL(buffer,"_FullRestart",FullRestart,readvar(27))
+        call assignD(buffer,"T_Bathx2",T_Bathx2,readvar(28))
+        call assignD(buffer,"T_Bathy1",T_Bathy1,readvar(29))
+        call assignD(buffer,"T_Bathy2",T_Bathy2,readvar(30))
+        call assignD(buffer,"T_Bathz1",T_Bathz1,readvar(31))
+        call assignD(buffer,"T_Bathz2",T_Bathz2,readvar(32))
+        call assignD(buffer,"T_System",T_System,readvar(33))
 
     end do
     call check_param(readvar,size(readvar,1))
@@ -315,7 +334,7 @@ contains
     ! read mesh volume dimessions
     read(unit,'(A)',iostat=Reason) buffer
     read(buffer,*) Lx, Ly, Lz
-
+    print*, Lx/nx, Ly/ny, Lz/nz
     grid(:,:,:)%Length(1)=real(Lx)/real(nx)
     grid(:,:,:)%Length(2)=real(Ly)/real(ny)
     grid(:,:,:)%Length(3)=real(Lz)/real(nz)
@@ -349,7 +368,7 @@ contains
 
     ! Allocate Global data arrays
     allocate(iheater(nx,ny,nz))
-
+    iheater(:,:,:) = 0.0_real12
     do k = 1, nz
        read(unit, '(A)', iostat= Reason) buffer
        do j = 1, ny

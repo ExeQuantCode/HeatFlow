@@ -1,7 +1,7 @@
 
 module setup
   use constants, only: real12, int12, TINY
-  use inputs, only: Lx, Ly, Lz, nx, ny, nz, NA, grid, T_Bath, time_step, kappaBoundx, kappaBoundy, kappaBoundz &
+  use inputs, only: Lx, Ly, Lz, nx, ny, nz, NA, grid, time_step, kappaBoundx, kappaBoundy, kappaBoundz &
                      ,Check_Sparse_Full, Check_Stability, ntime
   use constructions, only: heatblock
   use hmatrixmod, only: hmatrixfunc
@@ -23,8 +23,8 @@ module setup
       allocate(TN(nx, ny, nz))
       allocate(TPD(NA))
       allocate(TPPD(NA))
-      allocate(heat(NA))
-      heat = 0.0_real12
+      allocate(heat(ntime))
+      ! heat = 0.0_real12
       dt = time_step
       print1 = .true.
       inverse_time = 1.0_real12/dt
@@ -77,7 +77,6 @@ module setup
             end do               
          end do
       end do
-      print*, "TBATH", real(T_Bath,real12)
 
       !---------------------------------------------------
       !** should impliment an if condition for sparse only
@@ -142,6 +141,7 @@ subroutine SparseToReal(HT)
    addit(1) = 1
    addit(2) = nx
    addit(3) = nx*ny
+   
    HT = 0.0_real12
    parent_loop: do j = 1, NA
       i=j
@@ -153,11 +153,12 @@ subroutine SparseToReal(HT)
           H0=hmatrixfunc(i,j)
           if (abs(H0).lt.TINY) cycle neighbour_loop
           HT(i,j)=H0
+          H0=hmatrixfunc(j,i)
           HT(j,i)=H0
 
       end do neighbour_loop
   end do parent_loop
-   write(*, '(3F15.4)') HT
+   write(*, '(10F15.4)') HT
 end subroutine SparseToReal
 
 !!!#########################################################################
@@ -167,14 +168,17 @@ end subroutine SparseToReal
          ! use omp_lib
          real(real12) :: H0
          integer(int12) :: i, j, len, count, k
-         integer, dimension(3) :: addit
+         integer(int12), allocatable, dimension(:) :: addit
          len = 7*nx*ny*nz - 2*(nx*ny + ny*nz + nz*nx)
          ra%n = NA
          ra%len = len
          allocate(ra%val(len), ra%irow(len), ra%jcol(len))
-         addit(1) = 1
-         addit(2) = nx
-         addit(3) = nx*ny
+
+         addit = [1]
+         if (nx .gt. 1) addit = [addit, nx]
+         if (ny .gt. 1) addit = [addit, nx*ny]
+
+
 
          
          count = 0

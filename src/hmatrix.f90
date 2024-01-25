@@ -12,7 +12,7 @@ contains
     integer(int12) :: x, y, z
     real(real12) :: alpha, A, B, D, E, F, G 
     real(real12) ::  tau
-    real(real12) :: conductivity
+    real(real12) :: conductivity, rho, heat_capacity
     real(real12) :: H
 
 
@@ -87,18 +87,22 @@ contains
 
   function calculate_alpha(x, y, z) result(alpha)
     integer(int12), intent(in) :: x, y, z
-    real(real12) :: tau, alpha
+    real(real12) :: tau, alpha, rho, heat_capacity
     tau = grid(x,y,z)%tau
     if (isteady .eq. 0) then
+      rho = grid(x,y,z)%rho
+      heat_capacity = grid(x,y,z)%heat_capacity
       if (icattaneo .eq. 0) tau = 0.0_real12
-      alpha = (tau/(grid(x,y,z)%rho*grid(x,y,z)%heat_capacity)) + (1+mixing)*(inverse_time/(2.0_real12))
+      alpha = (tau) + (1+mixing)*(inverse_time*rho*heat_capacity/(2.0_real12)) !tau is already divided by time_step**2
+    else
+      alpha = 0.0_real12
     end if 
     
   end function calculate_alpha
 
   function calculate_conductivity(x_in, y_in, z_in, x_out, y_out, z_out) result(conductivity)
     integer(int12), intent(in) :: x_in, y_in, z_in, x_out, y_out, z_out
-    real(real12) :: kappa_out, kappa_in, heat_capacity, rho, tau, kappa_ab
+    real(real12) :: kappa_out, kappa_in, tau, kappa_ab
     real(real12) :: conductivity
     real(real12) :: T ! Dummy T value; as it seems unused in the original
 
@@ -106,8 +110,7 @@ contains
          (y_in .le. ny) .and. (z_in .ge. 1) .and. (z_in .le. nz)) then
           kappa_in = grid(x_in,y_in,z_in)%kappa
           kappa_out = grid(x_out,y_out,z_out)%kappa
-          heat_capacity = grid(x_out,y_out,z_out)%heat_capacity
-          rho = grid(x_out,y_out,z_out)%rho
+
 
        if(x_in .ne. x_out) then
           kappa_ab = (grid(x_in, y_in, z_in)%Length(1) + grid(x_out, y_out, z_out)%Length(1))*kappa_in*kappa_out/&
@@ -125,10 +128,10 @@ contains
                kappa_ab = kappa_ab/(grid(x_out, y_out, z_out)%Length(3))**2
 
        end if
-       conductivity = (kappa_ab) / (rho * heat_capacity)
+       conductivity = (kappa_ab) 
     else
-       call boundry_diag_term(x_in, y_in, z_in,x_out, y_out, z_out,kappa_ab,rho,heat_capacity)
-       conductivity = kappa_ab / (rho * heat_capacity)
+       call boundry_diag_term(x_in, y_in, z_in,x_out, y_out, z_out,kappa_ab)
+       conductivity = kappa_ab 
     end if
   end function calculate_conductivity
 
@@ -138,14 +141,13 @@ contains
     if(c .eq. 0) c = b
   end function altmod
 
-  subroutine boundry_diag_term(x_b, y_b, z_b, x, y, z, kappa_ab, rho, heat_capacity)
+  subroutine boundry_diag_term(x_b, y_b, z_b, x, y, z, kappa_ab)
     integer(int12), intent(in) :: x_b, y_b, z_b, x, y, z
-    real(real12), intent(out) :: kappa_ab, heat_capacity, rho
+    real(real12), intent(out) :: kappa_ab
     real(real12) :: kappa
 
     kappa = grid(x,y,z)%kappa
-    heat_capacity = grid(x,y,z)%heat_capacity
-    rho = grid(x,y,z)%rho
+
     
     if(x_b .ne. x) then
        kappa_ab = (2*kappaBoundx*kappa)/(kappaBoundx+kappa)
