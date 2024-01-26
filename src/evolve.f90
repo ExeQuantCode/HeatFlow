@@ -3,10 +3,9 @@ module evolution
   use inputs, only: NA, icattaneo, isteady, nx, ny, nz, T_System, time_step, mixing, grid
   use sptype, only: I4B
   use sparse, only: linbcg
-  use globe_data, only: TPD, TPPD, inverse_time, heat
+  use globe_data, only: TPD, TPPD, inverse_time, heat, Grid1DHR
   use heating, only: heater
   use boundary_vector, only: boundary
-  use hmatrixmod, only: altmod
   use cattaneo, only: S_catS
   implicit none
 
@@ -24,7 +23,7 @@ module evolution
     integer(int12) :: i,j, ncg, itol, itmax, iss, ierr, xc , yc, zc
     integer(I4B) :: iter
     real(real12) :: dt, To, Hb, e, err, tol
-    real(real12) :: rho, heat_capacity
+    real(real12) :: RhoHC
     
     
 
@@ -53,13 +52,9 @@ module evolution
     call s_catS(s_cat)
     if (iSteady.eq.0) then
        do j=1, NA
-        xc = altmod(j,nx)
-        yc = mod((j-altmod(j,nx))/nx,ny)+1
-        zc = (j-altmod(j,nx*ny))/(nx*ny)+1
-        rho = grid(xc,yc,zc)%rho
-        heat_capacity = grid(xc,yc,zc)%heat_capacity
-          S(j)=(-(TPPD(j)*(1-mixing)*inverse_time/(2.0_real12))*rho*heat_capacity)-&
-            (TPD(j)*inverse_time*mixing*rho*heat_capacity)-Q(j)-B(j)
+          RhoHC = Grid1DHR(j)
+          S(j)=(-(TPPD(j)*(1-mixing)*inverse_time/(2.0_real12))*RhoHC)-&
+            (TPD(j)*inverse_time*mixing*RhoHC)-Q(j)-B(j)
           ! print*,B
           ! print*,S_CAT
           if (iCAttaneo.eq.1)  then
