@@ -6,6 +6,7 @@ module globe_data
   real(real12), dimension(:), allocatable :: TPD, TPPD, heat
   real(real12) :: inverse_time
   real(real12), dimension(:), allocatable :: heatcheck
+  real(real12), dimension(:), allocatable :: Grid1DHR ! 1D array for HeatCapacity*Rho
   TYPE(sprs2_dp) :: ra !Techniqually rH
   TYPE(diag_sprs_dp) :: da !Techniqually dH
    

@@ -5,7 +5,7 @@ module setup
                      ,Check_Sparse_Full, Check_Stability, ntime
   use constructions, only: heatblock
   use hmatrixmod, only: hmatrixfunc
-  use globe_data, only:  ra, TN, TPD, TPPD,inverse_time, heat
+  use globe_data, only:  ra, TN, TPD, TPPD,inverse_time, heat, Grid1DHR
   use sparse, only: SRSin
   use materials, only: material
   implicit none
@@ -24,6 +24,7 @@ module setup
       allocate(TPD(NA))
       allocate(TPPD(NA))
       allocate(heat(ntime))
+      allocate(Grid1DHR(NA))
       ! heat = 0.0_real12
       dt = time_step
       print1 = .true.
@@ -33,15 +34,17 @@ module setup
       ! can be expanded to include more properties at a 
       ! later date
       !---------------------------------------------------
+      index = 0
       do k = 1, nz
          do j = 1, ny
             do i = 1, nx
+            index = index + 1
             call material(grid(i,j,k)%imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
             grid(i,j,k)%kappa = kappa
             grid(i,j,k)%rho = rho
             grid(i,j,k)%heat_capacity = heat_capacity
             grid(i,j,k)%tau = tau*inverse_time*inverse_time
-
+            Grid1DHR(index) = rho*heat_capacity
             !---------------------------------------------------
             ! Check stability condition
             !---------------------------------------------------
