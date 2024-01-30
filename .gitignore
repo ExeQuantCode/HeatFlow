@@ -8,3 +8,9 @@ cases/
 build/
 inputs/
 outputs/
+utl/DFortran/make_geom/bin/
+utl/DFortran/make_geom/obj/
+utl/DFortran/make_geom/mod/
+utl/DFortran/make_geom/geom.in
+utl/DFortran/make_geom/Pillers.in
+utl/DFortran/make_geom/test_geometry.in

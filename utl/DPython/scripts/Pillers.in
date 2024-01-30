@@ -10,12 +10,12 @@ VOLUME
        !units are meters by default
        Units = 1E-9
        dim = 3
-       grid = 100 100 50
+       grid = 50 50 25
 END
 
 CUBOID
 	origin = 0 0 0
-	Dimensions: 750 750 10
+	Dim: 750 750 10
 	Fill = 3
 END
 
