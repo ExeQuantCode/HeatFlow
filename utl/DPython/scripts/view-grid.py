@@ -107,7 +107,7 @@ values=invert_mode(values)
 values=compress_to_range(values)
 isomin_ = min(values)
 isomax_ = max(values)
-sufnum = len(np.unique(values))
+sufnum = len(np.unique(values)) # this should never be too big
 ###############################################################
 
 # Define isosurface
