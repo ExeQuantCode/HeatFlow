@@ -17,7 +17,7 @@ module setup
 !!! This allocates arrays and builds the apropreate H matrix
 !!!##########################################################################
    subroutine set_global_variables()
-      integer(int12) :: i,j,k
+      integer(int12) :: i,j,k,index
       logical :: print1
       real(real12) :: TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau, stability, alpha, dt
       allocate(TN(nx, ny, nz))
