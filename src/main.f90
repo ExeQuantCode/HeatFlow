@@ -64,12 +64,11 @@ program HEATFLOW_V0_1
 
       ! Temp will be moved to evolve eventually                  !
       !call bmake(grid, T, TN, Told, TPD ,it)                    !
-      if (it .eq. 1) then
-         CALL initial_evolve
-      else                                  !
+      if (it .eq. 1) CALL initial_evolve                        !
+      
       ! run the time evolution                                   !
-         CALL evolve(it)
-      end if                                            !
+      CALL evolve(it)
+                                                 !
                                                                  !
       ! Write results                                            !
       CALL plot(it)                                              !
