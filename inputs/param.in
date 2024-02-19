@@ -6,31 +6,31 @@
     _Test_Run = .False. 
     _InputTempDis = .False.
     _FullRestart = .False.
-    _RunName = Su8Tau0.001 !The prefix name for the output file
+    _RunName = Silicon11x11x11New !The prefix name for the output file
     _WriteToTxt = .True. !For large systems/Large number of time_steps False
     icell_mix = 2     !
-    ntime = 300000000 !10000000  !
+    ntime = 30 !10000000  !
     Rel = 0     !
     mixing = 0.0     !
     ACon = 1     !
-    time_step = 1E-15  !
+    time_step = 1E-4  !
     freq = 10     !
     iboundary = 1     !
-    icattaneo = 1 !
-    isteady =  0!
-    T_System = 300 ! Doesnt matter if _FullRestart or _InputTempDis = True
-    T_Bathx1 = 300     !
-    T_Bathx2 = 300     !
-    T_Bathy1 = 300     !
-    T_Bathy2 = 300    !
-    T_Bathz1 = 300    !
-    T_Bathz2 = 300    !
+    icattaneo = 0 !
+    isteady =  0  !
+    T_System = 600 ! Doesnt matter if _FullRestart or _InputTempDis = True
+    T_Bathx1 = 200     !
+    T_Bathx2 = 200     !
+    T_Bathy1 = 200     !
+    T_Bathy2 = 200    !
+    T_Bathz1 = 200    !
+    T_Bathz2 = 200    !
     cutoff = 1000     !
-    power_in =  0.00005  !
+    power_in =  0  !
     T_period = 0.01  !
-    kappaBoundx = 0  !
-    kappaBoundy = 0  !
-    kappaBoundz = 100    !
+    kappaBoundx = 400  !
+    kappaBoundy = 400  !
+    kappaBoundz = 400    !
 
 
 

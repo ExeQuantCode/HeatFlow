@@ -24,7 +24,7 @@ contains
     real(real12), dimension(NA) :: S, x, Q, Qdens, S_CAT, B
     integer(int12) :: i, j, ncg, itol, itmax, iss, ierr, xc, yc, zc
     integer(I4B) :: iter
-    real(real12) :: dt, To, Hb, e, err, tol, RhoHC
+    real(real12) :: dt, To, Hb, e, err, tol
 
     !----------------------
     ! Initialize vectors
@@ -67,16 +67,22 @@ contains
        !S = - TPPD * inverse_time * (1 - mixing) * RhoHC / 2.0_real12 &
        !     - TPD * inverse_time * mixing * RhoHC &
        !     - Qdens - B
-       S = - inverse_time * TPD * RhoHC - Qdens - B
+       S = - (inverse_time * (TPPD/2.0_real12) * Grid1DHR) - Qdens - B
        if (iCAttaneo .eq. 1) then
-          S(j) = S(j) + S_CAT(j)
+        print *, 'S_CAT = ', S_CAT
+
+          S = S + S_CAT
        end if
     else
        S(:) = -Qdens(:) - B(:)
     end if
+    ! print *, 'B = ', B
+    ! print *, 'Qdens = ', Qdens
+    ! print *, 'S = ', S
+    ! print *, 'inverse_time = ', inverse_time
+     print *, 'TPD = ', TPD
     !---------------------------------------------
 
-    
 !!!#################################################
 !!! Call the CG method to solve the equation Ax=b.
 !!!#################################################
@@ -99,7 +105,7 @@ contains
     call linbcg(S,x,itol=int(itol,I4B),tol=tol, itmax=int(itmax,I4B), iter=iter, &
          err=E, iss=int(iss,I4B))
 !!!#################################################
-
+    ! print*, 'X= ', x
     ! Update temperature profile
     call TP_UPDATE(x)
   end subroutine EVOLVE

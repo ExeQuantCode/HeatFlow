@@ -161,7 +161,7 @@ subroutine SparseToReal(HT)
 
       end do neighbour_loop
   end do parent_loop
-   write(*, '(10F15.4)') HT
+   write(*, '(3F15.4)') HT
 end subroutine SparseToReal
 
 !!!#########################################################################

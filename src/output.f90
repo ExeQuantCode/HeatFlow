@@ -100,7 +100,7 @@ contains
         end if
       end if
     end if 
-    if (WriteToTxt) write(newunit,*) real((it-1)*(time_step)),(TN(6,6,:))   !-293.0
+    if (WriteToTxt) write(newunit,*) real((it-1)*(time_step)),(TN(:,:,:))   !-293.0
     if (it == ntime) then
         close(30)
         vol = real(Lx*Ly*Lz,real12)/real(nx*ny*nz,real12)

@@ -1,4 +1,15 @@
-4 !silicon
+5 !TEST
+heat_capacity = 1
+h_conv = 100
+kappa  = 1
+kappa3D = 148
+rho = 1
+sound_speed = 8430
+tau = 0.001
+source = .true.
+0
+
+1 !silicon
 heat_capacity = 710
 h_conv = 100
 kappa  = 400
@@ -20,7 +31,7 @@ tau = 0.001
 source = .true.
 0
 
-1 !SU8
+4 !SU8
 heat_capacity = 1500
 kappa  = 0.2
 rho = 1200

@@ -63,7 +63,6 @@ contains
       TPPD = T_System
     end if
 
-    ! print*,'Initial Temperature = ',TPD
     
   end subroutine initial_evolve
 end module initial
