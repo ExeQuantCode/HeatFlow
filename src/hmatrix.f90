@@ -11,8 +11,6 @@ contains
     integer(int12), intent(in) :: i, j
     integer(int12) :: x, y, z
     real(real12) :: alpha, A, B, D, E, F, G 
-    real(real12) ::  tau
-    real(real12) :: conductivity, rho, heat_capacity
     real(real12) :: H
 
 
@@ -93,7 +91,7 @@ contains
       rho = grid(x,y,z)%rho
       heat_capacity = grid(x,y,z)%heat_capacity
       if (icattaneo .eq. 0) tau = 0.0_real12
-      alpha = (tau) + (1+mixing)*(inverse_time*rho*heat_capacity/(2.0_real12)) !tau is already divided by time_step**2
+      alpha = (tau*rho*heat_capacity) + (inverse_time*rho*heat_capacity) !tau is already divided by time_step**2
     else
       alpha = 0.0_real12
     end if 

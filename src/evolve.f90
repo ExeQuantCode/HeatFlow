@@ -67,7 +67,7 @@ contains
        !S = - TPPD * inverse_time * (1 - mixing) * RhoHC / 2.0_real12 &
        !     - TPD * inverse_time * mixing * RhoHC &
        !     - Qdens - B
-       S = - (inverse_time * (TPPD/2.0_real12) * Grid1DHR) - Qdens - B
+       S = - (inverse_time * (TPD) * Grid1DHR) - Qdens - B
        if (iCAttaneo .eq. 1) then
         print *, 'S_CAT = ', S_CAT
 
