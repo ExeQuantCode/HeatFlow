@@ -23,7 +23,7 @@ module setup
       allocate(TN(nx, ny, nz))
       allocate(TPD(NA))
       allocate(TPPD(NA))
-      allocate(heat(ntime))
+      ! allocate(heat(ntime))
       allocate(Grid1DHR(NA))
       ! heat = 0.0_real12
       dt = time_step

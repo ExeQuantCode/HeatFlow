@@ -8,9 +8,9 @@ module inputs
   implicit none
 
   integer :: unit, newunit
-  real(real12) :: time_step, freq, power_in, T_period, cutoff, kappaBoundx, kappaBoundy, kappaBoundz
-  real(real12) :: mixing, T_Bathx1, T_Bathx2, T_Bathy1, T_Bathy2, T_Bathz1, T_Bathz2, T_System
-  integer(int12) :: IVERB, icell_mix, ntime, Rel, zpos, ACon, iboundary, nx, ny, nz, icattaneo, isteady, NA
+  real(real12) :: time_step, freq, power_in, kappaBoundx, kappaBoundy, kappaBoundz
+  real(real12) :: T_Bathx1, T_Bathx2, T_Bathy1, T_Bathy2, T_Bathz1, T_Bathz2, T_System
+  integer(int12) :: IVERB, ntime, iboundary, nx, ny, nz, icattaneo, isteady, NA
   logical :: Check_Sparse_Full, Check_Stability, Check_Steady_State, WriteToTxt, Percentage, InputTempDis
   logical :: verbose = .TRUE., Test_Run = .FALSE., FullRestart
   character(1024) :: RunName
@@ -185,11 +185,7 @@ contains
        write(6,'(A35,L1)')   '    _FullRestart         = ',FullRestart
        write(6,'(A35,A)')   '    _RunName         = ',trim(RunName)
        write(6,'(A35,L1)')   '   _WriteToTxt         = ',WriteToTxt
-       write(6,'(A35,I6)')   '   icell_mix  = ',icell_mix
        write(6,'(A35,I12)')   '   ntime      = ',ntime
-       write(6,'(A35,I6)')   '   Rel        = ', Rel
-       write(6,'(A35,F12.5)')'   Mixing       = ',mixing
-       write(6,'(A35,I6)')   '   ACon       = ',ACon       
        write(6,'(A35,F20.15)')'   Time_step  = ',time_step
        write(6,'(A35,F12.5)')'   frequency  = ',freq
        write(6,'(A35,I6)')   '   iboundary  = ',iboundary
@@ -202,9 +198,7 @@ contains
        write(6,'(A35,F12.5)')'   T_Bathy2     = ', T_Bathy2
        write(6,'(A35,F12.5)')'   T_Bathz1     = ', T_Bathz1
        write(6,'(A35,F12.5)')'   T_Bathz2     = ', T_Bathz2
-       write(6,'(A35,F16.5)')'   cutoff     = ',cutoff
        write(6,'(A35,F12.5)')'   power_in   = ',power_in
-       write(6,'(A35,F12.5)')'   T_period   = ',T_period
        write(6,'(A35,F12.5)')   '   kappaBoundx         = ',kappaBoundx
        write(6,'(A35,F12.5)')   '   kappaBoundy         = ',kappaBoundy
        write(6,'(A35,F12.5)')   '   kappaBoundz         = ',kappaBoundz
@@ -219,8 +213,8 @@ contains
 !!! ... by the variable i.e. 1, 2, .TRUE., 5D-15
 !!!##########################################################################
   subroutine read_param(unit)
-    integer::unit, Reason, i
-    integer,dimension(33)::readvar
+    integer:: unit, Reason, i
+    integer,dimension(27)::readvar
     character(1024)::buffer
     logical::ex
     readvar=0
@@ -238,11 +232,7 @@ contains
     RunName = 'default'
     RunName = trim(adjustl(RunName))
     WriteToTxt = .FALSE.
-    icell_mix = 2
     ntime = 10
-    Rel = 0
-    mixing = 0.5  
-    ACon = 0
     time_step = 1.0
     freq = 1
     iboundary = 1
@@ -255,9 +245,7 @@ contains
     T_Bathy2 = 300
     T_Bathz1 = 300
     T_Bathz2 = 300
-    cutoff = 1e12
     power_in = 0
-    T_period = 1
     kappaBoundx = 400
     kappaBoundy = 400
     kappaBoundz = 400
@@ -275,38 +263,32 @@ contains
        !---------------------------------------
        ! looks for all the keywords relating to inputs and defines their variables
        call assignI(buffer,"IVERB",IVERB,readvar(1))
-       call assignI(buffer,"icell_mix",icell_mix,readvar(2))             
-       call assignI(buffer,"ntime",ntime,readvar(3))           
-       call assignI(buffer,"Rel",Rel,readvar(4))       
-       call assignD(buffer,"mixing",mixing,readvar(5))      
-       call assignI(buffer,"ACon",ACon,readvar(6))         
-       call assignD(buffer,"time_step",time_step,readvar(7))   
-       call assignD(buffer,"freq",freq,readvar(8))       
-       call assignI(buffer,"iboundary",iboundary,readvar(9))   
-       call assignI(buffer,"icattaneo", icattaneo, readvar(10))
-       call assignI(buffer,"isteady", isteady, readvar(11))
-       call assignD(buffer,"T_Bathx1",T_Bathx1,readvar(12)) 
-       call assignD(buffer,"cutoff",cutoff,readvar(13))    
-       call assignD(buffer,"power_in",power_in,readvar(14))       
-       call assignD(buffer,"T_period",T_period,readvar(15))       
-       call assignD(buffer,"kappaBoundx",kappaBoundx,readvar(16))
-       call assignD(buffer,"kappaBoundy",kappaBoundy,readvar(17))    
-       call assignD(buffer,"kappaBoundz",kappaBoundz,readvar(18))
-       call assignL(buffer,"_Check_Sparse_Full",Check_Sparse_Full,readvar(19))
-       call assignL(buffer,"_Check_Stability",Check_Stability,readvar(20))
-       call assignL(buffer,"_Check_Steady_State",Check_Steady_State,readvar(21))
-       call assignL(buffer,"_WriteToTxt",WriteToTxt,readvar(22))
-       call assignL(buffer,"_Percentage_Completion",Percentage,readvar(23))
-       call assignL(buffer,"_Test_Run",Test_Run,readvar(24))
-       call assignL(buffer,"_InputTempDis",InputTempDis,readvar(25))
-       call assignS(buffer,"_RunName",RunName,readvar(26))
-        call assignL(buffer,"_FullRestart",FullRestart,readvar(27))
-        call assignD(buffer,"T_Bathx2",T_Bathx2,readvar(28))
-        call assignD(buffer,"T_Bathy1",T_Bathy1,readvar(29))
-        call assignD(buffer,"T_Bathy2",T_Bathy2,readvar(30))
-        call assignD(buffer,"T_Bathz1",T_Bathz1,readvar(31))
-        call assignD(buffer,"T_Bathz2",T_Bathz2,readvar(32))
-        call assignD(buffer,"T_System",T_System,readvar(33))
+       call assignI(buffer,"ntime",ntime,readvar(2))           
+       call assignD(buffer,"time_step",time_step,readvar(3))   
+       call assignD(buffer,"freq",freq,readvar(4))       
+       call assignI(buffer,"iboundary",iboundary,readvar(5))   
+       call assignI(buffer,"icattaneo", icattaneo, readvar(6))
+       call assignI(buffer,"isteady", isteady, readvar(7))
+       call assignD(buffer,"T_Bathx1",T_Bathx1,readvar(8)) 
+       call assignD(buffer,"power_in",power_in,readvar(9))       
+       call assignD(buffer,"kappaBoundx",kappaBoundx,readvar(10))
+       call assignD(buffer,"kappaBoundy",kappaBoundy,readvar(11))    
+       call assignD(buffer,"kappaBoundz",kappaBoundz,readvar(12))
+       call assignL(buffer,"_Check_Sparse_Full",Check_Sparse_Full,readvar(13))
+       call assignL(buffer,"_Check_Stability",Check_Stability,readvar(14))
+       call assignL(buffer,"_Check_Steady_State",Check_Steady_State,readvar(15))
+       call assignL(buffer,"_WriteToTxt",WriteToTxt,readvar(16))
+       call assignL(buffer,"_Percentage_Completion",Percentage,readvar(17))
+       call assignL(buffer,"_Test_Run",Test_Run,readvar(18))
+       call assignL(buffer,"_InputTempDis",InputTempDis,readvar(19))
+       call assignS(buffer,"_RunName",RunName,readvar(20))
+        call assignL(buffer,"_FullRestart",FullRestart,readvar(21))
+        call assignD(buffer,"T_Bathx2",T_Bathx2,readvar(22))
+        call assignD(buffer,"T_Bathy1",T_Bathy1,readvar(23))
+        call assignD(buffer,"T_Bathy2",T_Bathy2,readvar(24))
+        call assignD(buffer,"T_Bathz1",T_Bathz1,readvar(25))
+        call assignD(buffer,"T_Bathz2",T_Bathz2,readvar(26))
+        call assignD(buffer,"T_System",T_System,readvar(27))
 
     end do
     call check_param(readvar,size(readvar,1))
@@ -334,7 +316,7 @@ contains
     ! read mesh volume dimessions
     read(unit,'(A)',iostat=Reason) buffer
     read(buffer,*) Lx, Ly, Lz
-    print*, Lx/nx, Ly/ny, Lz/nz
+    ! print*, Lx/nx, Ly/ny, Lz/nz
     grid(:,:,:)%Length(1)=real(Lx)/real(nx)
     grid(:,:,:)%Length(2)=real(Ly)/real(ny)
     grid(:,:,:)%Length(3)=real(Lz)/real(nz)

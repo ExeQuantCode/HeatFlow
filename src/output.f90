@@ -1,6 +1,6 @@
 module output
   use constants, only: real12, int12, TINY
-  use inputs, only: nx,ny,nz, time_step, zpos, grid, NA, Check_Steady_State, ntime, WriteToTxt
+  use inputs, only: nx,ny,nz, time_step, grid, NA, Check_Steady_State, ntime, WriteToTxt
   use inputs, only: Test_Run, freq, RunName, FullRestart, Lx, Ly, Lz
   use constructions, only: heatblock
   use globe_data, only: TPD,TPPD, heat
@@ -33,7 +33,7 @@ contains
      xlen= 1.0*0.333
 
       if (it == 1) then
-       if (Test_Run .neqv. .True.) open(unit=30,file='./outputs/Test.txt')
+       if (Test_Run .eqv. .True.) open(unit=30,file='./outputs/Test.txt')
        if (Test_Run .eqv. .False.) then
            ! Create the file name using timestep, frequency, and tau variables
            write(file_prefix, '(A, A, A, F0.2)') 'output_', trim(RunName), '_freq_', freq
@@ -72,7 +72,7 @@ contains
 
     
     ! write(33,*) REAL(it)*time_step, heat(799)
-    TotalPower=sum(heat)
+    ! TotalPower=sum(heat)
 
     indexA=1
     do k = 1, nz
@@ -100,19 +100,18 @@ contains
         end if
       end if
     end if 
-    if (WriteToTxt) write(newunit,*) real((it-1)*(time_step)),(TN(:,:,:))   !-293.0
+    if (WriteToTxt) write(newunit,*) real((it-1)*(time_step)),(TN(17,17,:))   !-293.0
     if (it == ntime) then
-        close(30)
         vol = real(Lx*Ly*Lz,real12)/real(nx*ny*nz,real12)
         ! print*, 'TH after ', real((it-1)*(time_step)), ' seconds is ', TN(6,6,6)
         ! print*, 'TM after ', real((it-1)*(time_step)), ' seconds is ', TN(6,6,9)
-        print*, 'Total Power is ', TotalPower*vol
-        print*, 'Average Power is ', (TotalPower*vol/ntime)
-        print*, 'Total Energy is ', (TotalPower*vol/ntime)*totaltime
+        ! print*, 'Total Power is ', TotalPower*vol
+        ! print*, 'Average Power is ', (TotalPower*vol/ntime)
+        ! print*, 'Total Energy is ', (TotalPower*vol/ntime)*totaltime
 
-        open(unit=34,file='./outputs/TempDis.dat')
-        write(34,*) TPD(:)
-        close(34)
+        ! open(unit=34,file='./outputs/TempDis.dat')
+        ! write(34,*) TPD(:)
+        ! close(34)
           open(unit=35,file='./outputs/TempDisTPD.dat')
           write(35,*) TPD(:)
           close(35)
@@ -121,8 +120,6 @@ contains
           close(36)
     end if
 
-    ! call PlotdeltaT(it)
-    205 format(5f12.6)
 
   end subroutine plot
   !!---------------------------------------------------------------------

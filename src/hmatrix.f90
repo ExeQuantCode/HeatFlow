@@ -1,6 +1,6 @@
 module hmatrixmod
   use constants, only: real12, int12
-  use inputs, only: nx, ny, nz, time_step, grid, isteady, icattaneo, kappaBoundx, kappaBoundy, kappaBoundz, mixing
+  use inputs, only: nx, ny, nz, time_step, grid, isteady, icattaneo, kappaBoundx, kappaBoundy, kappaBoundz
   use globe_data, only: inverse_time
   implicit none
 
