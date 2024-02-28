@@ -1,6 +1,6 @@
 module evolution
   use constants, only: real12, int12, TINY
-  use inputs, only: NA, icattaneo, isteady, nx, ny, nz, T_System, time_step, mixing, grid, power_in
+  use inputs, only: NA, icattaneo, isteady, nx, ny, nz, T_System, time_step, grid, power_in
   use sptype, only: I4B
   use sparse, only: linbcg
   use globe_data, only: TPD, TPPD, inverse_time, heat, Grid1DHR
@@ -50,7 +50,7 @@ contains
        call heater(it, Q, Qdens)
        if (any(isnan(Q(:)))) call exit
     end if
-    heat(it) = sum(Q(:))
+    ! heat(it) = sum(Q(:))
     !--------------------------------
 
     !--------------------------------
@@ -67,9 +67,9 @@ contains
        !S = - TPPD * inverse_time * (1 - mixing) * RhoHC / 2.0_real12 &
        !     - TPD * inverse_time * mixing * RhoHC &
        !     - Qdens - B
-       S = - (inverse_time * (TPPD/2.0_real12) * Grid1DHR) - Qdens - B
+       S = - (inverse_time * (TPD) * Grid1DHR) - Qdens - B
        if (iCAttaneo .eq. 1) then
-        print *, 'S_CAT = ', S_CAT
+        ! print *, 'S_CAT = ', S_CAT
 
           S = S + S_CAT
        end if
@@ -80,7 +80,7 @@ contains
     ! print *, 'Qdens = ', Qdens
     ! print *, 'S = ', S
     ! print *, 'inverse_time = ', inverse_time
-     print *, 'TPD = ', TPD
+    !  print *, 'TPD = ', TPD
     !---------------------------------------------
 
 !!!#################################################

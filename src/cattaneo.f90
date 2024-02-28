@@ -1,6 +1,6 @@
 module cattaneo
 use inputs, only: NA, time_step, nx, ny, nz, grid
-use globe_data, only: TPD,TPPD
+use globe_data, only: TPD,TPPD, Grid1DHR
 use constants, only: real12, int12, TINY
 implicit none
 contains
@@ -15,7 +15,7 @@ subroutine S_catS(s_cat)
         do y = 1, ny
             do x = 1, nx
                 i = i+1
-                S_cat(i) = ( TPPD(i) - 2._real12 * TPD(i) ) * ( grid(x,y,z)%tau )  !
+                S_cat(i) = ( TPPD(i) - 2._real12 * TPD(i) ) * ( grid(x,y,z)%tau * Grid1DHR(i) )  !
 
             end do
         end do

@@ -17,7 +17,7 @@ contains
     real(real12), dimension(NA), intent(out) :: Q, Qdens
     integer(int12) :: i, j, k, IA ,heated_num
     real(real12) :: time, dt, POWER, time_pulse, x, x2
-    real(real12) :: rho, volume, heat_capacity, area, heated_volume
+    real(real12) :: rho, volume, heat_capacity, area, heated_volume, tau
 
     ! Initialize variables
     IA = 0
@@ -39,7 +39,7 @@ contains
              volume = grid(i,j,k)%volume
              heat_capacity = grid(i,j,k)%heat_capacity
              area = grid(i,j,k)%area(1)
-
+             tau = grid(i,j,k)%tau*(dt**2)
              ! select heater case
              select case(iheater(i,j,k))
              case(0)
@@ -75,9 +75,9 @@ contains
                 !------------------------------
              case(4)
                 !------------------------------
-                ! AC oscillatory heating raw
+                ! AC oscillatory heating raw, with Volz correction
                 !------------------------------
-                Q(IA) = POWER * (sin(time * 2 * PI * freq)**2)
+                Q(IA) = POWER * (sin(time * 2 * PI * freq)**2)+POWER*2*PI*freq*tau*sin(2*time*2*PI*freq)
                 !------------------------------
              case(5)
                 !------------------------------
