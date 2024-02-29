@@ -1,68 +1,106 @@
 module initial 
-  use constants, only: real12, int12
+  use constants, only: real12, int12, fields
   use inputs, only: NA, nx, ny, nz, InputTempDis, FullRestart, T_System
   use globe_data, only: TPD,TPPD
   implicit none
 
   
 contains
-  
+
   subroutine initial_evolve()
     implicit none
     integer(int12) :: i,j,k, index, reason
     logical :: file_TPD_exists, file_TPPD_exists
     character :: buffer
-    !Current version just sets all previous time steps temperatures = heat bath
-    ! Gaussian distribution of temperatures about T_Bath+100
-    ! index = 0
-    ! do k = 1, nz
-    !   do j = 1, ny
-    !     do i = 1, nx
-    !       index = index + 1
-    !       TPD(index) = (T_Bath + 100._real12) * exp(-((i - nx/2)**2 + (j - ny/2)**2 + (k - nz/2)**2) / 1000._real12)+T_Bath
-    !     end do
-    !   end do
-    ! end do
-    ! TPPD=TPD
-    ! TPPD= 310._real12
-    ! TPD= 310._real12
-
-      if (FullRestart) then
-        inquire(file='./outputs/TempDisTPD.dat', exist=file_TPD_exists)
-        inquire(file='./outputs/TempDisTPPD.dat', exist=file_TPPD_exists)
-        if (.not. file_TPD_exists .or. .not. file_TPPD_exists) then
-          write(*,*) 'Error: TempDisTPD.dat or TempDisTPPD.dat does not exist'
-          call exit
-        end if
-        open(unit=11, file='./outputs/TempDisTPD.dat', status='unknown')
-        read(11,'(A)', iostat = reason) buffer
-        read(buffer,*) (TPD(index), index = 1, NA)
-        close(11)
-        open(unit=12, file='./outputs/TempDisTPPD.dat', status='unknown')
-        read(12,'(A)', iostat = reason) buffer
-        read(buffer,*) (TPPD(index), index = 1, NA)
-        close(12)
-      end if
-    if (InputTempDis) then
-      inquire(file='./outputs/TempDis.dat', exist=file_TPD_exists)
-      if (.not. file_TPD_exists) then
-        write(*,*) 'Error: TempDis.dat does not exist'
-        call exit
-      end if
-      open(unit=10,file='./outputs/TempDis.dat',status='unknown')
-      read(10,'(A)', iostat = reason) buffer
-      if (Reason .ne. 0) then
-        write(10,*) 'Error: Unexpected EOF TempDis.in'
-        call exit
-      end if
-      read(buffer,*) (TPD(index), index = 1, NA)
-      TPPD = TPD
-      close(10)
+    
+    if (FullRestart) then
+       call read_temp_file('./outputs/TempDis.dat',TPD)
+       call read_temp_file('./outputs/TempDisTPD.dat',TPPD)
+    else if (InputTempDis) then
+       call read_temp_file('./outputs/TempDis.dat',TPD)
+       TPPD = TPD
     else 
-      TPD = T_System
-      TPPD = T_System
+       TPD = T_System
+       TPPD = T_System
     end if
-
     
   end subroutine initial_evolve
+  
+
+!!!
+subroutine read_temp_file(filepath, T)
+  implicit none
+  character(len=*), intent(in) :: filepath
+  real(real12), intent(out) :: T(:) 
+  integer(int12) :: i, reason, unit
+  logical :: exists
+  real(real12), dimension(6) :: line
+  integer(int12) :: c, numvals
+
+  !----------------------------
+  ! check file exists
+  !----------------------------
+  inquire(file=filepath, exist=exists)
+  if (.not. exists) then
+     write(*,*) 'Error:',filepath,'does not exist'; call exit
+  end if
+  !----------------------------
+
+  !----------------------
+  ! Open file
+  !----------------------
+  open(newunit=unit, file=filepath, status='old', action='read', iostat=reason)
+  if (reason .ne. 0) then
+     write(*,*) "Error opening file."; call exit
+  end if
+  !----------------------
+
+  !-------------------------------------------------------------
+  ! Read file, "fields" values per line
+  !-------------------------------------------------------------
+  c = 0
+  do while (c .lt. NA)
+     read(unit, *, iostat=reason) line
+     !----------------------------
+     ! error responses
+     if (reason .gt. 0) then
+        write(*,*) "Error: read error."; call exit
+     end if
+     !----------------------------
+
+     
+     !----------------------------
+     ! assinge values
+     numvals = min(fields, NA - c) ! find num values left in NA
+     do i = 1, numvals
+        c = c + 1
+        T(c) = line(i)
+     end do
+     !----------------------------
+  end do
+  !-------------------------------------------------------------
+
+  !-------------------------------------
+  ! check values are missing
+  !-------------------------------------
+  if (c .lt. NA) then
+     write(*,*) "Error: File contains fewer values than expected (", &
+          c, " out of ", NA, ")."; call exit
+  end if
+  !-------------------------------------
+
+  !--------------------------------------------------------------------
+  ! Attempt to read one more value to ensure there are no extra values
+  !--------------------------------------------------------------------
+  read(unit, *, iostat=reason) line
+  if (reason .eq. 0) then
+     print *, "Error: File contains more values than expected."; call exit
+  end if
+  !--------------------------------------------------------------------
+
+  close(unit)
+
+end subroutine read_temp_file
+
+  
 end module initial

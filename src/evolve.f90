@@ -25,7 +25,7 @@ contains
     integer(int12) :: i, j, ncg, itol, itmax, iss, ierr, xc, yc, zc
     integer(I4B) :: iter
     real(real12) :: dt, To, Hb, e, err, tol
-
+    
     !----------------------
     ! Initialize vectors
     !----------------------
@@ -49,40 +49,41 @@ contains
     if ( power_in .gt. TINY) then
        call heater(it, Q, Qdens)
        if (any(isnan(Q(:)))) call exit
+       if (any(isnan(Qdens(:)))) call exit
     end if
-    ! heat(it) = sum(Q(:))
+    heat(it) = sum(Q(:))
     !--------------------------------
 
     !--------------------------------
     ! Calculate Cattaneo correction
     !--------------------------------
-    call S_catS(S_CAT)
-    if (any(isnan(S_CAT))) call exit
+    if (iCAttaneo .eq. 1) then
+       call S_catS(S_CAT)
+       if (any(isnan(S_CAT))) call exit
+    end if
     !--------------------------------
 
     !---------------------------------------------
     ! Construct S vector 
     !---------------------------------------------
     if (iSteady .eq. 0) then
-       !S = - TPPD * inverse_time * (1 - mixing) * RhoHC / 2.0_real12 &
-       !     - TPD * inverse_time * mixing * RhoHC &
+       !S = - TPPD * inverse_time * (1 - mixing) * Grid1DHR / 2.0_real12 &
+       !     - TPD * inverse_time * mixing * Grid1DHR &
        !     - Qdens - B
-       S = - (inverse_time * (TPD) * Grid1DHR) - Qdens - B
+       S = - inverse_time * TPD * Grid1DHR - Qdens - B
        if (iCAttaneo .eq. 1) then
-        ! print *, 'S_CAT = ', S_CAT
-
           S = S + S_CAT
        end if
     else
-       S(:) = -Qdens(:) - B(:)
+       S = -Qdens - B
     end if
-    ! print *, 'B = ', B
-    ! print *, 'Qdens = ', Qdens
-    ! print *, 'S = ', S
-    ! print *, 'inverse_time = ', inverse_time
-    !  print *, 'TPD = ', TPD
     !---------------------------------------------
 
+    if (any(isnan(S(:)))) then
+       write(*,*) "fatal error: NAN in S vector"
+       call exit
+    end if
+    
 !!!#################################################
 !!! Call the CG method to solve the equation Ax=b.
 !!!#################################################
@@ -94,7 +95,8 @@ contains
 !!! iter:  Output - gives the number of the final iteration.
 !!! err:   Output - records the error of the final iteration.
 !!! iss:   Input - sets the Sparse Storage type (1=SRS, 2=SDS).
-    if (it .eq. 1) call INIT_EVOLVE(it,x)
+    x=TPD+TINY ! to stop devide by zero error in stedy state
+    !x(:)=0
     itol=1
     tol=1.e-12_real12
     itmax=50000
@@ -104,49 +106,20 @@ contains
     iss=1
     call linbcg(S,x,itol=int(itol,I4B),tol=tol, itmax=int(itmax,I4B), iter=iter, &
          err=E, iss=int(iss,I4B))
+    !if (any(isnan(x(:)))) then
+    !   write(*,*) "fatal error: NAN in x tempurature vector"
+    !   call exit
+    !end if
 !!!#################################################
-    ! print*, 'X= ', x
-    ! Update temperature profile
-    call TP_UPDATE(x)
-  end subroutine EVOLVE
-
-!!#################################################
-!!! Subroutine to initialize the evolve process.
-!!! Inputs:
-!!!   it - Current time step (integer)
-!!!   x - Initial temperature profile (real array)
-!!!#################################################
-  subroutine INIT_EVOLVE(it, x)
-    integer(int12), intent(in) :: it
-    real(real12), dimension(NA), intent(out) :: x
-
-    ! Initialize the temperature profile to the system temperature
-    if (it .eq. 1) x = T_System
-  end subroutine INIT_EVOLVE
-!!!#################################################
-
-!!!#################################################
-!!! Subroutine to update the temperature profile after a time step.
-!!! Inputs/Outputs:
-!!!   x - Updated temperature profile (real array)
-!!!#################################################
-  subroutine TP_UPDATE(x)
-    integer(int12) :: i, j, k, index
-    real(real12), dimension(NA) :: x
-
-    ! Update the temperature profile if changes are below a threshold
-    do index = 1, NA
-      if (abs(x(index)-TPD(index)) .lt. 1e-12_real12) then
-        x(index)=TPD(index)
-      end if
-   end do
-   
-    ! Update previous and current temperature profiles
+    !write(*,*) 
+    !write(*,*) 'time step  XX', "      T   ", sum(TPD)/size(TPD), E ,iter
+    !write(*,*) 'time step  XX', "      x   ", sum(x)/size(x), E ,iter
     TPPD = TPD
     TPD = x
-   
-  end subroutine TP_UPDATE
-!!!#################################################
+
+  end subroutine EVOLVE
+
+
 
 end module evolution
 

@@ -11,5 +11,6 @@ module constants
   real(real12), parameter :: atomic_mass=1.67262158e-27_real12
   real(real12), parameter :: avogadros=6.022e23_real12
   
-  real(real12), PARAMETER :: TINY=1.0e-9_real12
+  real(real12), parameter :: TINY=1.0e-9_real12
+  integer(int12) , parameter :: fields=6_int12
 end module constants
