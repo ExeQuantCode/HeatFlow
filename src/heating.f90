@@ -1,8 +1,19 @@
+!!!#################################################################################################
+!!! Module for calculating the heat density vector for each cell in the computational grid ...
+!!! ... based on different heating modes.
+!!! This module contains the subroutines: 
+!!!   - heater, calculates the heat source for each cell in a computational grid based on ...
+!!! ... different heating modes.
+!!! This module contains the variables:
+!!!   - Q, the heat source for each cell in the computational grid.
+!!!   - Qdens, the heat source density for each cell in the computational grid.
+!!!  
+!!! Author: Harry Mclean, Frank Davis, Steven Hepplestone
+!!!#################################################################################################
 module Heating
   use constants, only: real12, int12, pi
-  use constructions, only: heatblock
-  use globe_data, only: TPD, TPPD, Heat
-  use inputs, only: nx,ny,nz, grid, NA, iheater, power_in, time_step, T_System, freq, ntime
+  use globe_data, only: Temp_p, Temp_pp, Heat
+  use inputs, only: nx,ny,nz, grid, NA, power_in, time_step, T_System, freq, ntime
   use materials, only: material
   implicit none
 contains
@@ -12,10 +23,10 @@ contains
 !!! This subroutine calculates the heat source for each cell in a computational 
 !!! grid based on different heating modes.
 !!!##############################################################################
-  subroutine heater(it, Q, Qdens)
-    integer(int12), intent(in) :: it
+  subroutine heater(itime, Q, Qdens)
+    integer(int12), intent(in) :: itime
     real(real12), dimension(NA), intent(out) :: Q, Qdens
-    integer(int12) :: i, j, k, IA ,heated_num
+    integer(int12) :: ix, iy, iz, IA ,heated_num
     real(real12) :: time, dt, POWER, time_pulse, x, x2
     real(real12) :: rho, volume, heat_capacity, area, heated_volume, tau
 
@@ -24,24 +35,24 @@ contains
     Q = 0._real12
     dt = time_step
     POWER = power_in
-    time = dt * real(it,real12)
+    time = dt * real(itime,real12)
     time_pulse = 0.5_real12
     heated_volume=0.0
     heated_num=0
 
     ! Iterate over all cells in the grid
-    do k = 1, nz
-       do j = 1, ny
-          do i = 1, nx
+    do iz = 1, nz
+       do iy = 1, ny
+          do ix = 1, nx
              IA = IA + 1
              ! get cell properties
-             rho = grid(i,j,k)%rho
-             volume = grid(i,j,k)%volume
-             heat_capacity = grid(i,j,k)%heat_capacity
-             area = grid(i,j,k)%area(1)
-             tau = grid(i,j,k)%tau*(dt**2)
+             rho = grid(ix,iy,iz)%rho
+             volume = grid(ix,iy,iz)%volume
+             heat_capacity = grid(ix,iy,iz)%heat_capacity
+             area = grid(ix,iy,iz)%Length(1)*grid(ix,iy,iz)%Length(2) !???
+             tau = grid(ix,iy,iz)%tau*(dt**2)
              ! select heater case
-             select case(iheater(i,j,k))
+             select case(grid(ix,iy,iz)%iheater)
              case(0)
                 !------------------------------
                 ! No heating
@@ -71,13 +82,15 @@ contains
                 !------------------------------
                 x = time * 2.0_real12 * PI * freq
                 x2 = dt * 2.0_real12 * PI * freq
-                Q(IA) = POWER * 0.5_real12 * ((x2) - sin(x + x2) * cos(x + x2) + sin(x) * cos(x)) / x2
+                Q(IA) = POWER * 0.5_real12 * &
+                  ((x2) - sin(x + x2) * cos(x + x2) + sin(x) * cos(x)) / x2
                 !------------------------------
              case(4)
                 !------------------------------
                 ! AC oscillatory heating raw, with Volz correction
                 !------------------------------
-                Q(IA) = POWER * (sin(time * 2 * PI * freq)**2)+POWER*2*PI*freq*tau*sin(2*time*2*PI*freq)
+                Q(IA) = POWER * (sin(time * 2 * PI * freq)**2)&
+                  +POWER*2*PI*freq*tau*sin(2*time*2*PI*freq)
                 !------------------------------
              case(5)
                 !------------------------------
@@ -89,7 +102,7 @@ contains
                 !------------------------------
                 ! Step one heating
                 !------------------------------
-                if (it == 1) then
+                if (itime == 1) then
                    Q(IA) = POWER
                 else
                    Q(IA) = 0.0
@@ -109,7 +122,7 @@ contains
              !------------------------------
              ! count heated volume
              !------------------------------
-             if (iheater(i,j,k) .gt. 0) then
+             if (grid(ix,iy,iz)%iheater .gt. 0) then
                 heated_volume = heated_volume + volume
                 heated_num = heated_num + 1
              end if

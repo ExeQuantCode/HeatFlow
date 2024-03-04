@@ -1,3 +1,19 @@
+!!!#################################################################################################
+!!!  Module for material properties.
+!!! This module contains the subroutines:
+!!! - material, which takes the material type and returns the material properties.
+!!! This module contains the variables:
+!!! - imaterial_type, the material type.
+!!! - TC, the temperature of the material.
+!!! - kappa, the thermal conductivity of the material.
+!!! - kappa3D, the thermal conductivity of the material in 3D.
+!!! - h_conv, the convective heat transfer coefficient.
+!!! - heat_capacity, the heat capacity of the material.
+!!! - rho, the density of the material.
+!!! - sound_speed, the speed of sound in the material.
+!!! - tau, the relaxation time of the material.
+!!! Author: Harry Mclean, Frank Davis, Steven Hepplestone
+!!!#################################################################################################
 module materials
 
   use constants, only: real12, int12

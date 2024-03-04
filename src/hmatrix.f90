@@ -1,6 +1,45 @@
+!!!#################################################################################################
+!!! This is the hmatrixmod module, which contains the procedures for the construction of ...
+!!! ... the H matrix.
+!!! This module contains the subroutines:
+!!!   - hmatrixfunc, This function calculates the value of the H matrix based on the relationship...
+!!!     ... between the indices i and j.
+!!!   - calculate_alpha, This function calculates the value of alpha based on the indices ...
+!!!     ... x, y, and z.
+!!!   - calculate_conductivity, This function calculates the value of the conductivity based on ...
+!!!     ...  the indices x_in, y_in, z_in, x_out, y_out, and z_out.
+!!!   - altmod, This function calculates the modulus of a and b, and returns b if the modulus is 0.
+!!!   - boundry_diag_term, This subroutine calculates the value of the diagonal term of ...
+!!!     ... the H matrix based on the indices x_b, y_b, z_b, x, y, and z.
+!!! This module contains the variables:
+!!!   - H, The value of the H matrix.
+!!!   - alpha, The value of alpha.
+!!!   - conductivity, The value of the conductivity.
+!!!   - kappa_ab, The value of kappa_ab.
+!!!   - x, y, z: The indices of the grid.
+!!!   - A, B, D, E, F, G, The values of the conductivities of the neighbors of the grid point.
+!!!   - i, j, The indices of the grid points.
+!!!   - x_in, y_in, z_in, x_out, y_out, z_out, The indices of the grid points.
+!!!   - x_b, y_b, z_b, The indices of the grid points.
+!!!   - kappa, The value of the conductivity.
+!!!   - tau, The value of tau.
+!!!   - rho, The value of rho.
+!!!   - heat_capacity, The value of the heat capacity.
+!!!   - T: A dummy variable.
+!!!   - kappa_in, kappa_out, The values of the conductivities of the grid points.
+!!!   - kappaBoundx, kappaBoundy, kappaBoundz, The values of the boundary conductivities.
+!!!   - inverse_time, The value of the inverse of the time.
+!!!   - isteady, icattaneo, The values of the flags for the steady state and Cattaneo's model.
+!!!   - nx, ny, nz, The number of grid points in the x, y, and z directions.
+!!!   - time_step, The value of the time step.
+!!!   - grid, The grid.
+
+!!! Author: Harry Mclean, Frank Davis, Steven Hepplestone
+!!!#################################################################################################
 module hmatrixmod
   use constants, only: real12, int12
-  use inputs, only: nx, ny, nz, time_step, grid, isteady, icattaneo, kappaBoundx, kappaBoundy, kappaBoundz
+  use inputs, only: nx, ny, nz, time_step, grid
+  use inputs, only: isteady, icattaneo, kappaBoundx, kappaBoundy, kappaBoundz
   use globe_data, only: inverse_time
   implicit none
 
@@ -91,7 +130,8 @@ contains
       rho = grid(x,y,z)%rho
       heat_capacity = grid(x,y,z)%heat_capacity
       if (icattaneo .eq. 0) tau = 0.0_real12
-      alpha = (tau*rho*heat_capacity) + (inverse_time*rho*heat_capacity) !tau is already divided by time_step**2
+      !tau is already divided by time_step**2
+      alpha = (tau*rho*heat_capacity) + (inverse_time*rho*heat_capacity) 
     else
       alpha = 0.0_real12
     end if 
@@ -111,19 +151,28 @@ contains
 
 
        if(x_in .ne. x_out) then
-          kappa_ab = (grid(x_in, y_in, z_in)%Length(1) + grid(x_out, y_out, z_out)%Length(1))*kappa_in*kappa_out/&
-               (grid(x_in, y_in, z_in)%Length(1)*kappa_out + grid(x_out, y_out, z_out)%Length(1)*kappa_in)
-               kappa_ab = kappa_ab/(grid(x_out, y_out, z_out)%Length(1))**2
+          kappa_ab = (grid(x_in, y_in, z_in)%Length(1) + &
+              grid(x_out, y_out, z_out)%Length(1))*kappa_in*kappa_out/&
+              (grid(x_in, y_in, z_in)%Length(1)*kappa_out + &
+              grid(x_out, y_out, z_out)%Length(1)*kappa_in)
+               
+          kappa_ab = kappa_ab/(grid(x_out, y_out, z_out)%Length(1))**2
 
        else if (y_in .ne. y_out) then
-          kappa_ab = (grid(x_in, y_in, z_in)%Length(2) + grid(x_out, y_out, z_out)%Length(2))*kappa_in*kappa_out/&
-               (grid(x_in, y_in, z_in)%Length(2)*kappa_out + grid(x_out, y_out, z_out)%Length(2)*kappa_in)
-               kappa_ab = kappa_ab/(grid(x_out, y_out, z_out)%Length(2))**2
+          kappa_ab = (grid(x_in, y_in, z_in)%Length(2) + &
+              grid(x_out, y_out, z_out)%Length(2))*kappa_in*kappa_out/&
+              (grid(x_in, y_in, z_in)%Length(2)*kappa_out + &
+              grid(x_out, y_out, z_out)%Length(2)*kappa_in)
+        
+          kappa_ab = kappa_ab/(grid(x_out, y_out, z_out)%Length(2))**2
 
        else if (z_in .ne. z_out) then
-          kappa_ab = (grid(x_in, y_in, z_in)%Length(3) + grid(x_out, y_out, z_out)%Length(3))*kappa_in*kappa_out/&
-               (grid(x_in, y_in, z_in)%Length(3)*kappa_out + grid(x_out, y_out, z_out)%Length(3)*kappa_in)
-               kappa_ab = kappa_ab/(grid(x_out, y_out, z_out)%Length(3))**2
+          kappa_ab = (grid(x_in, y_in, z_in)%Length(3) + &
+              grid(x_out, y_out, z_out)%Length(3))*kappa_in*kappa_out/&
+              (grid(x_in, y_in, z_in)%Length(3)*kappa_out + &
+              grid(x_out, y_out, z_out)%Length(3)*kappa_in)
+        
+          kappa_ab = kappa_ab/(grid(x_out, y_out, z_out)%Length(3))**2
 
        end if
        conductivity = (kappa_ab) 

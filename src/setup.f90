@@ -1,11 +1,25 @@
-
+!!!#################################################################################################
+!!! Module to set up the global variables and the H matrix.
+!!! This module contains the subroutines:
+!!! set_global_variables, This allocates arrays and builds the apropreate H matrix
+!!! sparse_Hmatrix, This sets up the H Matrix directly in sparse row storage
+!!! stability, Check if the simulation will be stable. NOT FULLY IMPLEMENTED
+!!! build_Hmatrix, This sets up the H Matrix and converts it into sparse row storage
+!!! SparseToReal, This sets up the H Matrix and converts it into sparse row storage
+!!! This module contains the variables:
+!!! Temp_cur, The current temperature field
+!!! Temp_p, The previous temperature field
+!!! Temp_pp, The previous previous temperature field
+!!! inverse_time, The inverse of the time step
+!!! heat, The heat source
+!!! Author: Harry Mclean, Frank Davis, Steven Hepplestone
+!!!#################################################################################################
 module setup
   use constants, only: real12, int12, TINY
-  use inputs, only: Lx, Ly, Lz, nx, ny, nz, NA, grid, time_step, kappaBoundx, kappaBoundy, kappaBoundz &
-                     ,Check_Sparse_Full, Check_Stability, ntime
-  use constructions, only: heatblock
+  use inputs, only: nx, ny, nz, NA, grid, time_step, kappaBoundx, kappaBoundy, kappaBoundz & !
+                     ,Check_Sparse_Full, Check_Stability, ntime,IVERB ! 
   use hmatrixmod, only: hmatrixfunc
-  use globe_data, only:  ra, TN, TPD, TPPD,inverse_time, heat, Grid1DHR
+  use globe_data, only:  ra, Temp_cur, Temp_p, Temp_pp,inverse_time, heat, lin_rhoc
   use sparse, only: SRSin
   use materials, only: material
   implicit none
@@ -13,81 +27,42 @@ module setup
    contains
     
 
-!!!##########################################################################
+!!!########################################################################################################################
 !!! This allocates arrays and builds the apropreate H matrix
-!!!##########################################################################
+!!!########################################################################################################################
    subroutine set_global_variables()
-      integer(int12) :: i,j,k,index
-      logical :: print1
-      real(real12) :: TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau, stability, alpha, dt
-      allocate(TN(nx, ny, nz))
-      allocate(TPD(NA))
-      allocate(TPPD(NA))
+      integer(int12) :: ix,iy,iz,index
+      real(real12) :: TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau
+      allocate(Temp_cur(nx, ny, nz))
+      allocate(Temp_p(NA))
+      allocate(Temp_pp(NA))
       ! allocate(heat(ntime))
-      allocate(Grid1DHR(NA))
+      allocate(lin_rhoc(NA))
       ! heat = 0.0_real12
-      dt = time_step
-      print1 = .true.
-      inverse_time = 1.0_real12/dt
+      inverse_time = 1.0_real12/time_step
       !---------------------------------------------------
       ! ASign material properties to the grid construction
       ! can be expanded to include more properties at a 
       ! later date
       !---------------------------------------------------
       index = 0
-      do k = 1, nz
-         do j = 1, ny
-            do i = 1, nx
+      do iz = 1, nz
+         do iy = 1, ny
+            do ix = 1, nx
             index = index + 1
-            call material(grid(i,j,k)%imaterial_type,TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
-            grid(i,j,k)%kappa = kappa
-            grid(i,j,k)%rho = rho
-            grid(i,j,k)%heat_capacity = heat_capacity
-            grid(i,j,k)%tau = tau*inverse_time*inverse_time
-            Grid1DHR(index) = rho*heat_capacity
-            !---------------------------------------------------
-            ! Check stability condition
-            !---------------------------------------------------
-            if (Check_Stability) then
-               alpha = kappa/(rho*heat_capacity)
-               stability =(dt*alpha*(1/(grid(i,j,k)%length(1)**2)+1/(grid(i,j,k)%length(2)**2)+1/(grid(i,j,k)%length(3)**2)))
-               if (print1) then
-                  print*, "Stability condition = ", stability
-                  print1 = .false.
-               end if
-               if (stability .gt. 1.0/12.0) then
-                  print*, "Stability condition not met"
-                  print*, "Stability condition = ", stability
-
-                  print*, "dt = ", dt
-                  print*, "alpha = ", alpha
-                  print*, "dx = ", grid(i,j,k)%length(1)
-                  print*, "dy = ", grid(i,j,k)%length(2)
-                  print*, "dz = ", grid(i,j,k)%length(3)
-               
-                  stop
-               end if
-               if ((i .eq. 1) .or.(j .eq. 1) .or. (k .eq. 1)) then
-                  alpha = kappaBoundx/(rho*heat_capacity)
-                  stability =(dt*alpha*(1/(grid(i,j,k)%length(1)**2)+1/(grid(i,j,k)%length(2)**2)+1/(grid(i,j,k)%length(3)**2)))
-                  if (stability .gt. 1.0/12.0) then
-                     print*, "Stability condition at boundary not met = ", stability
-                     print*, " Boundary kappas = ", kappaBoundx, kappaBoundy, kappaBoundz
-                     stop
-                  end if
-               end if
-            end if 
+            call material(grid(ix,iy,iz)%imaterial_type,&
+             TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+            grid(ix,iy,iz)%kappa = kappa
+            grid(ix,iy,iz)%rho = rho
+            grid(ix,iy,iz)%heat_capacity = heat_capacity
+            grid(ix,iy,iz)%tau = tau*inverse_time*inverse_time
+            lin_rhoc(index) = rho*heat_capacity
+            if (Check_Stability) CALL stability(kappa, rho, heat_capacity, ix, iy, iz)
             end do               
          end do
       end do
 
-      !---------------------------------------------------
-      !** should impliment an if condition for sparse only
-      ! if(sparse_only) then
-         !** Never have to make the full H matrix, needs boundarys
-         !call SPHM()
-         !print*,Hsparse
-      ! else
+
       if (Check_Sparse_Full) then
          call build_Hmatrix()
       else
@@ -95,15 +70,113 @@ module setup
       end if
 
 
-      !call setup_grid()
 
    end subroutine set_global_variables
-!!!##########################################################################
+!!!#################################################################################################
+
+!!!#################################################################################################
+!!! This sets up the H Matrix directly in sparse row storage
+!!!#################################################################################################
+   subroutine sparse_Hmatrix()
+      ! use omp_lib
+      real(real12) :: H0 ! Holds the value of the H matrix
+      integer(int12) :: i, j, len, count, k ! i and j are the row and column of the H matrix
+      ! Holds the values to add to the row to get the column
+      integer(int12), allocatable, dimension(:) :: addit 
+      ! The number of non-zero elements in the H matrix to look for
+      len = 7*nx*ny*nz - 2*(nx*ny + ny*nz + nz*nx) 
+      ra%n = NA ! The number of rows in the H matrix
+      ra%len = len ! The number of non-zero elements in the H matrix
+      ! Allocate the arrays to hold the H matrix in sparse row storage
+      allocate(ra%val(len), ra%irow(len), ra%jcol(len)) 
+
+      addit = [1] ! The values to add to the row to get the column
+      if (nx .gt. 1) addit = [addit, nx] ! Add the values to add to the row to get the column
+      if (ny .gt. 1) addit = [addit, nx*ny]  ! Add the values to add to the row to get the column
 
 
-!!!#########################################################################
+
+      
+      count = 0 ! The number of non-zero elements in the H matrix
+      parent_loop: do j = 1, NA ! Loop over the columns of the H matrix
+         i=j ! The row of the H matrix
+         count = count + 1 ! The number of non-zero elements in the H matrix
+         H0 = hmatrixfunc(i,j) ! The value of the H matrix
+         ra%val(count) = H0 ! The value of the H matrix
+         ra%irow(count) = i ! The row of the H matrix
+         ra%jcol(count) = j ! The column of the H matrix
+         ! Loop over the values to add to the row to get the column
+         neighbour_loop: do k = 1, size(addit,1) 
+             i = j + addit(k) ! The row of the H matrix
+             ! If the row is greater than the number of rows ...
+             !...in the H matrix then go to the next column
+             if ((i.gt.NA)) cycle parent_loop 
+             H0=hmatrixfunc(i,j) ! The value of the H matrix
+             ! If the value of the H matrix is less than TINY then go to the next value ...
+             !...to add to the row to get the column
+             if (abs(H0).lt.TINY) cycle neighbour_loop 
+             count = count + 1 ! The number of non-zero elements in the H matrix
+             ra%val(count) = H0 ! The value of the H matrix
+             ra%irow(count) = i ! The row of the H matrix
+             ra%jcol(count) = j ! The column of the H matrix
+             count = count + 1 ! The number of non-zero elements in the H matrix
+             ra%val(count) = H0 ! The value of the H matrix
+             ra%irow(count) = j ! The row of the H matrix
+             ra%jcol(count) = i ! The column of the H matrix
+         end do neighbour_loop
+     end do parent_loop
+
+      
+   end subroutine sparse_Hmatrix
+!!!#################################################################################################
+
+!!!#################################################################################################
+!!! Check if the simulation will be stable. NOT FULLY IMPLEMENTED   
+!!!#################################################################################################
+   subroutine stability(kappa, rho, heat_capacity, ix, iy, iz)
+      implicit none
+      integer(int12) :: ix,iy,iz
+      real(real12) :: kappa, rho, heat_capacity, var_stability
+      real(real12) :: alpha
+
+      !---------------------------------------------------
+      ! Check stability condition
+      !---------------------------------------------------
+      
+      alpha = kappa/(rho*heat_capacity)
+      var_stability =( time_step * alpha * &
+      (1 / (grid(ix,iy,iz)%length(1)**2) + 1 / ( grid(ix,iy,iz)%length(2) ** 2 ) &
+           + 1 / (grid(ix,iy,iz)%length(3) ** 2 ) ) )
+      if (IVERB.ge.1) write(*,*) "Stability condition = ", var_stability
+      if (var_stability .gt. 1.0/12.0) then
+         write(*,*) "Stability condition not met"
+         write(*,*) "Stability condition = ", var_stability
+
+         write(*,*) "time_step = ", time_step
+         write(*,*) "alpha = ", alpha
+         write(*,*) "dx = ", grid(ix,iy,iz)%length(1)
+         write(*,*) "dy = ", grid(ix,iy,iz)%length(2)
+         write(*,*) "dz = ", grid(ix,iy,iz)%length(3)
+      
+         stop
+      end if
+      if ((ix .eq. 1) .or.(iy .eq. 1) .or. (iz .eq. 1)) then
+         alpha = kappaBoundx / ( rho * heat_capacity)
+         var_stability =( time_step * alpha * &
+              (1 / (grid(ix,iy,iz)%length(1)**2) + 1 / ( grid(ix,iy,iz)%length(2) ** 2 ) &
+              + 1 / (grid(ix,iy,iz)%length(3) ** 2 ) ) )
+         if (var_stability .gt. 1.0/12.0) then
+            write(*,*) "Stability condition at boundary not met = ", var_stability
+            write(*,*) " Boundary kappas = ", kappaBoundx, kappaBoundy, kappaBoundz
+            stop
+         end if
+      end if
+   end subroutine stability
+!!!#################################################################################################
+
+!!!#################################################################################################
 !!! This sets up the H Matrix and converts it into sparse row storage
-!!!#########################################################################
+!!!#################################################################################################
    subroutine build_Hmatrix()
       integer(int12) ::  HCheck
       integer(int12) :: i,j, BCount
@@ -118,23 +191,20 @@ module setup
             HCheck = HCheck + H0
             H(i,j) = H0
          end do
-         ! if (HCheck.ne.0) then
-         !    BCount = BCount + 1
-         !    print*, 'Boundary = ',BCount
-         ! end if 
+
       end do
       ! write(*,'(3F12.3)') H
       call SRSin(H, TINY, ra)
       call SparseToReal(HT)
       if (all(abs(H-HT) < TINY)) then
-         print*, "H and HT are the same"
+         write(*,*) "H and HT are the same"
       else
-         print*, "H and HT are not the same"
+         write(*,*) "H and HT are not the same"
       end if
    end subroutine build_Hmatrix
-!!!#########################################################################
+!!!#################################################################################################
 !!! This sets up the H Matrix and converts it into sparse row storage
-!!!#######################################################################
+!!!#################################################################################################
 subroutine SparseToReal(HT)
    real(real12) :: H0
    real(real12), dimension(NA,NA) :: HT
@@ -164,52 +234,6 @@ subroutine SparseToReal(HT)
    write(*, '(3F15.4)') HT
 end subroutine SparseToReal
 
-!!!#########################################################################
-!!! This sets up the H Matrix directly in sparse row storage
-!!!#########################################################################
-      subroutine sparse_Hmatrix()
-         ! use omp_lib
-         real(real12) :: H0
-         integer(int12) :: i, j, len, count, k
-         integer(int12), allocatable, dimension(:) :: addit
-         len = 7*nx*ny*nz - 2*(nx*ny + ny*nz + nz*nx)
-         ra%n = NA
-         ra%len = len
-         allocate(ra%val(len), ra%irow(len), ra%jcol(len))
 
-         addit = [1]
-         if (nx .gt. 1) addit = [addit, nx]
-         if (ny .gt. 1) addit = [addit, nx*ny]
-
-
-
-         
-         count = 0
-         parent_loop: do j = 1, NA
-            i=j
-            count = count + 1
-            H0 = hmatrixfunc(i,j)
-            ra%val(count) = H0
-            ra%irow(count) = i
-            ra%jcol(count) = j
-            neighbour_loop: do k = 1, size(addit,1)
-                i = j + addit(k)
-                if ((i.gt.NA)) cycle parent_loop
-                H0=hmatrixfunc(i,j)
-                if (abs(H0).lt.TINY) cycle neighbour_loop
-                count = count + 1
-                ra%val(count) = H0
-                ra%irow(count) = i
-                ra%jcol(count) = j
-                count = count + 1
-                ra%val(count) = H0
-                ra%irow(count) = j
-                ra%jcol(count) = i
-            end do neighbour_loop
-        end do parent_loop
-
-         
-      end subroutine sparse_Hmatrix
-!!!#########################################################################
 
 end module setup

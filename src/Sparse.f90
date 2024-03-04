@@ -1,6 +1,12 @@
+!!!#################################################
+!!! This module is for the Conjugate Gradient solver.
+!!! Author: Frank Davis
+!!!#################################################
 MODULE sputil
    use constants, only: real12
-  USE sptype !Parameters for crossover from serial to parallel algorithms (these are used only within this sputil module):
+!Parameters for crossover from serial to parallel algorithms ...
+!...(these are used only within this sputil module):
+  use sptype 
   IMPLICIT NONE
   INTEGER(I4B), PARAMETER :: NPAR_ARTH=16,NPAR2_ARTH=8
 
