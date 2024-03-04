@@ -1,3 +1,7 @@
+!!!#################################################################################################
+!!! This module is for the sparse storage of the h matrix.
+!!! Author: Frank Davis
+!!!#################################################################################################
 module sptype
   use constants, only: int12
   !Symbolic names for kind types of 4, 2, and 1byte integers:
@@ -22,7 +26,8 @@ module sptype
      integer(I4B) :: n          ! Size of the matrix (assuming it's square n by n)
      integer(I4B) :: num_diags  ! Number of diagonals stored
      real(DP), dimension(:,:), pointer :: vals  ! Values of the diagonals
-     integer(I4B), dimension(:), pointer :: diag_offsets ! Offsets of each diagonal from the main diagonal
+     ! Offsets of each diagonal from the main diagonal
+     integer(I4B), dimension(:), pointer :: diag_offsets 
      ! element diag_vals(x,1) will be the xth diagonal and will be in the first row
      ! diag_offsets=jcol-irow 
      ! hence for diag_vals(x,y), irow = y & jcol = diag_offsets(x)+y
