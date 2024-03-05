@@ -104,20 +104,20 @@ contains
     !---------------------------------------
 
 
-    ! print*, 'Writing Temperature to file'
+    ! write(*,*) 'Writing Temperature to file'
     !write(30,*) REAL(itime)*time_step, ((T_matrix(i)-T_Bath),i=1,e)
     if (Check_Steady_State) then
        if (itime.gt.1) then
-          print*, 'Checking for steady state'
+          write(*,*) 'Checking for steady state'
           open(unit=32,file='./Tests/outputs/Temperature_Steady.txt')
           read(32,*) CT
           close(32)
           if (any(abs(Temp_cur-CT).gt.TINY)) then
-             print*, Temp_cur(1,1,1), CT(1,1,1)
-             print*, 'Steady state not reached'
+             write(*,*) Temp_cur(1,1,1), CT(1,1,1)
+             write(*,*) 'Steady state not reached'
              stop
           else
-             print*, 'Steady state reached, Test passed'
+             write(*,*) 'Steady state reached, Test passed'
           end if
        end if
     end if
