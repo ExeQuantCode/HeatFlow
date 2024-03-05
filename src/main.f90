@@ -18,7 +18,7 @@
 !!!#################################################################################################
 !!!verboisity 0 - no feedback, 1 user needs details, 2, developer needs details, 3 everything
 !!!#################################################################################################
-program HEATFLOW_V0_2
+program HEATFLOW_V0_3
   
   use constants, only: real12, int12
   use constructions, only: heatblock
@@ -107,7 +107,7 @@ program HEATFLOW_V0_2
    ! give feedback to user that code has ended
    write(*,*) 'all done'
 
-end program HEATFLOW_V0_2
+end program HEATFLOW_V0_3
 
 
   
