@@ -55,34 +55,46 @@ contains
     Qdens = 0.0_real12
     S_CAT = 0.0_real12
     S = 0.0_real12
-    !----------------------
+    !^^^^^^^^^^^^^^^^^^^^^
     
     !--------------------------------
     ! Calculate boundary Vector
     !--------------------------------
-    call boundary(B)
-    if (any(isnan(B(:)))) call exit
-    !--------------------------------
+    CALL boundary(B)
+    if (any(isnan(B(:)))) then
+      write(*,*), "fatal error: NAN in B vector"
+      stop
+    end if
+    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     !--------------------------------
     ! Calculate heat
     !--------------------------------
     if ( power_in .gt. TINY) then
-       call heater(itime, Q, Qdens)
-       if (any(isnan(Q(:)))) call exit
-       if (any(isnan(Qdens(:)))) call exit
+       CALL heater(itime, Q, Qdens)
+       if (any(isnan(Q(:)))) then
+            write(*,*) "fatal error: NAN in Q vector"
+            stop
+         end if
+       if (any(isnan(Qdens(:)))) then
+            write(*,*) "fatal error: NAN in Qdens vector"
+            stop
+         end if
     end if
     heat(itime) = sum(Q(:))
-    !--------------------------------
+    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    !--------------------------------
+    !------------------------------------------
     ! Calculate Cattaneo correction
-    !--------------------------------
+    !------------------------------------------
     if (iCAttaneo .eq. 1) then
-       call S_catS(S_CAT)
-       if (any(isnan(S_CAT))) call exit
+       CALL S_catS(S_CAT)
+       if (any(isnan(S_CAT))) then
+            write(*,*) "fatal error: NAN in S_CAT vector"
+            stop
+         end if
     end if
-    !--------------------------------
+    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     !---------------------------------------------
     ! Construct S vector 
@@ -96,26 +108,25 @@ contains
     else
        S = -Qdens - B
     end if
-    !---------------------------------------------
+    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     if (any(isnan(S(:)))) then
        write(*,*) "fatal error: NAN in S vector"
-       call exit
+       stop
     end if
     
-!!!#################################################
-!!! Call the CG method to solve the equation Ax=b.
-!!!#################################################
-!!! b/S:     Input - the b vector.
-!!! x:     Input/Output - initial guess for x, overwritten with the final solution.
-!!! itol:  Input - sets the tolerance method used to calculate error.
-!!! tol:   Input - sets the convergence criteria.
-!!! itmax: Input - sets the max number of iterations.
-!!! iter:  Output - gives the number of the final iteration.
-!!! err:   Output - records the error of the final iteration.
-!!! iss:   Input - sets the Sparse Storage type (1=SRS, 2=SDS).
+   !----------------------------------------------------
+   ! Call the CG method to solve the equation Ax=b.
+   !---------------------------------------------------
+   ! b/S:     Input - the b vector.
+   ! x:     Input/Output - initial guess for x, overwritten with the final solution.
+   ! itol:  Input - sets the tolerance method used to calculate error.
+   ! tol:   Input - sets the convergence criteria.
+   ! itmax: Input - sets the max number of iterations.
+   ! iter:  Output - gives the number of the final iteration.
+   ! err:   Output - records the error of the final iteration.
+   ! iss:   Input - sets the Sparse Storage type (1=SRS, 2=SDS).
     x=Temp_p+TINY ! to stop devide by zero error in stedy state
-    !x(:)=0
     itol=1
     tol=1.e-12_real12
     itmax=50000
@@ -123,13 +134,13 @@ contains
     iter=ncg
     err=E
     iss=1
-    call linbcg(S,x,itol=int(itol,I4B),tol=tol, itmax=int(itmax,I4B), iter=iter, &
+    CALL linbcg(S,x,itol=int(itol,I4B),tol=tol, itmax=int(itmax,I4B), iter=iter, &
          err=E, iss=int(iss,I4B))
-    !if (any(isnan(x(:)))) then
-    !   write(*,*) "fatal error: NAN in x tempurature vector"
-    !   call exit
-    !end if
-!!!#################################################
+    if (any(isnan(x(:)))) then
+       write(*,*) "fatal error: NAN in x tempurature vector"
+       stop
+    end if
+   !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     !write(*,*) 
     !write(*,*) 'time step  XX', "      T   ", sum(Temp_p)/size(Temp_p), E ,iter
     !write(*,*) 'time step  XX', "      x   ", sum(x)/size(x), E ,iter
