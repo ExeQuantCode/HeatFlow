@@ -1,6 +1,6 @@
 !!!#################################################################################################
 !!! This is the main program for HeatFlow
-!!! Author: Harry Mclean, Frank Davis, Steven Hepplestone.
+!!! Author: Harry Mclean, Frank Davies, Steven Hepplestone.
 !!!#################################################################################################
 !!!The program defines variables for timing the execution of the simulation ...
 !!!...(cpustart, cpuend, cpustart2) and variables for controlling the simulation...
@@ -18,7 +18,7 @@
 !!!#################################################################################################
 !!!verboisity 0 - no feedback, 1 user needs details, 2, developer needs details, 3 everything
 !!!#################################################################################################
-program HEATFLOW_V0_2
+program HEATFLOW_V0_3
   
   use constants, only: real12, int12
   use constructions, only: heatblock
@@ -92,7 +92,7 @@ program HEATFLOW_V0_2
                                                                  !
       ! Write results                           !
       CALL data_write(itime) 
-      if (IVERB.ge.1) CALL final_print                                         !
+      if (IVERB.ge.3) CALL final_print                                         !
                                                                  !
    end do                                                        !
    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
@@ -107,7 +107,7 @@ program HEATFLOW_V0_2
    ! give feedback to user that code has ended
    write(*,*) 'all done'
 
-end program HEATFLOW_V0_2
+end program HEATFLOW_V0_3
 
 
   

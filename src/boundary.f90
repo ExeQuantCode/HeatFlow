@@ -7,7 +7,7 @@
 !!! - kappa, The thermal conductivity of the material.
 !!! - I, The index of the grid point.
 !!! - ix, iy, iz, The indices of the grid point in the x, y, and z directions.
-!!! Author: Harry Mclean, Frank Davis, Steven Hepplestone
+!!! Author: Harry Mclean, Frank Davies, Steven Hepplestone
 !!!#################################################################################################
 module boundary_vector
   use constants, only: real12, int12

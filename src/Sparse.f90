@@ -1,9 +1,9 @@
 !!!#################################################
 !!! This module is for the Conjugate Gradient solver.
-!!! Author: Frank Davis
+!!! Author: Frank Davies, Harry Mclean
 !!!#################################################
 MODULE sputil
-   use constants, only: real12
+   use constants, only: real12, int12
 !Parameters for crossover from serial to parallel algorithms ...
 !...(these are used only within this sputil module):
   use sptype 
@@ -200,22 +200,22 @@ CONTAINS
   FUNCTION outerdiff_r(a,b)
     real(real12), DIMENSION(:), INTENT(IN) :: a,b
     real(real12), DIMENSION(size(a),size(b)) :: outerdiff_r
-    outerdiff_r = spread(a,dim=2,ncopies=size(b)) - &
-         spread(b,dim=1,ncopies=size(a))
+    outerdiff_r = spread(a,dim=2,ncopies=size(b, kind=int12)) - &
+         spread(b,dim=1,ncopies=size(a, kind=int12))
   END FUNCTION outerdiff_r
 
   FUNCTION outerdiff_d(a,b)
     real(real12), DIMENSION(:), INTENT(IN) :: a,b
     real(real12), DIMENSION(size(a),size(b)) :: outerdiff_d
-    outerdiff_d = spread(a,dim=2,ncopies=size(b)) - &
-         spread(b,dim=1,ncopies=size(a))
+    outerdiff_d = spread(a,dim=2,ncopies=size(b, kind=int12)) - &
+         spread(b,dim=1,ncopies=size(a, kind=int12))
   END FUNCTION outerdiff_d
   
   FUNCTION outerdiff_i(a,b)
     INTEGER(I4B), DIMENSION(:), INTENT(IN) :: a,b
     INTEGER(I4B), DIMENSION(size(a),size(b)) :: outerdiff_i
-    outerdiff_i = spread(a,dim=2,ncopies=size(b)) - &
-         spread(b,dim=1,ncopies=size(a))
+    outerdiff_i = spread(a,dim=2,ncopies=size(b, kind=int12)) - &
+         spread(b,dim=1,ncopies=size(a, kind=int12))
   END FUNCTION outerdiff_i
   
   !Routines for scatter-with-combine.
@@ -224,7 +224,7 @@ CONTAINS
     real(real12), DIMENSION(:), INTENT(IN) :: source
     INTEGER(I4B), DIMENSION(:), INTENT(IN) :: dest_index
     INTEGER(I4B) :: m,n,j,i
-    n=assert_eq2(size(source),size(dest_index),'scatter_add_r')
+    n=assert_eq2(size(source, kind=int12),size(dest_index, kind=int12),'scatter_add_r')
     m=int(size(dest), int12)
     do j=1,n
        i=dest_index(j)
@@ -237,7 +237,7 @@ CONTAINS
     real(real12), DIMENSION(:), INTENT(IN) :: source
     INTEGER(I4B), DIMENSION(:), INTENT(IN) :: dest_index
     INTEGER(I4B) :: m,n,j,i
-    n=assert_eq2(size(source),size(dest_index),'scatter_add_d')
+    n=assert_eq2(size(source, kind=int12),size(dest_index, kind=int12),'scatter_add_d')
     m=size(dest)
     do j=1,n
        i=dest_index(j)
@@ -278,15 +278,15 @@ contains
     TYPE(sprs2_dp), INTENT(OUT) :: ra
     INTEGER(I4B) :: n,len
     logical, DIMENSION(size(a,1),size(a,2)) :: mask
-    n=assert_eq(size(a,1),size(a,2),'SRSin')
+    n=assert_eq(size(a,1, kind=int12),size(a,2, kind=int12),'SRSin')
     mask=abs(a)>thresh
     len=count(mask)
     allocate(ra%val(len),ra%irow(len),ra%jcol(len))
     ra%n=n
     ra%len=len
     ra%val=pack(a,mask)
-    ra%irow=pack(spread(arth(1,1,n),2,n),mask)
-    ra%jcol=pack(spread(arth(1,1,n),1,n),mask)
+    ra%irow=pack(spread(arth(1_int12,1_int12,n),2_int12,n),mask)
+    ra%jcol=pack(spread(arth(1_int12,1_int12,n),1_int12,n),mask)
   END SUBROUTINE SRSin
 
 
@@ -305,7 +305,7 @@ contains
     integer(I4B) :: i, j, o, m, c
     integer(I4B), dimension(:), allocatable :: diag_off
 
-    n = assert_eq(size(a,1), size(a,2), 'SDSin')
+    n = assert_eq(size(a,1, kind=int12), size(a,2, kind=int12), 'SDSin')
 
 
     ! Identify diagonals with non-zero values
@@ -365,7 +365,7 @@ contains
     real(real12), DIMENSION (:), INTENT(OUT) :: b
     INTEGER(I4B) :: ndum, j, i, m, n
 
-    ndum = assert_eq(ra%n, size(x), size(b), 'SRSax')
+    ndum = assert_eq(ra%n, size(x, kind=int12), size(b, kind=int12), 'SRSax')
     b = 0.0_dp
 
     n = size(ra%val)
@@ -386,7 +386,7 @@ contains
     real(real12), dimension (:), intent(IN) :: x
     real(real12), dimension (:), intent(OUT) :: b
     integer(I4B) :: ndum, n, i, j, col
-    ndum = assert_eq(size(x), size(b), 'SDSax')
+    ndum = assert_eq(size(x, kind=int12), size(b, kind=int12), 'SDSax')
     n=da%n
     b = 0.0_dp
     diag_loop: do j = 1, da%num_diags
@@ -408,7 +408,7 @@ contains
     real(real12), dimension (:), intent(IN) :: x
     real(real12), dimension (:), intent(OUT) :: b
     integer(I4B) :: ndum,i,j,n,m
-    ndum=assert_eq(ra%n,size(x),size(b),'SRStx')
+    ndum=assert_eq(ra%n,size(x, kind=int12),size(b, kind=int12),'SRStx')
     b=0.0_dp
     n = size(ra%val)
     m = size(b)
@@ -428,7 +428,7 @@ SUBROUTINE SDStx(da, x, b)
     real(real12), dimension (:), intent(IN) :: x
     real(real12), dimension (:), intent(OUT) :: b
     integer(I4B) :: n, i, j, col
-    n = assert_eq(da%n, size(x), size(b), 'SDSax')
+    n = assert_eq(da%n, size(x, kind=int12), size(b, kind=int12), 'SDSax')
     b = 0.0_dp
     diag_loop: do j = 1, da%num_diags
        ! Loop over each element in the diagonal
@@ -461,14 +461,14 @@ SUBROUTINE SDStx(da, x, b)
     INTEGER(I4B) :: k,l,ndum,nerr
     INTEGER(I4B), DIMENSION(size(b)) :: i
     LOGICAL(LGT), DIMENSION(:), ALLOCATABLE :: mask
-    ndum=assert_eq(ra%n,size(b),'SRSdiag')
+    ndum=assert_eq(ra%n,size(b, kind=int12),'SRSdiag')
     l=ra%len
     allocate(mask(l))
     mask = (ra%irow(1:l) == ra%jcol(1:l))
     call array_copy(pack(ra%val(1:l),mask),val,k,nerr)
     i(1:k)=pack(ra%irow(1:l),mask)
     deallocate(mask)
-    b=0.0
+    b=0.0_real12
     b(i(1:k))=val(1:k)
   END SUBROUTINE SRSdiag
 
@@ -479,8 +479,8 @@ SUBROUTINE SDStx(da, x, b)
     TYPE(diag_sprs_dp), INTENT(IN) :: da
     real(real12), DIMENSION(:), INTENT(OUT) :: b
     integer(I4B) :: ndum, d
-    ndum=assert_eq(da%n,size(b),'SDSdiag')
-    d=find_index(da%diag_offsets, 0)
+    ndum=assert_eq(da%n,size(b, kind=int12),'SDSdiag')
+    d=find_index(da%diag_offsets, 0_int12)
     !d=(da%n)/2
     b(:)=da%vals(d,:)
   END SUBROUTINE SDSdiag
@@ -504,7 +504,7 @@ SUBROUTINE SDStx(da, x, b)
     INTEGER(I4B) :: n
     real(real12) :: ak,akden,bk,bkden,bknum,bnrm,dxnrm,xnrm,zm1nrm,znrm
     real(real12), DIMENSION(size(b)) :: p,pp,r,rr,z,zz
-    n=assert_eq(size(b),size(x),'linbcg')
+    n=assert_eq(size(b, kind=int12),size(x, kind=int12),'linbcg')
     !iter=0
     !Calculate initial residual. Input to atimes is
     !x(1:n), output is r(1:n); the final 0
@@ -513,23 +513,23 @@ SUBROUTINE SDStx(da, x, b)
     !write(6,*) 'x',x
     !write(6,*) 'r',r
     !write(6,*) 'iss',iss
-    call atimes(x,r,0,iss)
+    call atimes(x,r,0_int12,iss)
     !write(6,*) 'x',x
     !write(6,*) 'r',r
     !write(6,*) 'iss',iss
     r=b-r
     rr=r
     !Uncomment this line to get the “minimum residual” variant of the algorithm.
-    call atimes(r,rr,0,iss)
+    call atimes(r,rr,0_int12,iss)
     !Calculate norms for use in stopping criterion, and initialize z.
     select case(itol) 
     case(1)
        bnrm=sqrt(dot_product(b,b))
-       call asolve(r,z,0,iss) 
+       call asolve(r,z,0_int12,iss) 
     case(2)
-       call asolve(b,z,0,iss)
+       call asolve(b,z,0_int12,iss)
        bnrm=sqrt(dot_product(z,z))
-       call asolve(r,z,0,iss)
+       call asolve(r,z,0_int12,iss)
     case default
        call nrerror('illegal itol in linbcg')
     end select
@@ -537,7 +537,7 @@ SUBROUTINE SDStx(da, x, b)
     solve_loop: do
        if (iter > itmax) exit
        iter=iter+1
-       call asolve(rr,zz,1,iss) 
+       call asolve(rr,zz,1_int12,iss) 
        bknum=dot_product(z,rr) 
        if (iter == 1) then
           p=z
@@ -548,15 +548,15 @@ SUBROUTINE SDStx(da, x, b)
           pp=bk*pp+zz
        end if
 
-       call atimes(p,z,0,iss)
+       call atimes(p,z,0_int12,iss)
        bkden=bknum 
        akden=dot_product(z,pp)
        ak=bknum/akden
-       call atimes(pp,zz,1,iss)
+       call atimes(pp,zz,1_int12,iss)
        x=x+ak*p
        r=r-ak*z
        rr=rr-ak*zz
-       call asolve(r,z,0,iss) 
+       call asolve(r,z,0_int12,iss) 
 
        select case(itol)
        case(1)
@@ -578,7 +578,7 @@ SUBROUTINE SDStx(da, x, b)
     real(real12), DIMENSION(:), INTENT(OUT) :: r
     INTEGER(I4B), INTENT(IN) :: itrnsp,iss
     INTEGER(I4B) :: n
-    n=assert_eq(size(x),size(r),'atimes')
+    n=assert_eq(size(x, kind=int12),size(r, kind=int12),'atimes')
     select case(iss)
     case(1)
        if (itrnsp == 0) then
@@ -605,7 +605,7 @@ SUBROUTINE SDStx(da, x, b)
     real(real12), DIMENSION(:), INTENT(OUT) :: x
     INTEGER(I4B), INTENT(IN) :: itrnsp,iss
     INTEGER(I4B) :: ndum
-    ndum=assert_eq(size(b),size(x),'asolve')
+    ndum=assert_eq(size(b, kind=int12),size(x, kind=int12),'asolve')
     select case(iss)
     case(1)
        call SRSdiag(ra,x)

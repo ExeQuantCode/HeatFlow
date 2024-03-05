@@ -12,7 +12,7 @@
 !!! Temp_pp, The previous previous temperature field
 !!! inverse_time, The inverse of the time step
 !!! heat, The heat source
-!!! Author: Harry Mclean, Frank Davis, Steven Hepplestone
+!!! Author: Harry Mclean, Frank Davies, Steven Hepplestone
 !!!#################################################################################################
 module setup
   use constants, only: real12, int12, TINY
@@ -27,18 +27,17 @@ module setup
    contains
     
 
-!!!########################################################################################################################
+!!!#################################################################################################
 !!! This allocates arrays and builds the apropreate H matrix
-!!!########################################################################################################################
+!!!#################################################################################################
    subroutine set_global_variables()
       integer(int12) :: ix,iy,iz,index
       real(real12) :: TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau
       allocate(Temp_cur(nx, ny, nz))
       allocate(Temp_p(NA))
       allocate(Temp_pp(NA))
-      ! allocate(heat(ntime))
       allocate(lin_rhoc(NA))
-      ! heat = 0.0_real12
+      heat = 0.0_real12
       inverse_time = 1.0_real12/time_step
       !---------------------------------------------------
       ! ASign material properties to the grid construction
@@ -147,7 +146,7 @@ module setup
       var_stability =( time_step * alpha * &
       (1 / (grid(ix,iy,iz)%length(1)**2) + 1 / ( grid(ix,iy,iz)%length(2) ** 2 ) &
            + 1 / (grid(ix,iy,iz)%length(3) ** 2 ) ) )
-      if (IVERB.ge.1) write(*,*) "Stability condition = ", var_stability
+      if (IVERB.ge.2) write(*,*) "Stability condition = ", var_stability
       if (var_stability .gt. 1.0/12.0) then
          write(*,*) "Stability condition not met"
          write(*,*) "Stability condition = ", var_stability
@@ -203,6 +202,8 @@ module setup
       end if
    end subroutine build_Hmatrix
 !!!#################################################################################################
+
+!!!#################################################################################################
 !!! This sets up the H Matrix and converts it into sparse row storage
 !!!#################################################################################################
 subroutine SparseToReal(HT)
@@ -233,7 +234,7 @@ subroutine SparseToReal(HT)
   end do parent_loop
    write(*, '(3F15.4)') HT
 end subroutine SparseToReal
-
+!!!#################################################################################################
 
 
 end module setup

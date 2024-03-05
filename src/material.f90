@@ -12,7 +12,7 @@
 !!! - rho, the density of the material.
 !!! - sound_speed, the speed of sound in the material.
 !!! - tau, the relaxation time of the material.
-!!! Author: Harry Mclean, Frank Davis, Steven Hepplestone
+!!! Author: Harry Mclean, Frank Davies, Steven Hepplestone
 !!!#################################################################################################
 module materials
 

@@ -15,7 +15,8 @@
 !!! - iounit, The unit number of the output file.
 !!! - iounit_power, The unit number of the power output file.
 !!! - iounit_tempdis, The unit number of the temperature distribution output file.
-!!! - iounit_tempdistpd, The unit number of the temperature distribution at the previous time step output file.
+!!! - iounit_tempdistpd, The unit number of the temperature distribution at the previous ...
+!!!   ... time step output file.
 !!! - logunit, The unit number of the log file.
 !!! - ix, The x index.
 !!! - iy, The y index.
@@ -38,13 +39,13 @@
 !!! - RunName, The name of the run.
 !!! - TINY, The tiny value.
 !!! - fields, The fields.
-!!! Author: Harry Mclean, Frank Davis, Steven Hepplestone
+!!! Author: Harry Mclean, Frank Davies, Steven Hepplestone
 !!!#################################################################################################
 module output
   use constants, only: real12, int12, TINY, fields
   use inputs, only: nx,ny,nz, time_step, grid, NA, Check_Steady_State, ntime, WriteToTxt
   use inputs, only: Test_Run, freq, RunName, FullRestart
-  use globe_data, only: Temp_p,Temp_pp, heat
+  use globe_data, only: Temp_p,Temp_pp, heat, heated_volume
   implicit none
   
 contains
@@ -62,17 +63,19 @@ contains
     
     if (itime .eq. 1) then
        if(Test_run) then
-          !---------------------------------------!
-          ! open test output files                !
-          open(unit=33,file='./outputs/Power.txt')!
-          !---------------------------------------!
+          !---------------------------------------
+          ! open test output files                
+          !---------------------------------------
+          open(unit=33,file='./outputs/Power.txt')
+          !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
        else
           !---------------------------------------
           ! find most recent log file and open it
-          open(unit=30,file='./outputs/Test.txt')
-          call last_log(logname,outdir)
-          open(newunit=logunit, file = logname )
           !---------------------------------------
+          open(unit=30,file='./outputs/Test.txt')
+          CALL last_log(logname,outdir)
+          open(newunit=logunit, file = logname )
+          !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
        end if
     end if
 
@@ -96,36 +99,35 @@ contains
     ! write out to log file
     !---------------------------------------
     if (.not.Test_run) then
-       if (WriteToTxt) write(logunit,*) real((itime-1)*(time_step)),(Temp_cur(6,6,:))  !-293.0
+       if (WriteToTxt) write(logunit,*) real((itime-1)*(time_step)),(Temp_cur(27,27,:))  !-293.0
     end if
     !---------------------------------------
 
 
-    ! print*, 'Writing Temperature to file'
+    ! write(*,*) 'Writing Temperature to file'
     !write(30,*) REAL(itime)*time_step, ((T_matrix(i)-T_Bath),i=1,e)
     if (Check_Steady_State) then
        if (itime.gt.1) then
-          print*, 'Checking for steady state'
+          write(*,*) 'Checking for steady state'
           open(unit=32,file='./Tests/outputs/Temperature_Steady.txt')
           read(32,*) CT
           close(32)
           if (any(abs(Temp_cur-CT).gt.TINY)) then
-             print*, Temp_cur(1,1,1), CT(1,1,1)
-             print*, 'Steady state not reached'
+             write(*,*) Temp_cur(1,1,1), CT(1,1,1)
+             write(*,*) 'Steady state not reached'
              stop
           else
-             print*, 'Steady state reached, Test passed'
+             write(*,*) 'Steady state reached, Test passed'
           end if
        end if
     end if
-
 
     !---------------------------------------
     ! final step print and closes
     !---------------------------------------
     if (itime == ntime) then
        if (.not.Test_run) close(logunit)
-       call final_print()
+       CALL final_print()
     end if
     !---------------------------------------
 
@@ -190,9 +192,9 @@ contains
    integer(int12) :: unit
    character(len=64) :: form
    
-   TotalPower=sum(heat)
+   TotalPower=heat
    totaltime=real(ntime)*time_step
-   vol = sum(grid(:,:,:)%volume) !??? Does this function as intended?
+   vol = heated_volume 
 
    write(*,*) ''
    

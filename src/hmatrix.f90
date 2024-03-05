@@ -34,13 +34,13 @@
 !!!   - time_step, The value of the time step.
 !!!   - grid, The grid.
 
-!!! Author: Harry Mclean, Frank Davis, Steven Hepplestone
+!!! Author: Harry Mclean, Frank Davies, Steven Hepplestone
 !!!#################################################################################################
 module hmatrixmod
   use constants, only: real12, int12
   use inputs, only: nx, ny, nz, time_step, grid
   use inputs, only: isteady, icattaneo, kappaBoundx, kappaBoundy, kappaBoundz
-  use globe_data, only: inverse_time
+  use globe_data, only: inverse_time, lin_rhoc
   implicit none
 
 contains
@@ -58,7 +58,7 @@ contains
     y = mod((i-altmod(i,nx))/nx,ny)+1
     z = (i-altmod(i,nx*ny))/(nx*ny)+1
 
-    Alpha = calculate_alpha(x,y,z)
+    alpha = calculate_alpha(x,y,z, i)
     A = calculate_conductivity(x - 1, y, z, x, y, z)
     B = calculate_conductivity(x + 1, y, z, x, y, z)
     D = calculate_conductivity(x, y - 1, z, x, y, z)
@@ -122,16 +122,16 @@ contains
     end if 
   end function hmatrixfunc
 
-  function calculate_alpha(x, y, z) result(alpha)
-    integer(int12), intent(in) :: x, y, z
-    real(real12) :: tau, alpha, rho, heat_capacity
+  function calculate_alpha(x, y, z, i) result(alpha)
+    integer(int12), intent(in) :: x, y, z, i
+    real(real12) :: tau, alpha
+
+    alpha = 0.0_real12
     tau = grid(x,y,z)%tau
     if (isteady .eq. 0) then
-      rho = grid(x,y,z)%rho
-      heat_capacity = grid(x,y,z)%heat_capacity
       if (icattaneo .eq. 0) tau = 0.0_real12
       !tau is already divided by time_step**2
-      alpha = (tau*rho*heat_capacity) + (inverse_time*rho*heat_capacity) 
+      alpha = (tau*lin_rhoc(i)) + (inverse_time*lin_rhoc(i)) 
     else
       alpha = 0.0_real12
     end if 

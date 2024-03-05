@@ -8,11 +8,11 @@
 !!!   - Q, the heat source for each cell in the computational grid.
 !!!   - Qdens, the heat source density for each cell in the computational grid.
 !!!  
-!!! Author: Harry Mclean, Frank Davis, Steven Hepplestone
+!!! Author: Harry Mclean, Frank Davies, Steven Hepplestone
 !!!#################################################################################################
 module Heating
   use constants, only: real12, int12, pi
-  use globe_data, only: Temp_p, Temp_pp, Heat
+  use globe_data, only: Temp_p, Temp_pp, Heat, heated_volume
   use inputs, only: nx,ny,nz, grid, NA, power_in, time_step, T_System, freq, ntime
   use materials, only: material
   implicit none
@@ -27,15 +27,14 @@ contains
     integer(int12), intent(in) :: itime
     real(real12), dimension(NA), intent(out) :: Q, Qdens
     integer(int12) :: ix, iy, iz, IA ,heated_num
-    real(real12) :: time, dt, POWER, time_pulse, x, x2
-    real(real12) :: rho, volume, heat_capacity, area, heated_volume, tau
+    real(real12) :: time, POWER, time_pulse, x, x2
+    real(real12) :: rho, volume, heat_capacity, area, tau
 
     ! Initialize variables
     IA = 0
     Q = 0._real12
-    dt = time_step
     POWER = power_in
-    time = dt * real(itime,real12)
+    time = time_step * real(itime,real12)
     time_pulse = 0.5_real12
     heated_volume=0.0
     heated_num=0
@@ -50,7 +49,7 @@ contains
              volume = grid(ix,iy,iz)%volume
              heat_capacity = grid(ix,iy,iz)%heat_capacity
              area = grid(ix,iy,iz)%Length(1)*grid(ix,iy,iz)%Length(2) !???
-             tau = grid(ix,iy,iz)%tau*(dt**2)
+             tau = grid(ix,iy,iz)%tau*(time_step**2.0_real12)
              ! select heater case
              select case(grid(ix,iy,iz)%iheater)
              case(0)
@@ -58,14 +57,14 @@ contains
                 ! No heating
                 !------------------------------
                 Q(IA) = 0.0_real12
-                !------------------------------
+                !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              case(1)
                 !------------------------------
                 ! Constant heating
                 !------------------------------
                 Q(IA) = POWER
                 
-                !------------------------------
+                !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              case(2)
                 !------------------------------
                  ! Heater on for a time period
@@ -75,29 +74,29 @@ contains
                 else
                    Q(IA) = 0.0_real12
                 end if
-                !------------------------------
+                !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              case(3)
                 !------------------------------
                 ! AC oscillatory heating
                 !------------------------------
                 x = time * 2.0_real12 * PI * freq
-                x2 = dt * 2.0_real12 * PI * freq
+                x2 = time_step * 2.0_real12 * PI * freq
                 Q(IA) = POWER * 0.5_real12 * &
                   ((x2) - sin(x + x2) * cos(x + x2) + sin(x) * cos(x)) / x2
-                !------------------------------
+                !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              case(4)
                 !------------------------------
                 ! AC oscillatory heating raw, with Volz correction
                 !------------------------------
-                Q(IA) = POWER * (sin(time * 2 * PI * freq)**2)&
-                  +POWER*2*PI*freq*tau*sin(2*time*2*PI*freq)
-                !------------------------------
+                Q(IA) = POWER * (sin(time * 2.0_real12 * PI * freq)**2.0_real12)&
+                  +POWER*2.0_real12*PI*freq*tau*sin(2.0_real12*time*2.0_real12*PI*freq)
+                !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              case(5)
                 !------------------------------
                 ! Radiative heating 
                 !------------------------------
                 ! Q(IA)= e*eps* T**4
-                !------------------------------
+                !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              case(6)
                 !------------------------------
                 ! Step one heating
@@ -107,7 +106,7 @@ contains
                 else
                    Q(IA) = 0.0
                 end if
-                !------------------------------
+                !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              end select
 
              !------------------------------
@@ -115,7 +114,7 @@ contains
              !------------------------------
              !Qdens(IA)=Q(IA)
              Q(IA)=Q(IA)
-             !------------------------------
+             !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
              
              
@@ -126,7 +125,7 @@ contains
                 heated_volume = heated_volume + volume
                 heated_num = heated_num + 1
              end if
-             !------------------------------
+             !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           end do
        end do
     end do
