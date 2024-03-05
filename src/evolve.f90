@@ -35,11 +35,11 @@ module evolution
 
 contains
 
-!!!##############################################################
+!!!#################################################################################################
 !!! Subroutine to evolve the system for one time step.
 !!! Inputs:
 !!!   itime - Current time step (integer)
-!!!##############################################################
+!!!#################################################################################################
   subroutine simulate(itime)
     integer(int12), intent(in) :: itime
     real(real12), dimension(NA) :: S, x, Q, Qdens, S_CAT, B
