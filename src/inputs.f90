@@ -275,7 +275,7 @@ contains
         CALL assignD(buffer,"T_Bathz2",T_Bathz2,readvar(25))
         CALL assignD(buffer,"T_System",T_System,readvar(26))
         CALL assignD(buffer,"T_Bath",T_Bath,readvar(27))
-        CALL assignD(buffer,"KappaBound",KappaBound,readvar(28))
+        CALL assignD(buffer,"kappaBound",KappaBound,readvar(28))
     end do
     CALL check_param(readvar,size(readvar,1))
 
@@ -286,7 +286,7 @@ contains
 !!! check_param gives errors and warnings regarding the INPUT file
 !!!#################################################################################################
   subroutine check_param(readvar,n)
-    integer::n
+    integer::n,i
     integer,dimension(n)::readvar
     ! Not currently in use
 
@@ -369,13 +369,18 @@ contains
      if (any(readvar.eq.0)) then
       write(6,*)
       write(6,'(A43)') '###############################'
-      write(6,'(A43)') '##########   ERROR   ##########'
+      write(6,'(A43)') '##########   WARNING  ##########'
       write(6,'(A43)') '###############################'
       write(6,*)
-      write(6,'(A)') ' ---       Error in subroutine "checkINPUT"       ---'
-      write(6,'(A)') ' --- ERROR: Essential parameters missing    ---'
+      write(6,'(A)') ' ---       WARNING in subroutine "checkINPUT"       ---'
+      write(6,'(A)') ' --- WARNING: Essential parameters missing    ---'
+      ! Print all indices of readvar that are 0
+      do i = 1, size(readvar)
+        if (readvar(i) == 0) then
+          write(6, '(A,I3)') 'Index ', i, ' of readvar is 0'
+        end if
+      end do
       write(6,*)
-      stop
      end if
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

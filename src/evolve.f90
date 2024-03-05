@@ -21,7 +21,7 @@
 
 module evolution
   use constants, only: real12, int12, TINY
-  use inputs, only: NA, icattaneo, isteady, nx, ny, nz, T_System, time_step, grid, power_in
+  use inputs, only: NA, icattaneo, isteady, nx, ny, nz, IVERB,T_System, time_step, grid, power_in
   use sptype, only: I4B
   use sparse, only: linbcg
   use globe_data, only: Temp_p, Temp_pp, inverse_time, heat, lin_rhoc
@@ -62,7 +62,7 @@ contains
     !--------------------------------
     CALL boundary(B)
     if (any(isnan(B(:)))) then
-      write(*,*), "fatal error: NAN in B vector"
+      write(*,*) "fatal error: NAN in B vector"
       stop
     end if
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -81,7 +81,7 @@ contains
             stop
          end if
     end if
-    heat(itime) = sum(Q(:))
+    heat = heat + sum(Q(:))
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     !------------------------------------------
@@ -89,6 +89,7 @@ contains
     !------------------------------------------
     if (iCAttaneo .eq. 1) then
        CALL S_catS(S_CAT)
+       write(*,*) "S_CAT", S_CAT
        if (any(isnan(S_CAT))) then
             write(*,*) "fatal error: NAN in S_CAT vector"
             stop
@@ -128,7 +129,7 @@ contains
    ! iss:   Input - sets the Sparse Storage type (1=SRS, 2=SDS).
     x=Temp_p+TINY ! to stop devide by zero error in stedy state
     itol=1
-    tol=1.e-12_real12
+    tol=1.e-20_real12
     itmax=50000
     ncg = 0
     iter=ncg
@@ -141,9 +142,11 @@ contains
        stop
     end if
    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    !write(*,*) 
-    !write(*,*) 'time step  XX', "      T   ", sum(Temp_p)/size(Temp_p), E ,iter
-    !write(*,*) 'time step  XX', "      x   ", sum(x)/size(x), E ,iter
+    if (IVERB .gt. 4) then
+      write(*,*) 
+      write(*,*) 'time step ', itime, "      T   ", sum(Temp_p)/size(Temp_p), E ,iter
+      write(*,*) 'time step ',itime, "      x   ", sum(x)/size(x), E ,iter
+    end if
     Temp_pp = Temp_p
     Temp_p = x
 

@@ -15,7 +15,8 @@
 !!! - iounit, The unit number of the output file.
 !!! - iounit_power, The unit number of the power output file.
 !!! - iounit_tempdis, The unit number of the temperature distribution output file.
-!!! - iounit_tempdistpd, The unit number of the temperature distribution at the previous time step output file.
+!!! - iounit_tempdistpd, The unit number of the temperature distribution at the previous ...
+!!!   ... time step output file.
 !!! - logunit, The unit number of the log file.
 !!! - ix, The x index.
 !!! - iy, The y index.
@@ -44,7 +45,7 @@ module output
   use constants, only: real12, int12, TINY, fields
   use inputs, only: nx,ny,nz, time_step, grid, NA, Check_Steady_State, ntime, WriteToTxt
   use inputs, only: Test_Run, freq, RunName, FullRestart
-  use globe_data, only: Temp_p,Temp_pp, heat
+  use globe_data, only: Temp_p,Temp_pp, heat, heated_volume
   implicit none
   
 contains
@@ -62,17 +63,19 @@ contains
     
     if (itime .eq. 1) then
        if(Test_run) then
-          !---------------------------------------!
-          ! open test output files                !
-          open(unit=33,file='./outputs/Power.txt')!
-          !---------------------------------------!
+          !---------------------------------------
+          ! open test output files                
+          !---------------------------------------
+          open(unit=33,file='./outputs/Power.txt')
+          !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
        else
           !---------------------------------------
           ! find most recent log file and open it
-          open(unit=30,file='./outputs/Test.txt')
-          call last_log(logname,outdir)
-          open(newunit=logunit, file = logname )
           !---------------------------------------
+          open(unit=30,file='./outputs/Test.txt')
+          CALL last_log(logname,outdir)
+          open(newunit=logunit, file = logname )
+          !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
        end if
     end if
 
@@ -119,13 +122,12 @@ contains
        end if
     end if
 
-
     !---------------------------------------
     ! final step print and closes
     !---------------------------------------
     if (itime == ntime) then
        if (.not.Test_run) close(logunit)
-       call final_print()
+       CALL final_print()
     end if
     !---------------------------------------
 
@@ -190,9 +192,9 @@ contains
    integer(int12) :: unit
    character(len=64) :: form
    
-   TotalPower=sum(heat)
+   TotalPower=heat
    totaltime=real(ntime)*time_step
-   vol = sum(grid(:,:,:)%volume) !??? Does this function as intended?
+   vol = heated_volume 
 
    write(*,*) ''
    

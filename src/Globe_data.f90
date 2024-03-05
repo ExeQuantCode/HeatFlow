@@ -7,8 +7,8 @@ module globe_data
   use constants, only: real12
   implicit none
   real(real12), dimension(:,:,:), allocatable :: Temp_cur
-  real(real12), dimension(:), allocatable :: Temp_p, Temp_pp, heat
-  real(real12) :: inverse_time
+  real(real12), dimension(:), allocatable :: Temp_p, Temp_pp
+  real(real12) :: inverse_time, heat, heated_volume
   real(real12), dimension(:), allocatable :: heatcheck
   real(real12), dimension(:), allocatable :: lin_rhoc ! 1D array for HeatCapacity*Rho
   TYPE(sprs2_dp) :: ra !Techniqually rH

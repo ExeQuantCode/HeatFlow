@@ -92,7 +92,7 @@ program HEATFLOW_V0_2
                                                                  !
       ! Write results                           !
       CALL data_write(itime) 
-      if (IVERB.ge.1) CALL final_print                                         !
+      if (IVERB.ge.3) CALL final_print                                         !
                                                                  !
    end do                                                        !
    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!

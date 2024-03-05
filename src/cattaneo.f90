@@ -12,18 +12,17 @@ use globe_data, only: Temp_p,Temp_pp, lin_rhoc
 use constants, only: real12, int12, TINY
 implicit none
 contains
-subroutine S_catS(s_cat)
+pure subroutine S_catS(s_cat)
     real(real12), dimension(NA), intent(inout) :: S_cat
+    integer(int12) :: index, ix, iy, iz
 
-    integer(int12) :: i, ix, iy, iz
-    i = 0
-    S_cat = 0._real12
+    index = 0
     do iz=1,nz
         do iy = 1, ny
             do ix = 1, nx
-                i = i+1
-                S_cat(i) = ( Temp_pp(i) - 2._real12 * Temp_p(i) ) &
-                * ( grid(ix,iy,iz)%tau * lin_rhoc(i) )  !
+                index = index+1
+                S_cat(index) = ( Temp_pp(index) - 2.0_real12 * Temp_p(index) ) &
+                * ( grid(ix,iy,iz)%tau * lin_rhoc(index) )  !
 
             end do
         end do

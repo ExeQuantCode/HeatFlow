@@ -12,7 +12,7 @@
 !!!#################################################################################################
 module Heating
   use constants, only: real12, int12, pi
-  use globe_data, only: Temp_p, Temp_pp, Heat
+  use globe_data, only: Temp_p, Temp_pp, Heat, heated_volume
   use inputs, only: nx,ny,nz, grid, NA, power_in, time_step, T_System, freq, ntime
   use materials, only: material
   implicit none
@@ -28,7 +28,7 @@ contains
     real(real12), dimension(NA), intent(out) :: Q, Qdens
     integer(int12) :: ix, iy, iz, IA ,heated_num
     real(real12) :: time, POWER, time_pulse, x, x2
-    real(real12) :: rho, volume, heat_capacity, area, heated_volume, tau
+    real(real12) :: rho, volume, heat_capacity, area, tau
 
     ! Initialize variables
     IA = 0
