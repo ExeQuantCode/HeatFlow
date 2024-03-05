@@ -4,7 +4,7 @@
 !!! - S_catS, This subroutine calculates the Cattaneo term for the S vector.
 !!! The variables used in this module are:
 !!! - S_cat, This is the Cattaneo term for the S vector.
-!!! Author: Harry Mclean, Frank Davis, Steven Hepplestone
+!!! Author: Harry Mclean, Frank Davies, Steven Hepplestone
 !!!#################################################################################################
 module cattaneo
 use inputs, only: NA, time_step, nx, ny, nz, grid

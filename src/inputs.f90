@@ -58,7 +58,7 @@
 !!!     - Ly, the length in the y direction
 !!!     - Lz, the length in the z direction
 
-!!! Author: Harry Mclean, Frank Davis, Steven Hepplestone
+!!! Author: Harry Mclean, Frank Davies, Steven Hepplestone
 !!!#################################################################################################
 module inputs
   use constants, only: real12, int12

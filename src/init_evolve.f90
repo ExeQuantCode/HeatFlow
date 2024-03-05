@@ -19,7 +19,7 @@
 !!!   ... step temperature field exists.
 !!! - buffer, A character variable used to store the file path.
 
-!!! Author: Harry Mclean, Frank Davis, Steven Hepplestone
+!!! Author: Harry Mclean, Frank Davies, Steven Hepplestone
 !!!#################################################################################################
 module initial
    use constants, only: real12, int12, fields

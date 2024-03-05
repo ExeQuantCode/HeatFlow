@@ -1,16 +1,16 @@
 !!!#################################################################################################
 !!! This module is for the sparse storage of the h matrix.
-!!! Author: Frank Davis
+!!! Author: Frank Davies
 !!!#################################################################################################
 module sptype
-  use constants, only: int12
+  use constants, only: int12, real12
   !Symbolic names for kind types of 4, 2, and 1byte integers:
-  integer, parameter :: I4B = SELECTED_INT_KIND(9)
+  integer, parameter :: I4B = int12 !SELECTED_INT_KIND(9)
   integer, parameter :: I2B = int12 !SELECTED_INT_KIND(4)
   integer, parameter :: I1B = int12 !SELECTED_INT_KIND(2)
   !Symbolic names for kind types of single- and double-precision reals:
   integer, parameter :: SP = KIND(1.0)
-  integer, parameter :: DP = KIND(1.0D0)
+  integer, parameter :: DP = real12!KIND(1.0D0)
   !Symbolic names for kind types of single- and double-precision complex:
   integer, parameter :: SPC = KIND((1.0,1.0))
   integer, parameter :: DPC = KIND((1.0D0,1.0D0))

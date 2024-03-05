@@ -1,6 +1,6 @@
 !!!#################################################################################################
 !!! This is the main program for HeatFlow
-!!! Author: Harry Mclean, Frank Davis, Steven Hepplestone.
+!!! Author: Harry Mclean, Frank Davies, Steven Hepplestone.
 !!!#################################################################################################
 !!!The program defines variables for timing the execution of the simulation ...
 !!!...(cpustart, cpuend, cpustart2) and variables for controlling the simulation...

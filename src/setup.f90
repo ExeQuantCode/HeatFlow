@@ -12,7 +12,7 @@
 !!! Temp_pp, The previous previous temperature field
 !!! inverse_time, The inverse of the time step
 !!! heat, The heat source
-!!! Author: Harry Mclean, Frank Davis, Steven Hepplestone
+!!! Author: Harry Mclean, Frank Davies, Steven Hepplestone
 !!!#################################################################################################
 module setup
   use constants, only: real12, int12, TINY

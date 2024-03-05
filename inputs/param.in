@@ -14,20 +14,20 @@
     mixing = 0.0     !
     ACon = 1     !
     time_step = 1E-4  !
-    freq = 10     !
+    freq = 100     !
     iboundary = 1     !
     icattaneo = 1 !
     isteady =  0  !
-    T_System = 1000 ! Doesnt matter if _FullRestart or _InputTempDis = True
-    T_Bath = 1000
-    T_Bathx1 = 1000     !
-    T_Bathx2 = 1000     !
-    T_Bathy1 = 1000     !
-    T_Bathy2 = 1000    !
-    T_Bathz1 = 1000    !
-    T_Bathz2 = 1000    !
+    T_System = 300 ! Doesnt matter if _FullRestart or _InputTempDis = True
+    T_Bath = 300
+    T_Bathx1 = 300     !
+    T_Bathx2 = 300     !
+    T_Bathy1 = 300     !
+    T_Bathy2 = 300    !
+    T_Bathz1 = 300    !
+    T_Bathz2 = 300    !
     cutoff = 1000     !
-    power_in =  0  !
+    power_in =  100  !
     T_period = 0.01  !
     kappaBound = 400
     kappaBoundx = 400  !

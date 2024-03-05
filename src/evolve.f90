@@ -16,7 +16,7 @@
 !!!   -err, The error of the final iteration.
 !!!   -tol, The convergence criteria.
 !!!   -iss, The Sparse Storage type (1=SRS, 2=SDS).
-!!! Author: Harry Mclean, Frank Davis, Steven Hepplestone
+!!! Author: Harry Mclean, Frank Davies, Steven Hepplestone
 !!!#################################################################################################
 
 module evolution
@@ -89,7 +89,7 @@ contains
     !------------------------------------------
     if (iCAttaneo .eq. 1) then
        CALL S_catS(S_CAT)
-       write(*,*) "S_CAT", S_CAT
+       if (IVERB .gt. 4) write(*,*) "S_CAT average", sum(S_CAT)/size(S_CAT)
        if (any(isnan(S_CAT))) then
             write(*,*) "fatal error: NAN in S_CAT vector"
             stop
@@ -127,7 +127,7 @@ contains
    ! iter:  Output - gives the number of the final iteration.
    ! err:   Output - records the error of the final iteration.
    ! iss:   Input - sets the Sparse Storage type (1=SRS, 2=SDS).
-    x=Temp_p+TINY ! to stop devide by zero error in stedy state
+    x=Temp_p! to stop devide by zero error in stedy state
     itol=1
     tol=1.e-20_real12
     itmax=50000

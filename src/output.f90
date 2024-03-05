@@ -39,7 +39,7 @@
 !!! - RunName, The name of the run.
 !!! - TINY, The tiny value.
 !!! - fields, The fields.
-!!! Author: Harry Mclean, Frank Davis, Steven Hepplestone
+!!! Author: Harry Mclean, Frank Davies, Steven Hepplestone
 !!!#################################################################################################
 module output
   use constants, only: real12, int12, TINY, fields
@@ -99,7 +99,7 @@ contains
     ! write out to log file
     !---------------------------------------
     if (.not.Test_run) then
-       if (WriteToTxt) write(logunit,*) real((itime-1)*(time_step)),(Temp_cur(6,6,:))  !-293.0
+       if (WriteToTxt) write(logunit,*) real((itime-1)*(time_step)),(Temp_cur(17,17,:))  !-293.0
     end if
     !---------------------------------------
 

@@ -8,7 +8,7 @@
 !!!   - Q, the heat source for each cell in the computational grid.
 !!!   - Qdens, the heat source density for each cell in the computational grid.
 !!!  
-!!! Author: Harry Mclean, Frank Davis, Steven Hepplestone
+!!! Author: Harry Mclean, Frank Davies, Steven Hepplestone
 !!!#################################################################################################
 module Heating
   use constants, only: real12, int12, pi
@@ -49,7 +49,7 @@ contains
              volume = grid(ix,iy,iz)%volume
              heat_capacity = grid(ix,iy,iz)%heat_capacity
              area = grid(ix,iy,iz)%Length(1)*grid(ix,iy,iz)%Length(2) !???
-             tau = grid(ix,iy,iz)%tau*(time_step**2)
+             tau = grid(ix,iy,iz)%tau*(time_step**2.0_real12)
              ! select heater case
              select case(grid(ix,iy,iz)%iheater)
              case(0)
@@ -88,8 +88,8 @@ contains
                 !------------------------------
                 ! AC oscillatory heating raw, with Volz correction
                 !------------------------------
-                Q(IA) = POWER * (sin(time * 2 * PI * freq)**2)&
-                  +POWER*2*PI*freq*tau*sin(2*time*2*PI*freq)
+                Q(IA) = POWER * (sin(time * 2.0_real12 * PI * freq)**2.0_real12)&
+                  +POWER*2.0_real12*PI*freq*tau*sin(2.0_real12*time*2.0_real12*PI*freq)
                 !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              case(5)
                 !------------------------------

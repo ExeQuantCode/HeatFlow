@@ -1,6 +1,6 @@
 !!!#################################################################################################
 !!! This is the module for the global variables used in the code
-!!! Author: Harry Mclean, Frank Davis, Steven Hepplestone
+!!! Author: Harry Mclean, Frank Davies, Steven Hepplestone
 !!!#################################################################################################
 module globe_data
   use sptype, only: sprs2_dp, diag_sprs_dp

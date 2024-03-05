@@ -1,6 +1,6 @@
 !!!#################################################################################################
 !!!This module contains the type definitions for the heatblock and material types
-!!! Author: Harry Mclean, Frank Davis, Steven Hepplestone
+!!! Author: Harry Mclean, Frank Davies, Steven Hepplestone
 !!!#################################################################################################
 !The heatblock type represents a block of material in a heat simulation. It contains several fields:
 !imaterial_type: An integer that represents the type of material the block is made of.
