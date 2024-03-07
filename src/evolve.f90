@@ -127,7 +127,7 @@ contains
    ! iter:  Output - gives the number of the final iteration.
    ! err:   Output - records the error of the final iteration.
    ! iss:   Input - sets the Sparse Storage type (1=SRS, 2=SDS).
-    x=Temp_p! to stop devide by zero error in stedy state
+    x=Temp_p+(Temp_p-Temp_pp)
     itol=1
     tol=1.e-20_real12
     itmax=50000
