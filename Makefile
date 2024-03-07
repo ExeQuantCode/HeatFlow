@@ -49,7 +49,7 @@ FC = gfortran
 MKLROOT?="/usr/local/intel/parallel_studio_xe_2017/compilers_and_libraries_2017/linux/mkl/lib/intel64_lin"
 
 
-NAME = ThermalFLow.x
+NAME = ThermalFlow.x
 programs = $(BIN_DIR)/$(NAME)
 all: $(programs)
 
