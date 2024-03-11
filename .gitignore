@@ -8,6 +8,9 @@ cases/
 build/
 inputs/
 outputs/
+DElectrodes/
+DThinFilm/
+BULK silicon and air/
 utl/DFortran/make_geom/bin/
 utl/DFortran/make_geom/obj/
 utl/DFortran/make_geom/mod/
