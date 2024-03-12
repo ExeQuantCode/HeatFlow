@@ -22,9 +22,12 @@
 !!!     - time_step, the time step of the simulation
 !!!     - freq, the frequency of the heater in simulation
 !!!     - power_in, the power in of the heater in the simulation
-!!!     - kappaBoundx, the boundary kappa in the x direction
-!!!     - kappaBoundy, the boundary kappa in the y direction
-!!!     - kappaBoundz, the boundary kappa in the z direction
+!!!     - kappaBoundx, the boundary kappa in the x direction plane x=1
+!!!     - kappaBoundy, the boundary kappa in the y direction plane y=1
+!!!     - kappaBoundz, the boundary kappa in the z direction plane z=1
+!!!     - kappaBoundNx, the boundary kappa in the x direction plane x=nx
+!!!     - kappaBoundNy, the boundary kappa in the y direction plane y=ny
+!!!     - kappaBoundNz, the boundary kappa in the z direction plane z=nz
 !!!     - KappaBound, the boundary kappa
 !!!     - T_Bathx1, the bath temperature in the x direction
 !!!     - T_Bathx2, the bath temperature in the x direction
@@ -67,7 +70,8 @@ module inputs
 
   integer :: unit, newunit
   ! time step, frequency, power in, boundary kappa
-  real(real12) :: time_step, freq, power_in, kappaBoundx, kappaBoundy, kappaBoundz, KappaBound
+  real(real12) :: time_step, freq, power_in, kappaBoundx1, kappaBoundy1, kappaBoundz1, KappaBound
+  real(real12) :: kappaBoundNx, kappaBoundNy, kappaBoundNz 
   ! Bath temperatures
   real(real12) :: T_Bathx1, T_Bathx2, T_Bathy1, T_Bathy2, T_Bathz1, T_Bathz2, T_System, T_Bath
   ! verbose, number of time steps, boundary condition, number of cells
@@ -200,7 +204,7 @@ contains
 !!!#################################################################################################
   subroutine read_param(unit)
     integer:: unit, Reason, i
-    integer,dimension(28)::readvar
+    integer,dimension(31)::readvar
     character(1024)::buffer
     logical::ex
     readvar=0
@@ -234,6 +238,9 @@ contains
     kappaBoundx = KappaBound
     kappaBoundy = KappaBound
     kappaBoundz = KappaBound
+    kappaBoundNx = KappaBound
+    kappaBoundNy = KappaBound
+    kappaBoundNz = KappaBound
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     do
        read(unit,'(A)',iostat=Reason) buffer
@@ -276,6 +283,9 @@ contains
         CALL assignD(buffer,"T_System",T_System,readvar(26))
         CALL assignD(buffer,"T_Bath",T_Bath,readvar(27))
         CALL assignD(buffer,"kappaBound",KappaBound,readvar(28))
+        CALL assignD(buffer,"kappaBoundNx",kappaBoundNx,readvar(29))
+        CALL assignD(buffer,"kappaBoundNy",kappaBoundNy,readvar(30))
+        CALL assignD(buffer,"kappaBoundNz",kappaBoundNz,readvar(31))
     end do
     CALL check_param(readvar,size(readvar,1))
 
@@ -363,6 +373,9 @@ contains
         kappaBoundx = KappaBound
         kappaBoundy = KappaBound
         kappaBoundz = KappaBound
+        kappaBoundNx = KappaBound
+        kappaBoundNy = KappaBound
+        kappaBoundNz = KappaBound
         readvar(9:11) = 1
       end if 
     
@@ -417,6 +430,9 @@ contains
        write(6,'(A35,F12.5)')   '   kappaBoundx         = ',kappaBoundx
        write(6,'(A35,F12.5)')   '   kappaBoundy         = ',kappaBoundy
        write(6,'(A35,F12.5)')   '   kappaBoundz         = ',kappaBoundz
+        write(6,'(A35,F12.5)')   '   kappaBoundNx         = ',kappaBoundNx
+        write(6,'(A35,F12.5)')   '   kappaBoundNy         = ',kappaBoundNy
+        write(6,'(A35,F12.5)')   '   kappaBoundNz         = ',kappaBoundNz
 
     end if
   end subroutine check_param
