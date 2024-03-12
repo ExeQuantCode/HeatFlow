@@ -35,9 +35,10 @@ def read_heat_file(filepath, dimensions):
     """
     Read and process the heat distribution file.
     """
+    a=[]
     with open(filepath, 'r') as f:
-        line = f.readline()
-        a = [float(i) for i in line.split()]
+        for line in f:
+            a.extend([float(i) for i in line.split()])
     a_array = np.array(a)
     matrix = a_array.reshape(dimensions)
     return matrix

@@ -1,4 +1,9 @@
 #!/home/fhd205/opt/anaconda3/envs/py3.11/bin/python
+import sys
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+import numpy as np
+import math
 
 #--------------------------------------------------------------------------#
 class Volume:
@@ -170,11 +175,66 @@ class Blocks:
         print("Cylinders:")
         for cylinder in self.cylinders:
             print(str(cylinder))
+    
+    def plot_shapes(self):
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        
+        # Set plot limits according to the volume
+        ax.set_xlim(0, self.volume.x)
+        ax.set_ylim(0, self.volume.y)
+        ax.set_zlim(0, self.volume.z)
+        
+        # Plot Cuboids
+        for cuboid in self.cuboids:
+            o = np.array(cuboid.origin)
+            d = np.array(cuboid.dimensions)
+            vertices = [o + np.array([dx, dy, dz]) for dx in [0, d[0]] for dy in [0, d[1]] for dz in [0, d[2]]]
+            faces = [
+                [vertices[i] for i in [0, 1, 3, 2]],
+                [vertices[i] for i in [4, 5, 7, 6]],
+                [vertices[i] for i in [0, 2, 6, 4]],
+                [vertices[i] for i in [1, 3, 7, 5]],
+                [vertices[i] for i in [0, 1, 5, 4]],
+                [vertices[i] for i in [2, 3, 7, 6]]
+            ]
+            cuboid_faces = Poly3DCollection(faces, edgecolors='k', linewidths=1, alpha=0.1)
+            cuboid_faces.set_facecolor((0, 1, 0, 0.1))
+            ax.add_collection3d(cuboid_faces)
+            
+        # Plot Spheres
+        for sphere in self.spheres:
+            u, v = np.mgrid[0:2*np.pi:100j, 0:np.pi:50j]
+            x = sphere.center[0] + sphere.radius * np.outer(np.cos(u), np.sin(v))
+            y = sphere.center[1] + sphere.radius * np.outer(np.sin(u), np.sin(v))
+            z = sphere.center[2] + sphere.radius * np.outer(np.ones(np.size(u)), np.cos(v))
+            ax.plot_surface(x, y, z, color='y')
+            
+        # Plot Cylinders
+        for cylinder in self.cylinders:
+            u, v = np.mgrid[0:2*np.pi:30j, 0:cylinder.length:30j]
+            direction = np.array(cylinder.direction)
+            l = direction * cylinder.length
+            r = np.cross([0.123, 0.456, 1.789], direction)
+            r = r / np.linalg.norm(r) * cylinder.radius
+            s = np.cross(l, r)
+            s = s / np.linalg.norm(s) * cylinder.radius
+            X = (r[0]*np.cos(u) + s[0]*np.sin(u)) + cylinder.start[0] + l[0]*v/cylinder.length
+            Y = (r[1]*np.cos(u) + s[1]*np.sin(u)) + cylinder.start[1] + l[1]*v/cylinder.length
+            Z = (r[2]*np.cos(u) + s[2]*np.sin(u)) + cylinder.start[2] + l[2]*v/cylinder.length
+            ax.plot_surface(X, Y, Z, color='b')
+            
+        plt.show()
 #--------------------------------------------------------------------------#
 
 
+if len(sys.argv) < 2:
+    print("Usage: python_script.py <inputfile>")
+    sys.exit(1)
 
+infile = sys.argv[1]
+print(infile)
 blocks = Blocks()
-blocks.read('Pillers.in')
+blocks.read(infile)
 blocks.print_all_values()
-
+blocks.plot_shapes()
