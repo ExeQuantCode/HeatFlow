@@ -235,9 +235,9 @@ contains
     T_Bathz1 = T_Bath
     T_Bathz2 = T_Bath
     power_in = 0
-    kappaBoundx = KappaBound
-    kappaBoundy = KappaBound
-    kappaBoundz = KappaBound
+    kappaBoundx1 = KappaBound
+    kappaBoundy1 = KappaBound
+    kappaBoundz1 = KappaBound
     kappaBoundNx = KappaBound
     kappaBoundNy = KappaBound
     kappaBoundNz = KappaBound
@@ -263,9 +263,9 @@ contains
        CALL assignI(buffer,"icattaneo", icattaneo, readvar(6))
        CALL assignI(buffer,"isteady", isteady, readvar(7))
        CALL assignD(buffer,"power_in",power_in,readvar(8))       
-       CALL assignD(buffer,"kappaBoundx",kappaBoundx,readvar(9))
-       CALL assignD(buffer,"kappaBoundy",kappaBoundy,readvar(10))    
-       CALL assignD(buffer,"kappaBoundz",kappaBoundz,readvar(11))
+       CALL assignD(buffer,"kappaBoundx",kappaBoundx1,readvar(9))
+       CALL assignD(buffer,"kappaBoundy",kappaBoundy1,readvar(10))    
+       CALL assignD(buffer,"kappaBoundz",kappaBoundz1,readvar(11))
        CALL assignL(buffer,"_Check_Sparse_Full",Check_Sparse_Full,readvar(12))
        CALL assignL(buffer,"_Check_Stability",Check_Stability,readvar(13))
        CALL assignL(buffer,"_WriteToTxt",WriteToTxt,readvar(14))
@@ -370,9 +370,9 @@ contains
         readvar(20:25) = 1
       end if
       if (readvar(28) .gt. 1) then
-        kappaBoundx = KappaBound
-        kappaBoundy = KappaBound
-        kappaBoundz = KappaBound
+        kappaBoundx1 = KappaBound
+        kappaBoundy1 = KappaBound
+        kappaBoundz1 = KappaBound
         kappaBoundNx = KappaBound
         kappaBoundNy = KappaBound
         kappaBoundNz = KappaBound
@@ -427,9 +427,9 @@ contains
        write(6,'(A35,F12.5)')'   T_Bathz2     = ', T_Bathz2
        write(6,'(A35,F12.5)')'   power_in   = ',power_in
        write(6,'(A35,F12.5)')   '   KappaBound         = ',KappaBound
-       write(6,'(A35,F12.5)')   '   kappaBoundx         = ',kappaBoundx
-       write(6,'(A35,F12.5)')   '   kappaBoundy         = ',kappaBoundy
-       write(6,'(A35,F12.5)')   '   kappaBoundz         = ',kappaBoundz
+       write(6,'(A35,F12.5)')   '   kappaBoundx1         = ',kappaBoundx1
+       write(6,'(A35,F12.5)')   '   kappaBoundy1         = ',kappaBoundy1
+       write(6,'(A35,F12.5)')   '   kappaBoundz1         = ',kappaBoundz1
         write(6,'(A35,F12.5)')   '   kappaBoundNx         = ',kappaBoundNx
         write(6,'(A35,F12.5)')   '   kappaBoundNy         = ',kappaBoundNy
         write(6,'(A35,F12.5)')   '   kappaBoundNz         = ',kappaBoundNz

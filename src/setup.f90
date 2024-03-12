@@ -16,7 +16,7 @@
 !!!#################################################################################################
 module setup
   use constants, only: real12, int12, TINY
-  use inputs, only: nx, ny, nz, NA, grid, time_step, kappaBoundx, kappaBoundy, kappaBoundz & !
+  use inputs, only: nx, ny, nz, NA, grid, time_step, kappaBoundx1, kappaBoundy1, kappaBoundz1 & !
                      ,Check_Sparse_Full, Check_Stability, ntime,IVERB ! 
   use hmatrixmod, only: hmatrixfunc
   use globe_data, only:  ra, Temp_cur, Temp_p, Temp_pp,inverse_time, heat, lin_rhoc
@@ -159,14 +159,15 @@ module setup
       
          stop
       end if
+      !!! This needs fixing, assuming all boundaries are the same
       if ((ix .eq. 1) .or.(iy .eq. 1) .or. (iz .eq. 1)) then
-         alpha = kappaBoundx / ( rho * heat_capacity)
+         alpha = kappaBoundx1 / ( rho * heat_capacity)
          var_stability =( time_step * alpha * &
               (1 / (grid(ix,iy,iz)%length(1)**2) + 1 / ( grid(ix,iy,iz)%length(2) ** 2 ) &
               + 1 / (grid(ix,iy,iz)%length(3) ** 2 ) ) )
          if (var_stability .gt. 1.0/12.0) then
             write(*,*) "Stability condition at boundary not met = ", var_stability
-            write(*,*) " Boundary kappas = ", kappaBoundx, kappaBoundy, kappaBoundz
+            write(*,*) " Boundary kappas = ", kappaBoundx1, kappaBoundy1, kappaBoundz1
             stop
          end if
       end if

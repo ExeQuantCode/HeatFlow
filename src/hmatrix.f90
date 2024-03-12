@@ -39,7 +39,8 @@
 module hmatrixmod
   use constants, only: real12, int12
   use inputs, only: nx, ny, nz, time_step, grid
-  use inputs, only: isteady, icattaneo, kappaBoundx, kappaBoundy, kappaBoundz
+  use inputs, only: isteady, icattaneo, kappaBoundx1, kappaBoundy1, kappaBoundz1
+  use inputs, only: kappaBoundNx, kappaBoundNy, kappaBoundNz
   use globe_data, only: inverse_time, lin_rhoc
   implicit none
 
@@ -196,16 +197,28 @@ contains
     kappa = grid(x,y,z)%kappa
 
     
-    if(x_b .ne. x) then
-       kappa_ab = (2*kappaBoundx*kappa)/(kappaBoundx+kappa)
+    if (x_b .ne. x) then
+      if (x_b .eq. 1) then
+       kappa_ab = (2*kappaBoundx1*kappa)/(kappaBoundx1+kappa)
+      else if (x_b .eq. nx) then
+        kappa_ab = (2*kappaBoundNx*kappa)/(kappaBoundNx+kappa)
+      end if 
        kappa_ab = kappa_ab/(grid(x, y, z)%Length(1))**2
 
     else if (y_b .ne. y) then
-       kappa_ab = ((2)*kappaBoundy*kappa)/(kappaBoundy+kappa)
+      if (y_b .eq. 1) then
+        kappa_ab = ((2)*kappaBoundy1*kappa)/(kappaBoundy1+kappa)
+      else if (y_b .eq. ny) then
+        kappa_ab = ((2)*kappaBoundNy*kappa)/(kappaBoundNy+kappa)
+      end if
        kappa_ab = kappa_ab/(grid(x, y, z)%Length(2))**2
 
     else if (z_b .ne. z) then
-       kappa_ab = ((2)*kappaBoundz*kappa)/(kappaBoundz+kappa)
+      if (z_b .eq. 1) then
+        kappa_ab = ((2)*kappaBoundz1*kappa)/(kappaBoundz1+kappa)
+      else if (z_b .eq. nz) then
+        kappa_ab = ((2)*kappaBoundNz*kappa)/(kappaBoundNz+kappa)
+      end if
        kappa_ab = kappa_ab/(grid(x, y, z)%Length(3))**2
 
     end if
