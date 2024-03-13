@@ -441,10 +441,10 @@ contains
     grid(:,:,:)%volume=grid(:,:,:)%Length(1)*grid(:,:,:)%Length(2)*grid(:,:,:)%Length(3)
     ! Read the file
     do iz = 1, nz
-        read(unit, '(A)', iostat= Reason) buffer
+        read(unit, '(A)', iostat= Reason) buffer ! read the buffer
         do iy = 1, ny
             if (Reason .ne. 0) then
-                write(6,*) 'Error: Unexpected EOF geom.in'
+                write(6,*) 'Error: Unexpected EOF system.in' ! error
                 stop
             end if
             read(unit, '(A)', iostat=Reason) array
