@@ -148,49 +148,28 @@ contains
 
 
     !-----------------------------------------------
-    ! get data from geom.in
+    ! get data from system.in
     !-----------------------------------------------
     ! name infile
 
-    mesh_infile = "./inputs/geom.in" ! file name
+    mesh_infile = "./inputs/system.in" ! file name
 
     ! check if file is there
     inquire(file=mesh_infile, exist=file_exists)
 
     ! give error and exit code
     if (.not.file_exists) then
-        write(6,*) 'Error cannot find file: geom.in'
+        write(6,*) 'Error cannot find file: system.in'
         stop
     end if
     
     ! open, read and close geom.in
     open(newunit=unit, file=mesh_infile, iostat=reason)
-    CALL read_mesh(unit)
+    CALL read_system(unit)
     close(unit)
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    !-----------------------------------------------
-    ! get data from heat.in
-    !-----------------------------------------------
-    ! name infile
 
-    mesh_infile = "./inputs/heat.in" ! file name
- 
-
-    ! check if file is there
-    inquire(file=mesh_infile, exist=file_exists)
-
-    ! give error and exit code
-    if (.not.file_exists) then
-        write(6,*) 'Error cannot find file: heat.in'
-        stop
-    end if
-    
-    ! open, read and close heat.in
-    open(newunit=unit, file=mesh_infile, iostat=reason)
-    CALL read_heat(unit)
-    close(unit)
-    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   end subroutine read_all_files
 !!!#################################################################################################
 
@@ -263,9 +242,9 @@ contains
        CALL assignI(buffer,"icattaneo", icattaneo, readvar(6))
        CALL assignI(buffer,"isteady", isteady, readvar(7))
        CALL assignD(buffer,"power_in",power_in,readvar(8))       
-       CALL assignD(buffer,"kappaBoundx",kappaBoundx1,readvar(9))
-       CALL assignD(buffer,"kappaBoundy",kappaBoundy1,readvar(10))    
-       CALL assignD(buffer,"kappaBoundz",kappaBoundz1,readvar(11))
+       CALL assignD(buffer,"kappaBoundx1",kappaBoundx1,readvar(9))
+       CALL assignD(buffer,"kappaBoundy1",kappaBoundy1,readvar(10))    
+       CALL assignD(buffer,"kappaBoundz1",kappaBoundz1,readvar(11))
        CALL assignL(buffer,"_Check_Sparse_Full",Check_Sparse_Full,readvar(12))
        CALL assignL(buffer,"_Check_Stability",Check_Stability,readvar(13))
        CALL assignL(buffer,"_WriteToTxt",WriteToTxt,readvar(14))
@@ -438,70 +417,53 @@ contains
   end subroutine check_param
 !!!#################################################################################################  
 
+
+
 !!!#################################################################################################
-!!! The geometery input file, geom.in
+!!! The read in the system file, system.in
 !!!#################################################################################################
-  subroutine read_mesh(unit)
+  subroutine read_system(unit)
     integer, intent(in) :: unit
-    integer(int12) :: ix, iy, iz, reason, c ! counters
-    character(1024) :: buffer, array ! buffer and array
-    
+    integer(int12) :: ix, iy, iz, reason, c, pos ! counters
+    character(1024) :: buffer, array,line, part1, part2 ! buffer and array
     ! read mesh cell number
     read(unit,'(A)',iostat=Reason) buffer ! read the buffer
     read(buffer,*) nx, ny, nz ! read the buffer into nx, ny, nz
     Na = nx*ny*nz ! number of cells
-
     ! Allocate Global data arrays
     allocate(grid(nx,ny,nz)) 
-    
     ! read mesh volume dimessions
-    read(unit,'(A)',iostat=Reason) buffer 
+    read(unit,'(A)',iostat=Reason) buffer
     read(buffer,*) Lx, Ly, Lz 
     grid(:,:,:)%Length(1)=Lx/real(nx)
     grid(:,:,:)%Length(2)=Ly/real(ny)
     grid(:,:,:)%Length(3)=Lz/real(nz)
     grid(:,:,:)%volume=grid(:,:,:)%Length(1)*grid(:,:,:)%Length(2)*grid(:,:,:)%Length(3)
-
+    ! Read the file
     do iz = 1, nz
-       read(unit, '(A)', iostat= Reason) buffer
-       do iy = 1, ny
-          if (Reason .ne. 0) then
-            write(6,*) 'Error: Unexpected EOF geom.in'
-            stop
-          end if
-          read(unit, '(A)', iostat=Reason) array 
-          read(array,*,iostat = reason) (grid(ix,iy,iz)%imaterial_type, ix = 1,nx)
+        read(unit, '(A)', iostat= Reason) buffer
+        do iy = 1, ny
+            if (Reason .ne. 0) then
+                write(6,*) 'Error: Unexpected EOF geom.in'
+                stop
+            end if
+            read(unit, '(A)', iostat=Reason) array
+            do ix = 1, nx
+                read(array, '(A)', iostat=Reason) buffer
+                read(buffer, '(A)', iostat=Reason) line
+                pos = index(line, ':')
+                part1 = trim(adjustl(line(:pos-1)))
+                part2 = trim(adjustl(line(pos+1:)))
+                read(part1, *) grid(ix,iy,iz)%imaterial_type
+                read(part2, *) grid(ix,iy,iz)%iheater
+            end do
         end do
     end do
-  end subroutine read_mesh
-!!!#################################################################################################
-
-
-!!!#################################################################################################
-!!! The heating file, heat.in
-!!!#################################################################################################
-  subroutine read_heat(unit)
-    integer, intent(in) :: unit
-    integer(int12) :: ix, iy, iz, reason, c
-    character(1024) :: buffer, array
-
-    ! Allocate Global data arrays
-    grid(:,:,:)%iheater = 0.0_real12
-    do iz = 1, nz
-       read(unit, '(A)', iostat= Reason) buffer
-       do iy = 1, ny
-          if (Reason .ne. 0) then
-            write(6,*) 'Error: Unexpected EOF heat.in'
-            stop
-          end if
-          read(unit, '(A)', iostat=Reason) array
-          read(array,*,iostat = reason) (grid(ix,iy,iz)%iheater, ix=1,nx )
-        end do
-    end do
-  
-  end subroutine read_heat
-!!!#################################################################################################
-
+    if (IVERB.gt.4) then
+      print*, 'Grid%imaterial = ' ,Grid%imaterial_type
+      print*, 'Grid%iheater = ',Grid%iheater
+    end if
+  end subroutine read_system
 
 !!!#################################################################################################
 !!! The materials file, mat.in
