@@ -441,13 +441,13 @@ contains
     grid(:,:,:)%volume=grid(:,:,:)%Length(1)*grid(:,:,:)%Length(2)*grid(:,:,:)%Length(3)
     ! Read the file
     do iz = 1, nz
-        read(unit, '(A)', iostat= Reason) buffer ! read the buffer
+        read(unit, '(A)', iostat= Reason) buffer 
         do iy = 1, ny
             if (Reason .ne. 0) then
                 write(6,*) 'Error: Unexpected EOF system.in' ! error
                 stop
             end if
-            read(unit, '(A)', iostat=Reason) array
+            read(unit, '(A)', iostat=Reason) array 
             do ix = 1, nx
                 read(array, '(A)', iostat=Reason) buffer
                 read(buffer, '(A)', iostat=Reason) line
