@@ -3,6 +3,7 @@ import argparse
 import os
 import numpy as np
 import plotly.graph_objects as go
+import matplotlib.pyplot as plt
 
 def parse_arguments():
     """
@@ -40,7 +41,7 @@ def read_heat_file(filepath, dimensions):
         for line in f:
             a.extend([float(i) for i in line.split()])
     a_array = np.array(a)
-    matrix = a_array.reshape(dimensions)
+    matrix = a_array.reshape(dimensions, order='F')
     return matrix
 
 def generate_plot(matrix, dimensions, limits):
@@ -69,6 +70,37 @@ def generate_plot(matrix, dimensions, limits):
 
     fig.show()
 
+def plotline(matrix, axis, element1, element2):
+    """
+    Plots a line through a 3D matrix along a specified axis at given elements in the other two axes.
+    
+    Parameters:
+    - matrix: 3D numpy array.
+    - axis: Axis along which to plot the line (0 for x, 1 for y, 2 for z).
+    - element1: Position in the first non-specified axis.
+    - element2: Position in the second non-specified axis.
+    """
+    if axis == 0:
+        line_to_plot = matrix[:, element1, element2]
+        x = np.arange(line_to_plot.size)
+        plt.title(f'Line along x-axis at y={element1}, z={element2}')
+    elif axis == 1:
+        line_to_plot = matrix[element1, :, element2]
+        x = np.arange(line_to_plot.size)
+        plt.title(f'Line along y-axis at x={element1}, z={element2}')
+    elif axis == 2:
+        line_to_plot = matrix[element1, element2, :]
+        x = np.arange(line_to_plot.size)
+        plt.title(f'Line along z-axis at x={element1}, y={element2}')
+    else:
+        raise ValueError("Axis must be 0 (x), 1 (y), or 2 (z).")
+
+    plt.plot(x, line_to_plot)
+    plt.xlabel('Position')
+    plt.ylabel('Heat intensity')
+    plt.grid(True)
+    plt.show()
+
 def main():
     args = parse_arguments()
 
@@ -87,6 +119,8 @@ def main():
     dimensions, limits = read_geom_file(geom_file)
     matrix = read_heat_file(heat_file, dimensions)
     generate_plot(matrix, dimensions, limits)
+    
+    plotline(matrix, 2, 25, 25)
 
 if __name__ == "__main__":
     main()
