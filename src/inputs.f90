@@ -460,8 +460,8 @@ contains
         end do
     end do
     if (IVERB.gt.4) then
-      print*, 'Grid%imaterial = ' ,Grid%imaterial_type
-      print*, 'Grid%iheater = ',Grid%iheater
+      print*, 'grid%imaterial = ' ,grid%imaterial_type
+      print*, 'grid%iheater = ',grid%iheater
     end if
   end subroutine read_system
 
