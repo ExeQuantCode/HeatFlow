@@ -58,11 +58,6 @@ program HEATFLOW_V0_3
  
    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
 
-   !-------------------------------------------------------------!
-   ! run initial evolve step                                     !
-   !-------------------------------------------------------------!
-   CALL initial_evolve()                                         !
-   !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
 
    ! give feedback to user that main simulation is begining
    write(*,*) 'Setup complete, running simulation' 
@@ -82,14 +77,14 @@ program HEATFLOW_V0_3
             write(*,'(A,A,I12)', advance = 'no') achar(13), 'Evolving system, timestep = ', itime
       end if                                                     !
 
-
-      if (itime .eq. 1) CALL initial_evolve                      !
+      ! CALL initial_evolve to set systems initial Temperature conditions      
+      if (itime .eq. 1) CALL initial_evolve                      
       
-      ! run the time evolution                                   !
+      ! run the time evolution                                   
       CALL simulate(itime)
-                                                !
-                                                !
-      ! Write results                           !
+                                                
+                             
+      ! Write results                           
       CALL data_write(itime) 
       if (IVERB.ge.3) CALL final_print                           
                                                                  !

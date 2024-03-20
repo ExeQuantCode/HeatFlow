@@ -49,7 +49,7 @@ module setup
          do iy = 1, ny
             do ix = 1, nx
             index = index + 1
-            call material(grid(ix,iy,iz)%imaterial_type,&
+            CALL material(grid(ix,iy,iz)%imaterial_type,&
              TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
             grid(ix,iy,iz)%kappa = kappa
             grid(ix,iy,iz)%rho = rho
@@ -63,9 +63,9 @@ module setup
 
 
       if (Check_Sparse_Full) then
-         call build_Hmatrix()
+         CALL build_Hmatrix()
       else
-         call sparse_Hmatrix()
+         CALL sparse_Hmatrix()
       end if
 
 
@@ -146,6 +146,7 @@ module setup
       var_stability =( time_step * alpha * &
       (1 / (grid(ix,iy,iz)%length(1)**2) + 1 / ( grid(ix,iy,iz)%length(2) ** 2 ) &
            + 1 / (grid(ix,iy,iz)%length(3) ** 2 ) ) )
+      
       if (IVERB.ge.2) write(*,*) "Stability condition = ", var_stability
       if (var_stability .gt. 1.0/12.0) then
          write(*,*) "Stability condition not met"
@@ -194,8 +195,8 @@ module setup
 
       end do
       ! write(*,'(3F12.3)') H
-      call SRSin(H, TINY, ra)
-      call SparseToReal(HT)
+      CALL SRSin(H, TINY, ra)
+      CALL SparseToReal(HT)
       if (all(abs(H-HT) < TINY)) then
          write(*,*) "H and HT are the same"
       else

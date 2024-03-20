@@ -62,6 +62,7 @@ contains
     file_extension = '.out'
     
     if (itime .eq. 1) then
+    ! Needs logica testing does not make sense
        if(Test_run) then
           !---------------------------------------
           ! open test output files                
@@ -144,7 +145,7 @@ contains
 !!!########################################################################
  subroutine PlotdeltaT(itime)
    real(real12) :: DT(NA)
-   real(real12) :: TO(nx,ny,nz)
+   real(real12) :: T0(nx,ny,nz)
    integer(int12) :: ix,iy,iz,itime
    integer(int12) :: index
 
@@ -153,7 +154,7 @@ contains
    do iz = 1, nz
       do iy = 1, ny
          do ix = 1, nx
-            TO(ix,iy,iz) = DT(index)
+            T0(ix,iy,iz) = DT(index)
             index = index+1
          end do
       end do
@@ -161,7 +162,7 @@ contains
    if (itime == 1) then
       open(unit=31,file='./outputs/DTemperature.txt')
    end if
-   write(31,*) REAL(itime)*time_step, TO(:,1,1)
+   write(31,*) REAL(itime)*time_step, T0(:,1,1)
  end subroutine PlotdeltaT
 
 !!!########################################################################
