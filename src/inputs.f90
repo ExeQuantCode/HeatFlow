@@ -409,15 +409,13 @@ contains
        write(6,'(A35,F12.5)')   '   kappaBoundx1         = ',kappaBoundx1
        write(6,'(A35,F12.5)')   '   kappaBoundy1         = ',kappaBoundy1
        write(6,'(A35,F12.5)')   '   kappaBoundz1         = ',kappaBoundz1
-        write(6,'(A35,F12.5)')   '   kappaBoundNx         = ',kappaBoundNx
-        write(6,'(A35,F12.5)')   '   kappaBoundNy         = ',kappaBoundNy
-        write(6,'(A35,F12.5)')   '   kappaBoundNz         = ',kappaBoundNz
+       write(6,'(A35,F12.5)')   '   kappaBoundNx         = ',kappaBoundNx
+       write(6,'(A35,F12.5)')   '   kappaBoundNy         = ',kappaBoundNy
+       write(6,'(A35,F12.5)')   '   kappaBoundNz         = ',kappaBoundNz
 
     end if
   end subroutine check_param
 !!!#################################################################################################  
-
-
 
 !!!#################################################################################################
 !!! The read in the system file, system.in
@@ -460,8 +458,8 @@ contains
         end do
     end do
     if (IVERB.gt.4) then
-      print*, 'grid%imaterial = ' ,grid%imaterial_type
-      print*, 'grid%iheater = ',grid%iheater
+      print*, 'grid%imaterial = ', grid%imaterial_type
+      print*, 'grid%iheater = ', grid%iheater
     end if
   end subroutine read_system
 

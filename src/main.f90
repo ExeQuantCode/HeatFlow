@@ -49,15 +49,14 @@ program HEATFLOW_V0_3
    !-------------------------------------------------------------!
    CALL read_all_files()                                         !
    
-   CALL cpu_time(cpustart2)                                         !   !
+   CALL cpu_time(cpustart2)                                      !
    CALL set_global_variables() 
    CALL cpu_time(cpuend)
    if (IVERB.ge.1) write(*,'(A,F12.6)') &
-   ' time to complete set_global_variables=', cpuend-cpustart2                    ! 
+   ' time to complete set_global_variables=', cpuend-cpustart2   ! 
 
  
    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
-
 
    !-------------------------------------------------------------!
    ! run initial evolve step                                     !
@@ -81,18 +80,18 @@ program HEATFLOW_V0_3
          end if 
          if ((mod(itime,10000) .eq.0) .and. (.not.Lpercentage)) &
             write(*,'(A,A,I12)', advance = 'no') achar(13), 'Evolving system, timestep = ', itime
-      end if                                                           !
+      end if                                                     !
 
 
-      if (itime .eq. 1) CALL initial_evolve                        !
+      if (itime .eq. 1) CALL initial_evolve                      !
       
       ! run the time evolution                                   !
       CALL simulate(itime)
-                                                 !
-                                                                 !
+                                                !
+                                                !
       ! Write results                           !
       CALL data_write(itime) 
-      if (IVERB.ge.3) CALL final_print                                         !
+      if (IVERB.ge.3) CALL final_print                           
                                                                  !
    end do                                                        !
    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
@@ -100,8 +99,8 @@ program HEATFLOW_V0_3
    !-------------------------------------------------------------!
    ! calculate end time and print to user                        !
    !-------------------------------------------------------------!
-   CALL cpu_time(cpuend)                                           !
-   write(*,'(A,F12.6)') ' time=', cpuend-cpustart                    !
+   CALL cpu_time(cpuend)                                          
+   write(*,'(A,F12.6)') ' time=', cpuend-cpustart                 
    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
 
    ! give feedback to user that code has ended
