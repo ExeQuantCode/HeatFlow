@@ -45,6 +45,7 @@ module output
   use constants, only: real12, int12, TINY, fields
   use inputs, only: nx,ny,nz, time_step, grid, NA, Check_Steady_State, ntime, WriteToTxt
   use inputs, only: Test_Run, freq, RunName, FullRestart
+  use inputs, only: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz
   use globe_data, only: Temp_p,Temp_pp, heat, heated_volume
   implicit none
   
@@ -100,7 +101,10 @@ contains
     ! write out to log file
     !---------------------------------------
     if (.not.Test_run) then
-       if (WriteToTxt) write(logunit,*) real((itime-1)*(time_step)),(Temp_cur(2,2,:))  !-293.0
+      if (WriteToTxt) then
+         write(logunit,*) real((itime-1)*(time_step)), &
+           (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
+      endif
     end if
     !---------------------------------------
 

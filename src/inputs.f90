@@ -75,7 +75,9 @@ module inputs
   ! Bath temperatures
   real(real12) :: T_Bathx1, T_Bathx2, T_Bathy1, T_Bathy2, T_Bathz1, T_Bathz2, T_System, T_Bath
   ! verbose, number of time steps, boundary condition, number of cells
-  integer(int12) :: IVERB, ntime, iboundary, nx, ny, nz, icattaneo, isteady, NA 
+  integer(int12) :: IVERB, ntime, iboundary, nx, ny, nz, icattaneo, isteady, NA
+  ! what cells to write to txt file
+  integer :: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz 
   ! flags
   logical :: Check_Sparse_Full, Check_Stability, Check_Steady_State
   logical :: WriteToTxt, LPercentage, InputTempDis
@@ -183,7 +185,7 @@ contains
 !!!#################################################################################################
   subroutine read_param(unit)
     integer:: unit, Reason, i
-    integer,dimension(31)::readvar
+    integer,dimension(37)::readvar
     character(1024)::buffer
     logical::ex
     readvar=0
@@ -220,6 +222,12 @@ contains
     kappaBoundNx = KappaBound
     kappaBoundNy = KappaBound
     kappaBoundNz = KappaBound
+    start_ix = 1 
+    end_ix = Nx 
+    start_iy = 1
+    end_iy = Ny
+    start_iz = 1
+    end_iz = Nz
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     do
        read(unit,'(A)',iostat=Reason) buffer
@@ -265,6 +273,13 @@ contains
         CALL assignD(buffer,"kappaBoundNx",kappaBoundNx,readvar(29))
         CALL assignD(buffer,"kappaBoundNy",kappaBoundNy,readvar(30))
         CALL assignD(buffer,"kappaBoundNz",kappaBoundNz,readvar(31))
+        CALL assignI(buffer,"start_ix",start_ix,readvar(32))
+        CALL assignI(buffer,"end_ix",end_ix,readvar(33))
+        CALL assignI(buffer,"start_iy",start_iy,readvar(34))
+        CALL assignI(buffer,"end_iy",end_iy,readvar(35))
+        CALL assignI(buffer,"start_iz",start_iz,readvar(36))
+        CALL assignI(buffer,"end_iz",end_iz,readvar(37))
+
     end do
     CALL check_param(readvar,size(readvar,1))
 
@@ -285,7 +300,7 @@ contains
        write(6,'(A43)') '##########   ERROR   ##########'
        write(6,'(A43)') '###############################'
        write(6,*)
-       write(6,'(A)') ' ---       Error in subroutine "checkINPUT"       ---'
+       write(6,'(A)') ' ---       Error in subroutine "check_param"       ---'
        write(6,'(A)') ' --- ERROR: same KEYWORD apears more than once    ---'
        stop
     end if
@@ -299,7 +314,7 @@ contains
         write(6,'(A43)') '##########   WARNING   ##########'
         write(6,'(A43)') '###############################'
         write(6,*)
-        write(6,'(A)') ' ---       Warning in subroutine "checkINPUT"       ---'
+        write(6,'(A)') ' ---       Warning in subroutine "check_param"       ---'
         write(6,'(A)') ' --- WARNING: KappaBoundx,y,z are not set, KappaBound will be used    ---'
     end if
 
@@ -309,7 +324,7 @@ contains
         write(6,'(A43)') '##########   WARNING   ##########'
         write(6,'(A43)') '###############################'
         write(6,*)
-        write(6,'(A)') ' ---       Warning in subroutine "checkINPUT"       ---'
+        write(6,'(A)') ' ---       Warning in subroutine "check_param"       ---'
         write(6,'(A)') ' --- WARNING: T_Bath x,y,z not set T_Bath will be used    ---'
     end if 
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -323,7 +338,7 @@ contains
         write(6,'(A43)') '##########   ERROR   ##########'
         write(6,'(A43)') '###############################'
         write(6,*)
-        write(6,'(A)') ' ---       Error in subroutine "checkINPUT"       ---'
+        write(6,'(A)') ' ---       Error in subroutine "check_param"       ---'
         write(6,'(A)') ' --- ERROR: KappaBound missing and KappaBound x,y,z not set    ---'
         write(6,*)
         stop
@@ -334,7 +349,7 @@ contains
         write(6,'(A43)') '##########   ERROR   ##########'
         write(6,'(A43)') '###############################'
         write(6,*)
-        write(6,'(A)') ' ---       Error in subroutine "checkINPUT"       ---'
+        write(6,'(A)') ' ---       Error in subroutine "check_param"       ---'
         write(6,'(A)') ' --- ERROR: T_Bath and T_Bath x,y,z are not set    ---'
         write(6,*)
         stop
@@ -357,6 +372,18 @@ contains
         kappaBoundNz = KappaBound
         readvar(9:11) = 1
       end if 
+
+      if (any(readvar(32:37).eq.0)) then
+        write(6,*)
+        write(6,'(A43)') '###############################'
+        write(6,'(A43)') '##########   WARNING  ##########'
+        write(6,'(A43)') '###############################'
+        write(6,*)
+        write(6,'(A)') ' ---       WARNING in subroutine "check_param"       ---'
+        write(6,'(A)') ' --- WARNING: Some or All output write cells paramters are not defined    ---'
+        write(6,*) ' --- USING: ', 'Start_ix = ',start_ix, ', end_ix = ', end_ix, ', start_iy = ',start_iy, &
+            ', end_iy = ' end_iy, ', start_iz = 'start_iz, ', end_iz = ' end_iz
+      end if 
     
      if (any(readvar.eq.0)) then
       write(6,*)
@@ -364,7 +391,7 @@ contains
       write(6,'(A43)') '##########   WARNING  ##########'
       write(6,'(A43)') '###############################'
       write(6,*)
-      write(6,'(A)') ' ---       WARNING in subroutine "checkINPUT"       ---'
+      write(6,'(A)') ' ---       WARNING in subroutine "check_param"       ---'
       write(6,'(A)') ' --- WARNING: Essential parameters missing    ---'
       ! Print all indices of readvar that are 0
       do i = 1, size(readvar)
@@ -458,8 +485,8 @@ contains
         end do
     end do
     if (IVERB.gt.4) then
-      print*, 'grid%imaterial = ', grid%imaterial_type
-      print*, 'grid%iheater = ', grid%iheater
+      write(*,*) 'grid%imaterial = ', grid%imaterial_type
+      write(*,*) 'grid%iheater = ', grid%iheater
     end if
   end subroutine read_system
 
