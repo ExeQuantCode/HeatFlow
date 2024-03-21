@@ -339,7 +339,7 @@ contains
         write(6,'(A43)') '###############################'
         write(6,*)
         write(6,'(A)') ' ---       Error in subroutine "check_param"       ---'
-        write(6,'(A)') ' --- ERROR: KappaBound missing and KappaBound x,y,z not set    ---'
+        write(6,'(A)') ' --- ERROR: KappaBound missing and KappaBound x,y,z not set ---'
         write(6,*)
         stop
       end if
@@ -380,9 +380,9 @@ contains
         write(6,'(A43)') '###############################'
         write(6,*)
         write(6,'(A)') ' ---       WARNING in subroutine "check_param"       ---'
-        write(6,'(A)') ' --- WARNING: Some or All output write cells paramters are not defined    ---'
-        write(6,*) ' --- USING: ', 'Start_ix = ',start_ix, ', end_ix = ', end_ix, ', start_iy = ',start_iy, &
-            ', end_iy = ' end_iy, ', start_iz = 'start_iz, ', end_iz = ' end_iz
+        write(6,'(A)') ' --- WARNING: Some or All output write cells paramters are not defined ---'
+        write(6,*) ' --- USING: ', 'Start_ix = ',start_ix, ', end_ix = ', end_ix, ', start_iy = ', &
+            start_iy,', end_iy = ' end_iy, ', start_iz = 'start_iz, ', end_iz = ' end_iz
       end if 
     
      if (any(readvar.eq.0)) then

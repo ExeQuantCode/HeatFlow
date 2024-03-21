@@ -22,7 +22,7 @@ pure subroutine S_catS(s_cat)
             do ix = 1, nx
                 index = index+1
                 S_cat(index) = ( Temp_pp(index) - 2.0_real12 * Temp_p(index) ) &
-                * ( grid(ix,iy,iz)%tau * lin_rhoc(index) )  !
+                * ( grid(ix,iy,iz)%tau * lin_rhoc(index) )  
 
             end do
         end do

@@ -72,14 +72,14 @@ contains
     H=0.0_real12
     if ((i-j) .eq. 0)  then
 
-      H = -(A + B + D + E + F + G ) - alpha  ! Diagonal
+      H = -(A + B + D + E + F + G ) - alpha  ! Diagonal term (self interaction)
     end if 
     
     if ((i-j) .eq. 1) then
       if (x .eq. 1) then
         H=0.0_real12
       else
-         H = A  ! X left neighbor
+         H = A  ! X left neighbor (left cell interaction)
       end if
     end if 
 
@@ -87,7 +87,7 @@ contains
       if (x .eq. nx) then
         H=0.0_real12
       else
-        H = B  ! X right neighbor
+        H = B  ! X right neighbor (right cell interaction)
       end if
     end if
 
@@ -95,14 +95,14 @@ contains
       if (y.eq.1) then
         H=0.0_real12
       else
-        H = D  ! Y down neighbor
+        H = D  ! Y down neighbor (down cell interaction)
       end if 
     end if 
     if ((i-j) .eq. -nx) then
       if (y.eq.ny) then
         H=0.0_real12
       else
-        H = E  ! Y up neighbor
+        H = E  ! Y up neighbor (up cell interaction)
       end if 
     end if 
 
@@ -110,7 +110,7 @@ contains
       if (z.eq. 1) then
         H=0.0_real12
       else
-         H = F  ! Z in neighbor
+         H = F  ! Z in neighbor (forward cell interaction)
       end if
     end if 
 
@@ -118,7 +118,7 @@ contains
       if (z .eq. nz) then
         H=0.0_real12
       else  
-        H = G  ! Z out neighbor
+        H = G  ! Z out neighbor (backward cell interaction)
       end if
     end if 
   end function hmatrixfunc
