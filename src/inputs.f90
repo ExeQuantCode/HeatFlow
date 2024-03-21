@@ -499,7 +499,7 @@ subroutine read_mat(unit)
     type(material), dimension(100) :: dum_mat
     character(1024) :: buffer
     integer :: reason, j
-    integer, dimension(8) :: readvar
+    integer, dimension(7) :: readvar
     integer :: i, index
 
     i=0
@@ -545,7 +545,6 @@ subroutine read_mat(unit)
        CALL assignD(buffer,"rho"          ,dum_mat(i)%rho          ,readvar(5))! assign rho
        CALL assignD(buffer,"sound_speed"  ,dum_mat(i)%sound_speed  ,readvar(6))! assign sound_speed
        CALL assignD(buffer,"tau"          ,dum_mat(i)%tau          ,readvar(7))! assign tau
-       CALL assignL(buffer,"source"       ,dum_mat(i)%source       ,readvar(8))! assign source
     end do read
     
     ! Check for duplicate indices
