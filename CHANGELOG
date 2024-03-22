@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Changed the format of the system input geometry and heating and merged them together.
 
 ### Removed
- - Source parameter in mat in 
+ - Source parameter in mat.in 
 ### Fixed
 
  - General formating
