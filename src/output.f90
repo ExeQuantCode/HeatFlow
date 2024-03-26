@@ -51,12 +51,12 @@ module output
   
 contains
   subroutine data_write(itime)
+    implicit none
     integer(int12), intent(in) :: itime
     real(real12), dimension(nx,ny,nz) :: CT, Temp_cur
-    integer :: iounit, iounit_power, iounit_tempdis, iounit_tempdistpd,logunit
-    integer(int12) :: ix, iy, iz, indexA
+    integer :: iounit, iounit_power, iounit_tempdis, iounit_tempdistpd, logunit
+    integer(int12) :: ix, iy, iz, indexA, newunit
     character(len=1024) :: filename, file_prefix, file_extension, outdir, logname
-
     
     file_prefix = 'Temperture_'
     outdir='./outputs/'
@@ -69,14 +69,15 @@ contains
           ! open test output files                
           !---------------------------------------
           open(unit=33,file='./outputs/Power.txt')
+          open(unit=30, file='./outputs/Test.txt')
           !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
        else
           !---------------------------------------
           ! find most recent log file and open it
           !---------------------------------------
-          open(unit=30,file='./outputs/Test.txt')
           CALL last_log(logname,outdir)
-          open(newunit=logunit, file = logname )
+          open(logunit,file=logname)
+
           !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
        end if
     end if
@@ -100,7 +101,7 @@ contains
     !---------------------------------------
     ! write out to log file
     !---------------------------------------
-    if (.not.Test_run) then
+    if (.not. Test_run) then
       if (WriteToTxt) then
          write(logunit,*) real((itime-1)*(time_step)), &
            (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
