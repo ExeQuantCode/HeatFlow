@@ -178,7 +178,7 @@ contains
        end if
        conductivity = (kappa_ab) 
     else
-       call boundry_diag_term(x_in, y_in, z_in,x_out, y_out, z_out,kappa_ab)
+       call boundry_diag_term(x_in, y_in, z_in, x_out, y_out, z_out, kappa_ab)
        conductivity = kappa_ab 
     end if
   end function calculate_conductivity
@@ -198,25 +198,25 @@ contains
 
     
     if (x_b .ne. x) then
-      if (x_b .eq. 1) then
+      if (x_b .lt. 1) then
        kappa_ab = (2*kappaBoundx1*kappa)/(kappaBoundx1+kappa)
-      else if (x_b .eq. nx) then
+      else if (x_b .gt. nx) then
         kappa_ab = (2*kappaBoundNx*kappa)/(kappaBoundNx+kappa)
       end if 
        kappa_ab = kappa_ab/(grid(x, y, z)%Length(1))**2
 
     else if (y_b .ne. y) then
-      if (y_b .eq. 1) then
+      if (y_b .lt. 1) then
         kappa_ab = ((2)*kappaBoundy1*kappa)/(kappaBoundy1+kappa)
-      else if (y_b .eq. ny) then
+      else if (y_b .gt. ny) then
         kappa_ab = ((2)*kappaBoundNy*kappa)/(kappaBoundNy+kappa)
       end if
        kappa_ab = kappa_ab/(grid(x, y, z)%Length(2))**2
 
     else if (z_b .ne. z) then
-      if (z_b .eq. 1) then
+      if (z_b .lt. 1) then
         kappa_ab = ((2)*kappaBoundz1*kappa)/(kappaBoundz1+kappa)
-      else if (z_b .eq. nz) then
+      else if (z_b .gt. nz) then
         kappa_ab = ((2)*kappaBoundNz*kappa)/(kappaBoundNz+kappa)
       end if
        kappa_ab = kappa_ab/(grid(x, y, z)%Length(3))**2
