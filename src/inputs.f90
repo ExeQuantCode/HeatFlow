@@ -308,7 +308,7 @@ contains
     !------------------------------------------------------------------------------------
     ! Disply that T_system and T_bath are being used and not individual, i.e T_bathx,y,z
     !------------------------------------------------------------------------------------
-    if ((any(readvar(9:11).eq.0)) .and. (readvar(28) .gt. 0) )then
+    if (((any(readvar(9:11).eq.0)) .and. any(readvar(29:31).eq.0)) .and. (readvar(28) .gt. 0) )then
         write(6,*)
         write(6,'(A43)') '###############################'
         write(6,'(A43)') '##########   WARNING   ##########'
@@ -318,7 +318,7 @@ contains
         write(6,'(A)') ' --- WARNING: KappaBoundx,y,z are not set, KappaBound will be used    ---'
     end if
 
-    if (any(readvar(20:25).eq.0) .and. (readvar(27) .gt. 0) ) then
+    if (any(readvar(20:25).eq.0)  .and. (readvar(27) .gt. 0) ) then
         write(6,*)
         write(6,'(A43)') '###############################'
         write(6,'(A43)') '##########   WARNING   ##########'
@@ -332,7 +332,7 @@ contains
     ! Check for missing parameters
     !------------------------------------------------------------------------------------
 
-      if (any(readvar(9:11) .eq.0) .and. (readvar(28) .eq. 0) ) then
+      if ((any(readvar(9:11) .eq.0) .and. any(readvar(29:31).eq.0)) .and. (readvar(28) .eq. 0) ) then
         write(6,*)
         write(6,'(A43)') '###############################'
         write(6,'(A43)') '##########   ERROR   ##########'
