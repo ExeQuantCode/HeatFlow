@@ -17,7 +17,7 @@ module boundary_vector
   implicit none
 contains
 
-  pure subroutine boundary(B)
+  subroutine boundary(B)
     real(real12), dimension(NA), intent(out) :: B
     real(real12) :: kappa
     integer(int12) :: I,ix,iy,iz
@@ -33,7 +33,6 @@ contains
          do iy= 1,ny
             do ix= 1,nx
               I = I+1
-
             kappa = grid(ix,iy,iz)%kappa
 
              select case (ix) 
@@ -74,6 +73,7 @@ contains
           end do
       end do
    end do
+
   end subroutine boundary
 
   

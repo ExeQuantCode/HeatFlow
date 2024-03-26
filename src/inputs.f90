@@ -77,7 +77,7 @@ module inputs
   ! verbose, number of time steps, boundary condition, number of cells
   integer(int12) :: IVERB, ntime, iboundary, nx, ny, nz, icattaneo, isteady, NA
   ! what cells to write to txt file
-  integer :: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz 
+  integer(int12) :: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz 
   ! flags
   logical :: Check_Sparse_Full, Check_Stability, Check_Steady_State
   logical :: WriteToTxt, LPercentage, InputTempDis
@@ -188,7 +188,7 @@ contains
     integer,dimension(37)::readvar
     character(1024)::buffer
     logical::ex
-    readvar=0
+    readvar(:)=0
     !------------------------------------------
     ! assign defaults
     !------------------------------------------
@@ -381,8 +381,8 @@ contains
         write(6,*)
         write(6,'(A)') ' ---       WARNING in subroutine "check_param"       ---'
         write(6,'(A)') ' --- WARNING: Some or All output write cells paramters are not defined ---'
-        write(6,*) ' --- USING: ', 'Start_ix = ',start_ix, ', end_ix = ', end_ix, ', start_iy = ', &
-            start_iy,', end_iy = ' end_iy, ', start_iz = 'start_iz, ', end_iz = ' end_iz
+        write(6,*) ' --- USING: ', 'Start_ix = ', start_ix, ', end_ix = ', end_ix, ', start_iy = ', &
+            start_iy,', end_iy = ', end_iy, ', start_iz = ', start_iz, ', end_iz = ', end_iz
       end if 
     
      if (any(readvar.eq.0)) then
@@ -499,11 +499,11 @@ subroutine read_mat(unit)
     type(material), dimension(100) :: dum_mat
     character(1024) :: buffer
     integer :: reason, j
-    integer, dimension(7) :: readvar
+    integer, dimension(7) :: readvarmat
     integer :: i, index
 
     i=0
-    readvar(:) = 0
+    readvarmat(:) = 0
     read: do
        read(unit,'(A)',iostat=Reason) buffer ! read the buffer
        if(Reason.ne.0) exit read ! if the buffer is empty exit the read loop
@@ -520,11 +520,11 @@ subroutine read_mat(unit)
           ! If 0 reset readvar and check for missing parameters
           if(index .eq. 0) then
                 ! Check for missing parameters after the loop
-              if (any(readvar .ne. 1)) then 
-                write(6,*) "Error in parameters : material ", readvar
+              if (any(readvarmat .ne. 1)) then 
+                write(6,*) "Error in parameters : material ", readvarmat
                 stop
               end if
-             readvar(:) = 0
+             readvarmat(:) = 0
           else
              ! If other number record it and increment
              i = i + 1
@@ -538,13 +538,13 @@ subroutine read_mat(unit)
        end if
 
     
-       CALL assignD(buffer,"heat_capacity",dum_mat(i)%heat_capacity,readvar(1))! assign heatCapacity
-       CALL assignD(buffer,"h_conv"       ,dum_mat(i)%h_conv       ,readvar(2))! assign h_conv
-       CALL assignD(buffer,"kappa"        ,dum_mat(i)%kappa        ,readvar(3))! assign kappa
-       CALL assignD(buffer,"kappa3D"      ,dum_mat(i)%kappa3D      ,readvar(4))! assign kappa3D
-       CALL assignD(buffer,"rho"          ,dum_mat(i)%rho          ,readvar(5))! assign rho
-       CALL assignD(buffer,"sound_speed"  ,dum_mat(i)%sound_speed  ,readvar(6))! assign sound_speed
-       CALL assignD(buffer,"tau"          ,dum_mat(i)%tau          ,readvar(7))! assign tau
+       CALL assignD(buffer,"heat_capacity",dum_mat(i)%heat_capacity,readvarmat(1))! assign heatCapacity
+       CALL assignD(buffer,"h_conv"       ,dum_mat(i)%h_conv       ,readvarmat(2))! assign h_conv
+       CALL assignD(buffer,"kappa"        ,dum_mat(i)%kappa        ,readvarmat(3))! assign kappa
+       CALL assignD(buffer,"kappa3D"      ,dum_mat(i)%kappa3D      ,readvarmat(4))! assign kappa3D
+       CALL assignD(buffer,"rho"          ,dum_mat(i)%rho          ,readvarmat(5))! assign rho
+       CALL assignD(buffer,"sound_speed"  ,dum_mat(i)%sound_speed  ,readvarmat(6))! assign sound_speed
+       CALL assignD(buffer,"tau"          ,dum_mat(i)%tau          ,readvarmat(7))! assign tau
     end do read
     
     ! Check for duplicate indices

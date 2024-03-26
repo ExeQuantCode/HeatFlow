@@ -44,6 +44,7 @@ module setup
       ! can be expanded to include more properties at a 
       ! later date
       !---------------------------------------------------
+      write(*,*) "Setting up material properties"
       index = 0
       do iz = 1, nz
          do iy = 1, ny
@@ -63,6 +64,7 @@ module setup
 
 
       if (Check_Sparse_Full) then
+         print*, "CHECK SPARSE FULL"
          CALL build_Hmatrix()
       else
          CALL sparse_Hmatrix()
@@ -194,7 +196,7 @@ module setup
          end do
 
       end do
-      ! write(*,'(3F12.3)') H
+      write(*,'(3F12.3)') H
       CALL SRSin(H, TINY, ra)
       CALL SparseToReal(HT)
       if (all(abs(H-HT) < TINY)) then

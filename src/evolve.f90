@@ -61,6 +61,9 @@ contains
     ! Calculate boundary Vector
     !--------------------------------
     CALL boundary(B)
+    if (IVERB .gt. 3) write(*,*) "B average", sum(B)/size(B)
+    if (IVERB .gt. 4) write(*,*) "B", B
+   
     if (any(isnan(B(:)))) then
       write(*,*) "fatal error: NAN in B vector"
       stop
@@ -89,7 +92,8 @@ contains
     !------------------------------------------
     if (iCAttaneo .eq. 1) then
        CALL S_catS(S_CAT)
-       if (IVERB .gt. 4) write(*,*) "S_CAT average", sum(S_CAT)/size(S_CAT)
+       if (IVERB .gt. 3) write(*,*) "S_CAT average", sum(S_CAT)/size(S_CAT)
+       if (IVERB .gt. 4) write(*,*) "S_CAT", S_CAT
        if (any(isnan(S_CAT))) then
             write(*,*) "fatal error: NAN in S_CAT vector"
             stop
@@ -101,7 +105,6 @@ contains
     ! Construct S vector 
     !---------------------------------------------
     if (iSteady .eq. 0) then
-
        S = - inverse_time * Temp_p * lin_rhoc - Qdens - B
        if (iCAttaneo .eq. 1) then
           S = S + S_CAT
@@ -110,7 +113,9 @@ contains
        S = -Qdens - B
     end if
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
+    if (IVERB .gt.3) write(*,*) "S average", sum(S)/size(S)
+    if (IVERB .gt.4) write(*,*) "S", S
+    
     if (any(isnan(S(:)))) then
        write(*,*) "fatal error: NAN in S vector"
        stop
@@ -127,19 +132,23 @@ contains
    ! iter:  Output - gives the number of the final iteration.
    ! err:   Output - records the error of the final iteration.
    ! iss:   Input - sets the Sparse Storage type (1=SRS, 2=SDS).
-    x=Temp_p+(Temp_p-Temp_pp)
+    x=Temp_p+(Temp_p-Temp_pp) 
+    if (any(x-Temp_p .lt. TINY)) x=x+TINY !avoid nan solver issue
     itol=1
-    tol=1.e-20_real12
+    tol=1.e-32_real12
     itmax=50000
     ncg = 0
     iter=ncg
     err=E
     iss=1
+    print*, 'time step ', itime, "      x before calculate =   ", x
     CALL linbcg(S,x,itol=int(itol,I4B),tol=tol, itmax=int(itmax,I4B), iter=iter, &
          err=E, iss=int(iss,I4B))
          
     if (any(isnan(x(:)))) then
        write(*,*) "fatal error: NAN in x tempurature vector"
+       write(*,*) 'time step ', itime, "      T   ", sum(Temp_p)/size(Temp_p), E ,iter
+       write(*,*) 'time step ',itime, "      x   ", sum(x)/size(x), E ,iter
        stop
     end if
    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
