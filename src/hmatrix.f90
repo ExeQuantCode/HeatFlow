@@ -39,7 +39,8 @@
 module hmatrixmod
   use constants, only: real12, int12
   use inputs, only: nx, ny, nz, time_step, grid
-  use inputs, only: isteady, icattaneo, kappaBoundx, kappaBoundy, kappaBoundz
+  use inputs, only: isteady, icattaneo, kappaBoundx1, kappaBoundy1, kappaBoundz1
+  use inputs, only: kappaBoundNx, kappaBoundNy, kappaBoundNz
   use globe_data, only: inverse_time, lin_rhoc
   implicit none
 
@@ -71,14 +72,14 @@ contains
     H=0.0_real12
     if ((i-j) .eq. 0)  then
 
-      H = -(A + B + D + E + F + G ) - alpha  ! Diagonal
+      H = -(A + B + D + E + F + G ) - alpha  ! Diagonal term (self interaction)
     end if 
     
     if ((i-j) .eq. 1) then
       if (x .eq. 1) then
         H=0.0_real12
       else
-         H = A  ! X left neighbor
+         H = A  ! X left neighbor (left cell interaction)
       end if
     end if 
 
@@ -86,7 +87,7 @@ contains
       if (x .eq. nx) then
         H=0.0_real12
       else
-        H = B  ! X right neighbor
+        H = B  ! X right neighbor (right cell interaction)
       end if
     end if
 
@@ -94,14 +95,14 @@ contains
       if (y.eq.1) then
         H=0.0_real12
       else
-        H = D  ! Y down neighbor
+        H = D  ! Y down neighbor (down cell interaction)
       end if 
     end if 
     if ((i-j) .eq. -nx) then
       if (y.eq.ny) then
         H=0.0_real12
       else
-        H = E  ! Y up neighbor
+        H = E  ! Y up neighbor (up cell interaction)
       end if 
     end if 
 
@@ -109,7 +110,7 @@ contains
       if (z.eq. 1) then
         H=0.0_real12
       else
-         H = F  ! Z in neighbor
+         H = F  ! Z in neighbor (forward cell interaction)
       end if
     end if 
 
@@ -117,7 +118,7 @@ contains
       if (z .eq. nz) then
         H=0.0_real12
       else  
-        H = G  ! Z out neighbor
+        H = G  ! Z out neighbor (backward cell interaction)
       end if
     end if 
   end function hmatrixfunc
@@ -177,7 +178,7 @@ contains
        end if
        conductivity = (kappa_ab) 
     else
-       call boundry_diag_term(x_in, y_in, z_in,x_out, y_out, z_out,kappa_ab)
+       call boundry_diag_term(x_in, y_in, z_in, x_out, y_out, z_out, kappa_ab)
        conductivity = kappa_ab 
     end if
   end function calculate_conductivity
@@ -196,16 +197,28 @@ contains
     kappa = grid(x,y,z)%kappa
 
     
-    if(x_b .ne. x) then
-       kappa_ab = (2*kappaBoundx*kappa)/(kappaBoundx+kappa)
+    if (x_b .ne. x) then
+      if (x_b .lt. 1) then
+       kappa_ab = (2*kappaBoundx1*kappa)/(kappaBoundx1+kappa)
+      else if (x_b .gt. nx) then
+        kappa_ab = (2*kappaBoundNx*kappa)/(kappaBoundNx+kappa)
+      end if 
        kappa_ab = kappa_ab/(grid(x, y, z)%Length(1))**2
 
     else if (y_b .ne. y) then
-       kappa_ab = ((2)*kappaBoundy*kappa)/(kappaBoundy+kappa)
+      if (y_b .lt. 1) then
+        kappa_ab = ((2)*kappaBoundy1*kappa)/(kappaBoundy1+kappa)
+      else if (y_b .gt. ny) then
+        kappa_ab = ((2)*kappaBoundNy*kappa)/(kappaBoundNy+kappa)
+      end if
        kappa_ab = kappa_ab/(grid(x, y, z)%Length(2))**2
 
     else if (z_b .ne. z) then
-       kappa_ab = ((2)*kappaBoundz*kappa)/(kappaBoundz+kappa)
+      if (z_b .lt. 1) then
+        kappa_ab = ((2)*kappaBoundz1*kappa)/(kappaBoundz1+kappa)
+      else if (z_b .gt. nz) then
+        kappa_ab = ((2)*kappaBoundNz*kappa)/(kappaBoundNz+kappa)
+      end if
        kappa_ab = kappa_ab/(grid(x, y, z)%Length(3))**2
 
     end if

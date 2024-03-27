@@ -37,10 +37,10 @@ contains
       character :: buffer
 
       if (FullRestart) then
-         call read_temp_file('./outputs/TempDis.dat',Temp_p)
-         call read_temp_file('./outputs/TempDisTPD.dat',Temp_pp)
+         CALL read_temp_file('./outputs/TempDis.dat',Temp_p)
+         CALL read_temp_file('./outputs/TempDisTPD.dat',Temp_pp)
       else if (InputTempDis) then
-         call read_temp_file('./outputs/TempDis.dat',Temp_p)
+         CALL read_temp_file('./outputs/TempDis.dat',Temp_p)
          Temp_pp = Temp_p
       else
          Temp_p = T_System
@@ -65,7 +65,7 @@ contains
       !----------------------------
       inquire(file=filepath, exist=exists)
       if (.not. exists) then
-         write(*,*) 'Error:',filepath,'does not exist'; call exit
+         write(*,*) 'Error:',filepath,'does not exist'; stop
       end if
       !----------------------------
 
@@ -74,7 +74,7 @@ contains
       !----------------------
       open(newunit=unit, file=filepath, status='old', action='read', iostat=reason)
       if (reason .ne. 0) then
-         write(*,*) "Error opening file."; call exit
+         write(*,*) "Error opening file."; stop
       end if
       !----------------------
 
@@ -87,7 +87,7 @@ contains
          !----------------------------
          ! error responses
          if (reason .gt. 0) then
-            write(*,*) "Error: read error."; call exit
+            write(*,*) "Error: read error."; stop
          end if
          !----------------------------
 
@@ -108,7 +108,7 @@ contains
       !-------------------------------------
       if (c .lt. NA) then
          write(*,*) "Error: File contains fewer values than expected (", &
-            c, " out of ", NA, ")."; call exit
+            c, " out of ", NA, ")."; stop
       end if
       !-------------------------------------
 
@@ -117,7 +117,7 @@ contains
       !--------------------------------------------------------------------
       read(unit, *, iostat=reason) line
       if (reason .eq. 0) then
-         print *, "Error: File contains more values than expected."; call exit
+         print *, "Error: File contains more values than expected."; stop
       end if
       !--------------------------------------------------------------------
 

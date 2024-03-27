@@ -16,7 +16,7 @@
 !!!#################################################################################################
 module setup
   use constants, only: real12, int12, TINY
-  use inputs, only: nx, ny, nz, NA, grid, time_step, kappaBoundx, kappaBoundy, kappaBoundz & !
+  use inputs, only: nx, ny, nz, NA, grid, time_step, kappaBoundx1, kappaBoundy1, kappaBoundz1 & !
                      ,Check_Sparse_Full, Check_Stability, ntime,IVERB ! 
   use hmatrixmod, only: hmatrixfunc
   use globe_data, only:  ra, Temp_cur, Temp_p, Temp_pp,inverse_time, heat, lin_rhoc
@@ -44,12 +44,13 @@ module setup
       ! can be expanded to include more properties at a 
       ! later date
       !---------------------------------------------------
+      write(*,*) "Setting up material properties"
       index = 0
       do iz = 1, nz
          do iy = 1, ny
             do ix = 1, nx
             index = index + 1
-            call material(grid(ix,iy,iz)%imaterial_type,&
+            CALL material(grid(ix,iy,iz)%imaterial_type,&
              TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
             grid(ix,iy,iz)%kappa = kappa
             grid(ix,iy,iz)%rho = rho
@@ -63,9 +64,10 @@ module setup
 
 
       if (Check_Sparse_Full) then
-         call build_Hmatrix()
+         print*, "CHECK SPARSE FULL"
+         CALL build_Hmatrix()
       else
-         call sparse_Hmatrix()
+         CALL sparse_Hmatrix()
       end if
 
 
@@ -146,6 +148,7 @@ module setup
       var_stability =( time_step * alpha * &
       (1 / (grid(ix,iy,iz)%length(1)**2) + 1 / ( grid(ix,iy,iz)%length(2) ** 2 ) &
            + 1 / (grid(ix,iy,iz)%length(3) ** 2 ) ) )
+      
       if (IVERB.ge.2) write(*,*) "Stability condition = ", var_stability
       if (var_stability .gt. 1.0/12.0) then
          write(*,*) "Stability condition not met"
@@ -159,14 +162,15 @@ module setup
       
          stop
       end if
+      !!! This needs fixing, assuming all boundaries are the same
       if ((ix .eq. 1) .or.(iy .eq. 1) .or. (iz .eq. 1)) then
-         alpha = kappaBoundx / ( rho * heat_capacity)
+         alpha = kappaBoundx1 / ( rho * heat_capacity)
          var_stability =( time_step * alpha * &
               (1 / (grid(ix,iy,iz)%length(1)**2) + 1 / ( grid(ix,iy,iz)%length(2) ** 2 ) &
               + 1 / (grid(ix,iy,iz)%length(3) ** 2 ) ) )
          if (var_stability .gt. 1.0/12.0) then
             write(*,*) "Stability condition at boundary not met = ", var_stability
-            write(*,*) " Boundary kappas = ", kappaBoundx, kappaBoundy, kappaBoundz
+            write(*,*) " Boundary kappas = ", kappaBoundx1, kappaBoundy1, kappaBoundz1
             stop
          end if
       end if
@@ -192,9 +196,9 @@ module setup
          end do
 
       end do
-      ! write(*,'(3F12.3)') H
-      call SRSin(H, TINY, ra)
-      call SparseToReal(HT)
+      write(*,'(3F12.3)') H
+      CALL SRSin(H, TINY, ra)
+      CALL SparseToReal(HT)
       if (all(abs(H-HT) < TINY)) then
          write(*,*) "H and HT are the same"
       else

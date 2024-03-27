@@ -45,36 +45,39 @@ module output
   use constants, only: real12, int12, TINY, fields
   use inputs, only: nx,ny,nz, time_step, grid, NA, Check_Steady_State, ntime, WriteToTxt
   use inputs, only: Test_Run, freq, RunName, FullRestart
+  use inputs, only: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz
   use globe_data, only: Temp_p,Temp_pp, heat, heated_volume
   implicit none
   
 contains
   subroutine data_write(itime)
+    implicit none
     integer(int12), intent(in) :: itime
     real(real12), dimension(nx,ny,nz) :: CT, Temp_cur
-    integer :: iounit, iounit_power, iounit_tempdis, iounit_tempdistpd,logunit
-    integer(int12) :: ix, iy, iz, indexA
+    integer :: iounit, iounit_power, iounit_tempdis, iounit_tempdistpd, logunit
+    integer(int12) :: ix, iy, iz, indexA, newunit
     character(len=1024) :: filename, file_prefix, file_extension, outdir, logname
-
     
     file_prefix = 'Temperture_'
     outdir='./outputs/'
     file_extension = '.out'
     
     if (itime .eq. 1) then
+    ! Needs logica testing does not make sense
        if(Test_run) then
           !---------------------------------------
           ! open test output files                
           !---------------------------------------
           open(unit=33,file='./outputs/Power.txt')
+          open(unit=30, file='./outputs/Test.txt')
           !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
        else
           !---------------------------------------
           ! find most recent log file and open it
           !---------------------------------------
-          open(unit=30,file='./outputs/Test.txt')
           CALL last_log(logname,outdir)
-          open(newunit=logunit, file = logname )
+          open(logunit,file=logname)
+
           !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
        end if
     end if
@@ -98,8 +101,11 @@ contains
     !---------------------------------------
     ! write out to log file
     !---------------------------------------
-    if (.not.Test_run) then
-       if (WriteToTxt) write(logunit,*) real((itime-1)*(time_step)),(Temp_cur(27,27,:))  !-293.0
+    if (.not. Test_run) then
+      if (WriteToTxt) then
+         write(logunit,*) real((itime-1)*(time_step)), &
+           (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
+      endif
     end if
     !---------------------------------------
 
@@ -144,7 +150,7 @@ contains
 !!!########################################################################
  subroutine PlotdeltaT(itime)
    real(real12) :: DT(NA)
-   real(real12) :: TO(nx,ny,nz)
+   real(real12) :: T0(nx,ny,nz)
    integer(int12) :: ix,iy,iz,itime
    integer(int12) :: index
 
@@ -153,7 +159,7 @@ contains
    do iz = 1, nz
       do iy = 1, ny
          do ix = 1, nx
-            TO(ix,iy,iz) = DT(index)
+            T0(ix,iy,iz) = DT(index)
             index = index+1
          end do
       end do
@@ -161,7 +167,7 @@ contains
    if (itime == 1) then
       open(unit=31,file='./outputs/DTemperature.txt')
    end if
-   write(31,*) REAL(itime)*time_step, TO(:,1,1)
+   write(31,*) REAL(itime)*time_step, T0(:,1,1)
  end subroutine PlotdeltaT
 
 !!!########################################################################

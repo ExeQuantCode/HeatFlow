@@ -37,7 +37,7 @@ program HEATFLOW_V0_3
    !-------------------------------------------------------------!
    ! calculate the time to run full simulation                   !
    !-------------------------------------------------------------!
-   CALL cpu_time(cpustart)                                         !
+   CALL cpu_time(cpustart)                                         
    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
 
    ! give feedback to user that code has begun
@@ -47,23 +47,17 @@ program HEATFLOW_V0_3
    ! Read parameters from input file and set global variables ...!
    ! ... and arrays                                              !
    !-------------------------------------------------------------!
-   CALL read_all_files()                                         !
+   CALL read_all_files()                                         
    
-   CALL cpu_time(cpustart2)                                         !   !
+   CALL cpu_time(cpustart2)                                      
    CALL set_global_variables() 
    CALL cpu_time(cpuend)
    if (IVERB.ge.1) write(*,'(A,F12.6)') &
-   ' time to complete set_global_variables=', cpuend-cpustart2                    ! 
+   ' time to complete set_global_variables=', cpuend-cpustart2   
 
  
    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
 
-
-   !-------------------------------------------------------------!
-   ! run initial evolve step                                     !
-   !-------------------------------------------------------------!
-   CALL initial_evolve()                                         !
-   !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
 
    ! give feedback to user that main simulation is begining
    write(*,*) 'Setup complete, running simulation' 
@@ -81,27 +75,27 @@ program HEATFLOW_V0_3
          end if 
          if ((mod(itime,10000) .eq.0) .and. (.not.Lpercentage)) &
             write(*,'(A,A,I12)', advance = 'no') achar(13), 'Evolving system, timestep = ', itime
-      end if                                                           !
+      end if                                                     
 
-
-      if (itime .eq. 1) CALL initial_evolve                        !
+      ! CALL initial_evolve to set systems initial Temperature conditions      
+      if (itime .eq. 1) CALL initial_evolve                      
       
-      ! run the time evolution                                   !
+      ! run the time evolution                                   
       CALL simulate(itime)
-                                                 !
-                                                                 !
-      ! Write results                           !
+                                                
+                             
+      ! Write results                           
       CALL data_write(itime) 
-      if (IVERB.ge.3) CALL final_print                                         !
-                                                                 !
-   end do                                                        !
+      if (IVERB.ge.3) CALL final_print                           
+                                                                 
+   end do                                                        
    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
 
    !-------------------------------------------------------------!
    ! calculate end time and print to user                        !
    !-------------------------------------------------------------!
-   CALL cpu_time(cpuend)                                           !
-   write(*,'(A,F12.6)') ' time=', cpuend-cpustart                    !
+   CALL cpu_time(cpuend)                                          
+   write(*,'(A,F12.6)') ' time=', cpuend-cpustart                 
    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
 
    ! give feedback to user that code has ended

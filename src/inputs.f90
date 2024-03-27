@@ -22,9 +22,12 @@
 !!!     - time_step, the time step of the simulation
 !!!     - freq, the frequency of the heater in simulation
 !!!     - power_in, the power in of the heater in the simulation
-!!!     - kappaBoundx, the boundary kappa in the x direction
-!!!     - kappaBoundy, the boundary kappa in the y direction
-!!!     - kappaBoundz, the boundary kappa in the z direction
+!!!     - kappaBoundx, the boundary kappa in the x direction plane x=1
+!!!     - kappaBoundy, the boundary kappa in the y direction plane y=1
+!!!     - kappaBoundz, the boundary kappa in the z direction plane z=1
+!!!     - kappaBoundNx, the boundary kappa in the x direction plane x=nx
+!!!     - kappaBoundNy, the boundary kappa in the y direction plane y=ny
+!!!     - kappaBoundNz, the boundary kappa in the z direction plane z=nz
 !!!     - KappaBound, the boundary kappa
 !!!     - T_Bathx1, the bath temperature in the x direction
 !!!     - T_Bathx2, the bath temperature in the x direction
@@ -67,11 +70,14 @@ module inputs
 
   integer :: unit, newunit
   ! time step, frequency, power in, boundary kappa
-  real(real12) :: time_step, freq, power_in, kappaBoundx, kappaBoundy, kappaBoundz, KappaBound
+  real(real12) :: time_step, freq, power_in, kappaBoundx1, kappaBoundy1, kappaBoundz1, KappaBound
+  real(real12) :: kappaBoundNx, kappaBoundNy, kappaBoundNz 
   ! Bath temperatures
   real(real12) :: T_Bathx1, T_Bathx2, T_Bathy1, T_Bathy2, T_Bathz1, T_Bathz2, T_System, T_Bath
   ! verbose, number of time steps, boundary condition, number of cells
-  integer(int12) :: IVERB, ntime, iboundary, nx, ny, nz, icattaneo, isteady, NA 
+  integer(int12) :: IVERB, ntime, iboundary, nx, ny, nz, icattaneo, isteady, NA
+  ! what cells to write to txt file
+  integer(int12) :: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz 
   ! flags
   logical :: Check_Sparse_Full, Check_Stability, Check_Steady_State
   logical :: WriteToTxt, LPercentage, InputTempDis
@@ -144,49 +150,28 @@ contains
 
 
     !-----------------------------------------------
-    ! get data from geom.in
+    ! get data from system.in
     !-----------------------------------------------
     ! name infile
 
-    mesh_infile = "./inputs/geom.in" ! file name
+    mesh_infile = "./inputs/system.in" ! file name
 
     ! check if file is there
     inquire(file=mesh_infile, exist=file_exists)
 
     ! give error and exit code
     if (.not.file_exists) then
-        write(6,*) 'Error cannot find file: geom.in'
+        write(6,*) 'Error cannot find file: system.in'
         stop
     end if
     
     ! open, read and close geom.in
     open(newunit=unit, file=mesh_infile, iostat=reason)
-    CALL read_mesh(unit)
+    CALL read_system(unit)
     close(unit)
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    !-----------------------------------------------
-    ! get data from heat.in
-    !-----------------------------------------------
-    ! name infile
 
-    mesh_infile = "./inputs/heat.in" ! file name
- 
-
-    ! check if file is there
-    inquire(file=mesh_infile, exist=file_exists)
-
-    ! give error and exit code
-    if (.not.file_exists) then
-        write(6,*) 'Error cannot find file: heat.in'
-        stop
-    end if
-    
-    ! open, read and close heat.in
-    open(newunit=unit, file=mesh_infile, iostat=reason)
-    CALL read_heat(unit)
-    close(unit)
-    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   end subroutine read_all_files
 !!!#################################################################################################
 
@@ -200,10 +185,10 @@ contains
 !!!#################################################################################################
   subroutine read_param(unit)
     integer:: unit, Reason, i
-    integer,dimension(28)::readvar
+    integer,dimension(37)::readvar
     character(1024)::buffer
     logical::ex
-    readvar=0
+    readvar(:)=0
     !------------------------------------------
     ! assign defaults
     !------------------------------------------
@@ -231,9 +216,18 @@ contains
     T_Bathz1 = T_Bath
     T_Bathz2 = T_Bath
     power_in = 0
-    kappaBoundx = KappaBound
-    kappaBoundy = KappaBound
-    kappaBoundz = KappaBound
+    kappaBoundx1 = KappaBound
+    kappaBoundy1 = KappaBound
+    kappaBoundz1 = KappaBound
+    kappaBoundNx = KappaBound
+    kappaBoundNy = KappaBound
+    kappaBoundNz = KappaBound
+    start_ix = 1 
+    end_ix = Nx 
+    start_iy = 1
+    end_iy = Ny
+    start_iz = 1
+    end_iz = Nz
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     do
        read(unit,'(A)',iostat=Reason) buffer
@@ -256,9 +250,9 @@ contains
        CALL assignI(buffer,"icattaneo", icattaneo, readvar(6))
        CALL assignI(buffer,"isteady", isteady, readvar(7))
        CALL assignD(buffer,"power_in",power_in,readvar(8))       
-       CALL assignD(buffer,"kappaBoundx",kappaBoundx,readvar(9))
-       CALL assignD(buffer,"kappaBoundy",kappaBoundy,readvar(10))    
-       CALL assignD(buffer,"kappaBoundz",kappaBoundz,readvar(11))
+       CALL assignD(buffer,"kappaBoundx1",kappaBoundx1,readvar(9))
+       CALL assignD(buffer,"kappaBoundy1",kappaBoundy1,readvar(10))    
+       CALL assignD(buffer,"kappaBoundz1",kappaBoundz1,readvar(11))
        CALL assignL(buffer,"_Check_Sparse_Full",Check_Sparse_Full,readvar(12))
        CALL assignL(buffer,"_Check_Stability",Check_Stability,readvar(13))
        CALL assignL(buffer,"_WriteToTxt",WriteToTxt,readvar(14))
@@ -276,6 +270,16 @@ contains
         CALL assignD(buffer,"T_System",T_System,readvar(26))
         CALL assignD(buffer,"T_Bath",T_Bath,readvar(27))
         CALL assignD(buffer,"kappaBound",KappaBound,readvar(28))
+        CALL assignD(buffer,"kappaBoundNx",kappaBoundNx,readvar(29))
+        CALL assignD(buffer,"kappaBoundNy",kappaBoundNy,readvar(30))
+        CALL assignD(buffer,"kappaBoundNz",kappaBoundNz,readvar(31))
+        CALL assignI(buffer,"start_ix",start_ix,readvar(32))
+        CALL assignI(buffer,"end_ix",end_ix,readvar(33))
+        CALL assignI(buffer,"start_iy",start_iy,readvar(34))
+        CALL assignI(buffer,"end_iy",end_iy,readvar(35))
+        CALL assignI(buffer,"start_iz",start_iz,readvar(36))
+        CALL assignI(buffer,"end_iz",end_iz,readvar(37))
+
     end do
     CALL check_param(readvar,size(readvar,1))
 
@@ -296,7 +300,7 @@ contains
        write(6,'(A43)') '##########   ERROR   ##########'
        write(6,'(A43)') '###############################'
        write(6,*)
-       write(6,'(A)') ' ---       Error in subroutine "checkINPUT"       ---'
+       write(6,'(A)') ' ---       Error in subroutine "check_param"       ---'
        write(6,'(A)') ' --- ERROR: same KEYWORD apears more than once    ---'
        stop
     end if
@@ -304,23 +308,23 @@ contains
     !------------------------------------------------------------------------------------
     ! Disply that T_system and T_bath are being used and not individual, i.e T_bathx,y,z
     !------------------------------------------------------------------------------------
-    if ((any(readvar(9:11).eq.0)) .and. (readvar(28) .gt. 0) )then
+    if (((any(readvar(9:11).eq.0)) .and. any(readvar(29:31).eq.0)) .and. (readvar(28) .gt. 0) )then
         write(6,*)
         write(6,'(A43)') '###############################'
         write(6,'(A43)') '##########   WARNING   ##########'
         write(6,'(A43)') '###############################'
         write(6,*)
-        write(6,'(A)') ' ---       Warning in subroutine "checkINPUT"       ---'
+        write(6,'(A)') ' ---       Warning in subroutine "check_param"       ---'
         write(6,'(A)') ' --- WARNING: KappaBoundx,y,z are not set, KappaBound will be used    ---'
     end if
 
-    if (any(readvar(20:25).eq.0) .and. (readvar(27) .gt. 0) ) then
+    if (any(readvar(20:25).eq.0)  .and. (readvar(27) .gt. 0) ) then
         write(6,*)
         write(6,'(A43)') '###############################'
         write(6,'(A43)') '##########   WARNING   ##########'
         write(6,'(A43)') '###############################'
         write(6,*)
-        write(6,'(A)') ' ---       Warning in subroutine "checkINPUT"       ---'
+        write(6,'(A)') ' ---       Warning in subroutine "check_param"       ---'
         write(6,'(A)') ' --- WARNING: T_Bath x,y,z not set T_Bath will be used    ---'
     end if 
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -328,14 +332,14 @@ contains
     ! Check for missing parameters
     !------------------------------------------------------------------------------------
 
-      if (any(readvar(9:11) .eq.0) .and. (readvar(28) .eq. 0) ) then
+      if ((any(readvar(9:11) .eq.0) .and. any(readvar(29:31).eq.0)) .and. (readvar(28) .eq. 0) ) then
         write(6,*)
         write(6,'(A43)') '###############################'
         write(6,'(A43)') '##########   ERROR   ##########'
         write(6,'(A43)') '###############################'
         write(6,*)
-        write(6,'(A)') ' ---       Error in subroutine "checkINPUT"       ---'
-        write(6,'(A)') ' --- ERROR: KappaBound missing and KappaBound x,y,z not set    ---'
+        write(6,'(A)') ' ---       Error in subroutine "check_param"       ---'
+        write(6,'(A)') ' --- ERROR: KappaBound missing and KappaBound x,y,z not set ---'
         write(6,*)
         stop
       end if
@@ -345,7 +349,7 @@ contains
         write(6,'(A43)') '##########   ERROR   ##########'
         write(6,'(A43)') '###############################'
         write(6,*)
-        write(6,'(A)') ' ---       Error in subroutine "checkINPUT"       ---'
+        write(6,'(A)') ' ---       Error in subroutine "check_param"       ---'
         write(6,'(A)') ' --- ERROR: T_Bath and T_Bath x,y,z are not set    ---'
         write(6,*)
         stop
@@ -360,10 +364,25 @@ contains
         readvar(20:25) = 1
       end if
       if (readvar(28) .gt. 1) then
-        kappaBoundx = KappaBound
-        kappaBoundy = KappaBound
-        kappaBoundz = KappaBound
+        kappaBoundx1 = KappaBound
+        kappaBoundy1 = KappaBound
+        kappaBoundz1 = KappaBound
+        kappaBoundNx = KappaBound
+        kappaBoundNy = KappaBound
+        kappaBoundNz = KappaBound
         readvar(9:11) = 1
+      end if 
+
+      if (any(readvar(32:37).eq.0)) then
+        write(6,*)
+        write(6,'(A43)') '###############################'
+        write(6,'(A43)') '##########   WARNING  ##########'
+        write(6,'(A43)') '###############################'
+        write(6,*)
+        write(6,'(A)') ' ---       WARNING in subroutine "check_param"       ---'
+        write(6,'(A)') ' --- WARNING: Some or All output write cells paramters are not defined ---'
+        write(6,*) ' --- USING: ', 'Start_ix = ', start_ix, ', end_ix = ', end_ix, ', start_iy = ', &
+            start_iy,', end_iy = ', end_iy, ', start_iz = ', start_iz, ', end_iz = ', end_iz
       end if 
     
      if (any(readvar.eq.0)) then
@@ -372,7 +391,7 @@ contains
       write(6,'(A43)') '##########   WARNING  ##########'
       write(6,'(A43)') '###############################'
       write(6,*)
-      write(6,'(A)') ' ---       WARNING in subroutine "checkINPUT"       ---'
+      write(6,'(A)') ' ---       WARNING in subroutine "check_param"       ---'
       write(6,'(A)') ' --- WARNING: Essential parameters missing    ---'
       ! Print all indices of readvar that are 0
       do i = 1, size(readvar)
@@ -414,78 +433,62 @@ contains
        write(6,'(A35,F12.5)')'   T_Bathz2     = ', T_Bathz2
        write(6,'(A35,F12.5)')'   power_in   = ',power_in
        write(6,'(A35,F12.5)')   '   KappaBound         = ',KappaBound
-       write(6,'(A35,F12.5)')   '   kappaBoundx         = ',kappaBoundx
-       write(6,'(A35,F12.5)')   '   kappaBoundy         = ',kappaBoundy
-       write(6,'(A35,F12.5)')   '   kappaBoundz         = ',kappaBoundz
+       write(6,'(A35,F12.5)')   '   kappaBoundx1         = ',kappaBoundx1
+       write(6,'(A35,F12.5)')   '   kappaBoundy1         = ',kappaBoundy1
+       write(6,'(A35,F12.5)')   '   kappaBoundz1         = ',kappaBoundz1
+       write(6,'(A35,F12.5)')   '   kappaBoundNx         = ',kappaBoundNx
+       write(6,'(A35,F12.5)')   '   kappaBoundNy         = ',kappaBoundNy
+       write(6,'(A35,F12.5)')   '   kappaBoundNz         = ',kappaBoundNz
 
     end if
   end subroutine check_param
 !!!#################################################################################################  
 
 !!!#################################################################################################
-!!! The geometery input file, geom.in
+!!! The read in the system file, system.in
 !!!#################################################################################################
-  subroutine read_mesh(unit)
+  subroutine read_system(unit)
     integer, intent(in) :: unit
-    integer(int12) :: ix, iy, iz, reason, c ! counters
-    character(1024) :: buffer, array ! buffer and array
-    
+    integer(int12) :: ix, iy, iz, reason, c, pos ! counters
+    character(1024) :: buffer, array,line, part1, part2 ! buffer and array
     ! read mesh cell number
     read(unit,'(A)',iostat=Reason) buffer ! read the buffer
     read(buffer,*) nx, ny, nz ! read the buffer into nx, ny, nz
     Na = nx*ny*nz ! number of cells
-
     ! Allocate Global data arrays
     allocate(grid(nx,ny,nz)) 
-    
     ! read mesh volume dimessions
-    read(unit,'(A)',iostat=Reason) buffer 
+    read(unit,'(A)',iostat=Reason) buffer
     read(buffer,*) Lx, Ly, Lz 
     grid(:,:,:)%Length(1)=Lx/real(nx)
     grid(:,:,:)%Length(2)=Ly/real(ny)
     grid(:,:,:)%Length(3)=Lz/real(nz)
     grid(:,:,:)%volume=grid(:,:,:)%Length(1)*grid(:,:,:)%Length(2)*grid(:,:,:)%Length(3)
-
+    ! Read the file
     do iz = 1, nz
-       read(unit, '(A)', iostat= Reason) buffer
-       do iy = 1, ny
-          if (Reason .ne. 0) then
-            write(6,*) 'Error: Unexpected EOF geom.in'
-            stop
-          end if
-          read(unit, '(A)', iostat=Reason) array 
-          read(array,*,iostat = reason) (grid(ix,iy,iz)%imaterial_type, ix = 1,nx)
+        read(unit, '(A)', iostat= Reason) buffer 
+        do iy = 1, ny
+            if (Reason .ne. 0) then
+                write(6,*) 'Error: Unexpected EOF system.in' ! error
+                stop
+            end if
+            read(unit, '(A)', iostat=Reason) array 
+            do ix = 1, nx
+                read(array, '(A)', iostat=Reason) buffer
+                read(buffer, '(A)', iostat=Reason) line
+                pos = index(line, ':')
+                part1 = trim(adjustl(line(:pos-1)))
+                part2 = trim(adjustl(line(pos+1:)))
+                read(part1, *) grid(ix,iy,iz)%imaterial_type
+                read(part2, *) grid(ix,iy,iz)%iheater
+            end do
         end do
     end do
-  end subroutine read_mesh
-!!!#################################################################################################
-
-
-!!!#################################################################################################
-!!! The heating file, heat.in
-!!!#################################################################################################
-  subroutine read_heat(unit)
-    integer, intent(in) :: unit
-    integer(int12) :: ix, iy, iz, reason, c
-    character(1024) :: buffer, array
-
-    ! Allocate Global data arrays
-    grid(:,:,:)%iheater = 0.0_real12
-    do iz = 1, nz
-       read(unit, '(A)', iostat= Reason) buffer
-       do iy = 1, ny
-          if (Reason .ne. 0) then
-            write(6,*) 'Error: Unexpected EOF heat.in'
-            stop
-          end if
-          read(unit, '(A)', iostat=Reason) array
-          read(array,*,iostat = reason) (grid(ix,iy,iz)%iheater, ix=1,nx )
-        end do
-    end do
-  
-  end subroutine read_heat
-!!!#################################################################################################
-
+    if (IVERB.gt.4) then
+      write(*,*) 'grid%imaterial = ', grid%imaterial_type
+      write(*,*) 'grid%iheater = ', grid%iheater
+    end if
+  end subroutine read_system
 
 !!!#################################################################################################
 !!! The materials file, mat.in
@@ -496,11 +499,11 @@ subroutine read_mat(unit)
     type(material), dimension(100) :: dum_mat
     character(1024) :: buffer
     integer :: reason, j
-    integer, dimension(8) :: readvar
+    integer, dimension(7) :: readvarmat
     integer :: i, index
 
     i=0
-    readvar(:) = 0
+    readvarmat(:) = 0
     read: do
        read(unit,'(A)',iostat=Reason) buffer ! read the buffer
        if(Reason.ne.0) exit read ! if the buffer is empty exit the read loop
@@ -517,11 +520,11 @@ subroutine read_mat(unit)
           ! If 0 reset readvar and check for missing parameters
           if(index .eq. 0) then
                 ! Check for missing parameters after the loop
-              if (any(readvar .ne. 1)) then 
-                write(6,*) "Error in parameters : material ", readvar
+              if (any(readvarmat .ne. 1)) then 
+                write(6,*) "Error in parameters : material ", readvarmat
                 stop
               end if
-             readvar(:) = 0
+             readvarmat(:) = 0
           else
              ! If other number record it and increment
              i = i + 1
@@ -535,14 +538,13 @@ subroutine read_mat(unit)
        end if
 
     
-       CALL assignD(buffer,"heat_capacity",dum_mat(i)%heat_capacity,readvar(1))! assign heatCapacity
-       CALL assignD(buffer,"h_conv"       ,dum_mat(i)%h_conv       ,readvar(2))! assign h_conv
-       CALL assignD(buffer,"kappa"        ,dum_mat(i)%kappa        ,readvar(3))! assign kappa
-       CALL assignD(buffer,"kappa3D"      ,dum_mat(i)%kappa3D      ,readvar(4))! assign kappa3D
-       CALL assignD(buffer,"rho"          ,dum_mat(i)%rho          ,readvar(5))! assign rho
-       CALL assignD(buffer,"sound_speed"  ,dum_mat(i)%sound_speed  ,readvar(6))! assign sound_speed
-       CALL assignD(buffer,"tau"          ,dum_mat(i)%tau          ,readvar(7))! assign tau
-       CALL assignL(buffer,"source"       ,dum_mat(i)%source       ,readvar(8))! assign source
+       CALL assignD(buffer,"heat_capacity",dum_mat(i)%heat_capacity,readvarmat(1))! assign heatCapacity
+       CALL assignD(buffer,"h_conv"       ,dum_mat(i)%h_conv       ,readvarmat(2))! assign h_conv
+       CALL assignD(buffer,"kappa"        ,dum_mat(i)%kappa        ,readvarmat(3))! assign kappa
+       CALL assignD(buffer,"kappa3D"      ,dum_mat(i)%kappa3D      ,readvarmat(4))! assign kappa3D
+       CALL assignD(buffer,"rho"          ,dum_mat(i)%rho          ,readvarmat(5))! assign rho
+       CALL assignD(buffer,"sound_speed"  ,dum_mat(i)%sound_speed  ,readvarmat(6))! assign sound_speed
+       CALL assignD(buffer,"tau"          ,dum_mat(i)%tau          ,readvarmat(7))! assign tau
     end do read
     
     ! Check for duplicate indices
