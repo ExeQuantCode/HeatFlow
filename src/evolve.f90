@@ -141,7 +141,6 @@ contains
     iter=ncg
     err=E
     iss=1
-    print*, 'time step ', itime, "      x before calculate =   ", x
     CALL linbcg(S,x,itol=int(itol,I4B),tol=tol, itmax=int(itmax,I4B), iter=iter, &
          err=E, iss=int(iss,I4B))
          
