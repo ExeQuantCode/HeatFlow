@@ -305,6 +305,9 @@ contains
        stop
     end if
 
+    if (((all(readvar(9:11).eq.1)).and.all(readvar(29:31).eq.1)) .and. (readvar(28).eq.0)) &
+        readvar(28) = 1
+
     !------------------------------------------------------------------------------------
     ! Disply that T_system and T_bath are being used and not individual, i.e T_bathx,y,z
     !------------------------------------------------------------------------------------
