@@ -37,10 +37,10 @@ contains
       character :: buffer
 
       if (FullRestart) then
-         CALL read_temp_file('./outputs/TempDis.dat',Temp_p)
-         CALL read_temp_file('./outputs/TempDisTPD.dat',Temp_pp)
+         CALL read_temp_file('./restart/TempDis.dat',Temp_p)
+         CALL read_temp_file('./restart/TempDisTPD.dat',Temp_pp)
       else if (InputTempDis) then
-         CALL read_temp_file('./outputs/TempDis.dat',Temp_p)
+         CALL read_temp_file('./restart/TempDis.dat',Temp_p)
          Temp_pp = Temp_p
       else
          Temp_p = T_System
