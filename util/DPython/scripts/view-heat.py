@@ -12,6 +12,9 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description="Process geom and heat files.")
     parser.add_argument('-g', '--geom', type=str, help="Path to the geometry file.")
     parser.add_argument('-H', '--heat', type=str, help="Path to the heat distribution file.")
+    parser.add_argument('-l', '--lower', type=float, help="set lower bound on temprature for 2D plots")
+    parser.add_argument('-u', '--upper', type=float, help="set upper bound on temprature for 2D plots")
+    parser.add_argument('-s', '--cut', type=int, help="element to take slice at")
     return parser.parse_args()
 
 def find_file(search_paths):
@@ -97,10 +100,83 @@ def plotline(matrix, axis, element1, element2):
 
     plt.plot(x, line_to_plot)
     plt.xlabel('Position')
-    plt.ylabel('Heat intensity')
+    plt.ylabel('Tempurature')
     plt.grid(True)
     plt.show()
 
+    
+def plot_center_slice(matrix, axis, limits, uppertemp=None, lowertemp=None, slice_cord=None):
+    """
+    Plots a 2D slice from the center (or specified) cell of a given axis.
+    The slice is normal to the specified axis.
+    
+    Parameters:
+    - matrix: 3D numpy array.
+    - axis: Axis normal to the slice (0 for x, 1 for y, 2 for z).
+    - limits: Tuple of limits for each axis.
+    - uppertemp: Optional upper bound to temperature.
+    - lowertemp: Optional lower bound to temperature.
+    - slice_cord: Optional slice coordinate; if None, center slice is plotted.
+    """
+    if slice_cord is not None:
+        center_index = slice_cord
+    else:
+        center_index = matrix.shape[axis] // 2
+
+    if axis == 0:
+        slice_to_plot = matrix[center_index, :, :]
+        lim=limits[2],limits[1]
+        xlab='z axis'
+        ylab='y axis'
+        plt.title('2D Slice at center x-axis')
+    elif axis == 1:
+        slice_to_plot = matrix[:, center_index, :]
+        lim=limits[0],limits[2]
+        xlab='x axis'
+        ylab='z axis'
+        plt.title('2D Slice at center y-axis')
+    elif axis == 2:
+        slice_to_plot = matrix[:, :, center_index]
+        lim=limits[0],limits[1]
+        xlab='x axis'
+        ylab='y axis'
+        plt.title('2D Slice at center z-axis')
+    else:
+        raise ValueError("Axis must be 0 (x), 1 (y), or 2 (z).")
+
+    # Adjust the dimensions if needed (for imshow)
+    if axis != 0:
+        slice_to_plot = slice_to_plot.transpose()
+        
+
+    if uppertemp and lowertemp:
+        adjusted_slice = np.clip(slice_to_plot, lowertemp, uppertemp)
+        plt.imshow(adjusted_slice, cmap='hot', interpolation='nearest',
+                   extent=[0, lim[0], 0, lim[1]])
+    else:
+        #plt.imshow(slice_to_plot, cmap='hot', interpolation='nearest')
+        plt.imshow(slice_to_plot, cmap='hot', interpolation='nearest', extent=[0, lim[0], 0, lim[1]])
+
+    plt.colorbar(label='Tempurature')
+    plt.xlabel(xlab)
+    plt.ylabel(ylab)
+    plt.title(f'2D Heatmap with Temperature Range [{lowertemp}, {uppertemp}]')
+    plt.show()
+
+
+def plot_options(matrix, limits, uppertemp=None, lowertemp=None, cut=None):
+    # If 'cut' is specified, plot slices at this specific coordinate on all axes.
+    if cut is not None:
+        # Iterate over each axis and plot the given slice with optional temperature bounds.
+        for axis in range(3):
+            plot_center_slice(matrix, axis, limits, uppertemp, lowertemp, slice_cord=cut)
+    else:
+        # If 'cut' is not specified, consider plotting center slices with optional temperature bounds.
+        for axis in range(3):
+            plot_center_slice(matrix, axis, limits, uppertemp, lowertemp)    
+
+    
+    
 def main():
     args = parse_arguments()
 
@@ -118,7 +194,10 @@ def main():
 
     dimensions, limits = read_geom_file(geom_file)
     matrix = read_heat_file(heat_file, dimensions)
-    generate_plot(matrix, dimensions, limits)
+    #generate_plot(matrix, dimensions, limits)
+
+    
+    plot_options(matrix, limits, args.upper, args.lower, args.cut)
     
     plotline(matrix, 2, 25, 25)
 
