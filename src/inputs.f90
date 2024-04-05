@@ -357,7 +357,7 @@ contains
         write(6,*)
         stop
       end if
-      if (readvar(27) .gt. 1) then
+      if (readvar(27) .gt. 0) then
         T_Bathx1 = T_Bath
         T_Bathx2 = T_Bath
         T_Bathy1 = T_Bath
