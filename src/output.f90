@@ -44,7 +44,7 @@
 module output
   use constants, only: real12, int12, TINY, fields
   use inputs, only: nx,ny,nz, time_step, grid, NA, Check_Steady_State, ntime, WriteToTxt
-  use inputs, only: Test_Run, freq, RunName, FullRestart
+  use inputs, only: Test_Run, freq, RunName, FullRestart, IVERB
   use inputs, only: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz
   use globe_data, only: Temp_p,Temp_pp, heat, heated_volume
   implicit none
@@ -167,6 +167,7 @@ contains
    if (itime == 1) then
       open(unit=31,file='./outputs/DTemperature.txt')
    end if
+   
    write(31,*) REAL(itime)*time_step, T0(:,1,1)
  end subroutine PlotdeltaT
 
@@ -198,15 +199,18 @@ contains
    integer(int12) :: unit
    character(len=64) :: form
    
-   TotalPower=heat
-   totaltime=real(ntime)*time_step
-   vol = heated_volume 
+   if (IVERB .gt. 3) then 
+      TotalPower=heat
+      totaltime=real(ntime)*time_step
+      vol = heated_volume 
 
-   write(*,*) ''
+      write(*,*) ''
    
-   write(*,'(A,EN12.3)') 'Total Power is ', TotalPower*vol
-   write(*,'(A,EN12.3)') 'Average Power is ', (TotalPower*vol/ntime)
-   write(*,'(A,EN12.3)') 'Total Energy is ', (TotalPower*vol/ntime)*totaltime
+      write(*,'(A,EN12.3)') 'Total Power is ', TotalPower*vol
+      write(*,'(A,EN12.3)') 'Average Power is ', (TotalPower*vol/ntime)
+      write(*,'(A,EN12.3)') 'Total Energy is ', (TotalPower*vol/ntime)*totaltime
+   
+   end if 
 
     open(newunit=unit,file='./outputs/TempDis.dat')
     write(form,'(A,I0,A)') '(',fields,'(ES16.8,1X))'

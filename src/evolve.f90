@@ -84,7 +84,8 @@ contains
             stop
          end if
     end if
-    heat = heat + sum(Q(:))
+    
+    if (IVERB .gt. 3) heat = heat + sum(Q(:))
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     !------------------------------------------
