@@ -62,27 +62,6 @@ contains
     outdir='./outputs/'
     file_extension = '.out'
     
-    if (itime .eq. 1) then
-    ! Needs logica testing does not make sense
-       if(Test_run) then
-          !---------------------------------------
-          ! open test output files                
-          !---------------------------------------
-          open(unit=33,file='./outputs/Power.txt')
-          open(unit=30, file='./outputs/Test.txt')
-          !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-       else
-          !---------------------------------------
-          ! find most recent log file and open it
-          !---------------------------------------
-          CALL last_log(logname,outdir)
-          open(logunit,file=logname)
-
-          !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-       end if
-    end if
-
-
     !---------------------------------------
     !  make a 3d array
     !---------------------------------------
@@ -98,13 +77,38 @@ contains
     !---------------------------------------
 
 
+    if (itime .eq. 1) then
+    ! Needs logica testing does not make sense
+       if(Test_run) then
+          !---------------------------------------
+          ! open test output files                
+          !---------------------------------------
+          open(unit=33,file='./outputs/Power.txt')
+          open(unit=30, file='./outputs/Test.txt')
+          !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+       else
+          !---------------------------------------
+          ! find most recent log file and open it
+          !---------------------------------------
+          CALL last_log(logname,outdir)
+          open(logunit,file=logname)
+          write(logunit,*) real((itime-1)*(time_step)), &
+               (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
+          !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+       end if
+    end if
+
+
+
+
+
     !---------------------------------------
     ! write out to log file
     !---------------------------------------
     if (.not. Test_run) then
       if (WriteToTxt) then
          if (mod(itime, write_every) .eq. 0) then
-            print *, 'Writing Temperature difference to file'
+            write(*, *) 'Writing Temperature difference to file'
             write(logunit,*) real((itime-1)*(time_step)), &
                (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
          end if
