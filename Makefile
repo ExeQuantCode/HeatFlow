@@ -63,4 +63,4 @@ $(programs) : $(OBJS) | $(BIN_DIR) $(BUILD_DIR)
 	$(FC) -O3 -fopenmp $(MODULEFLAGS) $(BUILD_DIR) $(OBJS) -o $@
 
 debug :  $(OBJS)
-	$(FC) -O3 -mcmodel=large -fbacktrace -fcheck=all -fbounds-check  $(MODULEFLAGS) $(BUILD_DIR) $(OBJS) -o $(programs)
+	$(FC) -O3 -mcmodel=large -ffpe-trap=invalid,zero,overflow,underflow -fbacktrace -fcheck=all -fbounds-check  $(MODULEFLAGS) $(BUILD_DIR) $(OBJS) -o $(programs)
