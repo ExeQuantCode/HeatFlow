@@ -49,7 +49,8 @@ contains
              volume = grid(ix,iy,iz)%volume
              heat_capacity = grid(ix,iy,iz)%heat_capacity
              area = grid(ix,iy,iz)%Length(1)*grid(ix,iy,iz)%Length(2) !???
-             tau = grid(ix,iy,iz)%tau*(time_step**2.0_real12)
+             !tau divided by time_step squared in setup.f90
+             tau = grid(ix,iy,iz)%tau*(time_step**2.0_real12) 
              ! select heater case
              select case(grid(ix,iy,iz)%iheater)
              case(0)
