@@ -44,7 +44,7 @@
 module output
   use constants, only: real12, int12, TINY, fields
   use inputs, only: nx,ny,nz, time_step, grid, NA, Check_Steady_State, ntime, WriteToTxt
-  use inputs, only: Test_Run, freq, RunName, FullRestart, IVERB
+  use inputs, only: Test_Run, freq, RunName, FullRestart, IVERB, write_every
   use inputs, only: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz
   use globe_data, only: Temp_p,Temp_pp, heat, heated_volume
   implicit none
@@ -103,8 +103,11 @@ contains
     !---------------------------------------
     if (.not. Test_run) then
       if (WriteToTxt) then
-         write(logunit,*) real((itime-1)*(time_step)), &
-           (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
+         if (mod(itime, write_every) .eq. 0) then
+            print *, 'Writing Temperature difference to file'
+            write(logunit,*) real((itime-1)*(time_step)), &
+               (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
+         end if
       endif
     end if
     !---------------------------------------
@@ -164,10 +167,11 @@ contains
          end do
       end do
    end do
-   if (itime == 1) then
+   if (itime .eq. 1) then
       open(unit=31,file='./outputs/DTemperature.txt')
    end if
    
+
    write(31,*) REAL(itime)*time_step, T0(:,1,1)
  end subroutine PlotdeltaT
 

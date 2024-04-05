@@ -75,7 +75,7 @@ module inputs
   ! Bath temperatures
   real(real12) :: T_Bathx1, T_Bathx2, T_Bathy1, T_Bathy2, T_Bathz1, T_Bathz2, T_System, T_Bath
   ! verbose, number of time steps, boundary condition, number of cells
-  integer(int12) :: IVERB, ntime, iboundary, nx, ny, nz, icattaneo, isteady, NA
+  integer(int12) :: IVERB, ntime, iboundary, nx, ny, nz, icattaneo, isteady, NA, write_every
   ! what cells to write to txt file
   integer(int12) :: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz 
   ! flags
@@ -185,7 +185,7 @@ contains
 !!!#################################################################################################
   subroutine read_param(unit)
     integer:: unit, Reason, i
-    integer,dimension(37)::readvar
+    integer,dimension(38)::readvar
     character(1024)::buffer
     logical::ex
     readvar(:)=0
@@ -203,6 +203,7 @@ contains
     RunName = trim(adjustl(RunName))
     WriteToTxt = .FALSE.
     ntime = 10
+    write_every = 1
     time_step = 1.0
     freq = 1
     iboundary = 1
@@ -279,6 +280,7 @@ contains
         CALL assignI(buffer,"end_iy",end_iy,readvar(35))
         CALL assignI(buffer,"start_iz",start_iz,readvar(36))
         CALL assignI(buffer,"end_iz",end_iz,readvar(37))
+        CALL assignI(buffer,"write_every",write_every,readvar(38))
 
     end do
     CALL check_param(readvar,size(readvar,1))
@@ -421,6 +423,7 @@ contains
        write(6,'(A35,A)')   '    _RunName         = ',trim(RunName)
        write(6,'(A35,L1)')   '   _WriteToTxt         = ',WriteToTxt
        write(6,'(A35,I12)')   '   ntime      = ',ntime
+       write(6,'(A35,I12)')   '   write_every      = ',write_every
        write(6,'(A35,F20.15)')'   Time_step  = ',time_step
        write(6,'(A35,F12.5)')'   frequency  = ',freq
        write(6,'(A35,I6)')   '   iboundary  = ',iboundary
