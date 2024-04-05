@@ -39,6 +39,7 @@
 !!!     - T_Bath, the bath temperature
 !!!     - IVERB, the verbose
 !!!     - ntime, the number of time steps
+!!!     - write_every, the number of time steps to write to txt file
 !!!     - iboundary, the boundary condition
 !!!     - nx, the number of cells in the x direction
 !!!     - ny, the number of cells in the y direction
