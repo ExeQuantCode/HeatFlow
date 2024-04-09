@@ -23,16 +23,15 @@ program HEATFLOW_V0_3
   use constants, only: real12, int12
   use constructions, only: heatblock
   use output, only: data_write, final_print
-  use inputs, only: read_all_files, nx, ny, nz, NA, iverb, ntime, grid, LPercentage
+  use inputs, only: read_all_files, iverb, ntime, LPercentage
   use inputs, only: IVERB
   use evolution, only: simulate
   use setup, only: set_global_variables
   use INITIAL, only: initial_evolve
 
   implicit none
-   real(real12) :: cpustart, cpuend, rprogress, cpustart2, progress
+   real(real12) :: cpustart, cpuend, cpustart2, progress
    integer(int12) :: itime
-   integer :: newunit, unit
 
    !-------------------------------------------------------------!
    ! calculate the time to run full simulation                   !

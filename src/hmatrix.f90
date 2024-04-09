@@ -25,7 +25,6 @@
 !!!   - tau, The value of tau.
 !!!   - rho, The value of rho.
 !!!   - heat_capacity, The value of the heat capacity.
-!!!   - T: A dummy variable.
 !!!   - kappa_in, kappa_out, The values of the conductivities of the grid points.
 !!!   - kappaBoundx, kappaBoundy, kappaBoundz, The values of the boundary conductivities.
 !!!   - inverse_time, The value of the inverse of the time.
@@ -141,21 +140,23 @@ contains
 
   function calculate_conductivity(x_in, y_in, z_in, x_out, y_out, z_out) result(conductivity)
     integer(int12), intent(in) :: x_in, y_in, z_in, x_out, y_out, z_out
-    real(real12) :: kappa_out, kappa_in, tau, kappa_ab
+    real(real12) :: kappa_out, kappa_in, kappa_ab
     real(real12) :: conductivity
-    real(real12) :: T ! Dummy T value; as it seems unused in the original
 
+    kappa_ab=0
+    
+    ! if not an edge element
     if ((x_in .ge. 1) .and. (x_in .le. nx) .and. (y_in .ge. 1) .and. &
          (y_in .le. ny) .and. (z_in .ge. 1) .and. (z_in .le. nz)) then
-          kappa_in = grid(x_in,y_in,z_in)%kappa
-          kappa_out = grid(x_out,y_out,z_out)%kappa
+       kappa_in = grid(x_in,y_in,z_in)%kappa
+       kappa_out = grid(x_out,y_out,z_out)%kappa
 
 
        if(x_in .ne. x_out) then
           kappa_ab = (grid(x_in, y_in, z_in)%Length(1) + &
-              grid(x_out, y_out, z_out)%Length(1))*kappa_in*kappa_out/&
-              (grid(x_in, y_in, z_in)%Length(1)*kappa_out + &
-              grid(x_out, y_out, z_out)%Length(1)*kappa_in)
+               grid(x_out, y_out, z_out)%Length(1))*kappa_in*kappa_out/&
+               (grid(x_in, y_in, z_in)%Length(1)*kappa_out + &
+               grid(x_out, y_out, z_out)%Length(1)*kappa_in)
                
           kappa_ab = kappa_ab/(grid(x_out, y_out, z_out)%Length(1))**2
 
@@ -174,7 +175,6 @@ contains
               grid(x_out, y_out, z_out)%Length(3)*kappa_in)
         
           kappa_ab = kappa_ab/(grid(x_out, y_out, z_out)%Length(3))**2
-
        end if
        conductivity = (kappa_ab) 
     else
@@ -191,8 +191,7 @@ contains
 
   subroutine boundry_diag_term(x_b, y_b, z_b, x, y, z, kappa_ab)
     integer(int12), intent(in) :: x_b, y_b, z_b, x, y, z
-    real(real12), intent(out) :: kappa_ab
-    real(real12) :: kappa
+    real(real12) :: kappa, kappa_ab
 
     kappa = grid(x,y,z)%kappa
 

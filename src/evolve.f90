@@ -43,9 +43,9 @@ contains
   subroutine simulate(itime)
     integer(int12), intent(in) :: itime
     real(real12), dimension(NA) :: S, x, Q, Qdens, S_CAT, B
-    integer(int12) :: i, j, ncg, itol, itmax, iss, ierr, xc, yc, zc
+    integer(int12) :: ncg, itol, itmax, iss
     integer(I4B) :: iter
-    real(real12) :: dt, Hb, e, err, tol
+    real(real12) :: e, err, tol
     
     !----------------------
     ! Initialize vectors

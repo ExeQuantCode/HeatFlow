@@ -185,10 +185,10 @@ contains
 !!! ... by the variable i.e. 1, 2, .TRUE., 5D-15
 !!!#################################################################################################
   subroutine read_param(unit)
-    integer:: unit, Reason, i
+    integer:: unit, Reason
     integer,dimension(38)::readvar
     character(1024)::buffer
-    logical::ex
+
     readvar(:)=0
     !------------------------------------------
     ! assign defaults
@@ -456,7 +456,7 @@ contains
 !!!#################################################################################################
   subroutine read_system(unit)
     integer, intent(in) :: unit
-    integer(int12) :: ix, iy, iz, reason, c, pos ! counters
+    integer(int12) :: ix, iy, iz, reason, pos ! counters
     character(1024) :: buffer, array,line, part1, part2 ! buffer and array
     ! read mesh cell number
     read(unit,'(A)',iostat=Reason) buffer ! read the buffer

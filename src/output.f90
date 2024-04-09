@@ -54,9 +54,8 @@ contains
     implicit none
     integer(int12), intent(in) :: itime
     real(real12), dimension(nx,ny,nz) :: CT, Temp_cur
-    integer :: iounit, iounit_power, iounit_tempdis, iounit_tempdistpd, logunit
-    integer(int12) :: ix, iy, iz, indexA, newunit
-    character(len=1024) :: filename, file_prefix, file_extension, outdir, logname
+    integer(int12) :: ix, iy, iz, indexA, logunit
+    character(len=1024) :: file_prefix, file_extension, outdir, logname
     
     file_prefix = 'Temperture_'
     outdir='./outputs/'
@@ -91,7 +90,7 @@ contains
           ! find most recent log file and open it
           !---------------------------------------
           CALL last_log(logname,outdir)
-          open(logunit,file=logname)
+          open(newunit=logunit,file=logname)
           write(logunit,*) real((itime-1)*(time_step)), &
                (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
           !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -138,7 +137,7 @@ contains
     !---------------------------------------
     ! final step print and closes
     !---------------------------------------
-    if (itime == ntime) then
+    if (itime .eq. ntime) then
        if (.not.Test_run) close(logunit)
        CALL final_print()
     end if
