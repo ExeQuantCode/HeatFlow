@@ -45,7 +45,7 @@ contains
     real(real12), dimension(NA) :: S, x, Q, Qdens, S_CAT, B
     integer(int12) :: i, j, ncg, itol, itmax, iss, ierr, xc, yc, zc
     integer(I4B) :: iter
-    real(real12) :: dt, To, Hb, e, err, tol
+    real(real12) :: dt, Hb, e, err, tol
     
     !----------------------
     ! Initialize vectors
