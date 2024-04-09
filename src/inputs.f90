@@ -39,6 +39,7 @@
 !!!     - T_Bath, the bath temperature
 !!!     - IVERB, the verbose
 !!!     - ntime, the number of time steps
+!!!     - write_every, the number of time steps to write to txt file
 !!!     - iboundary, the boundary condition
 !!!     - nx, the number of cells in the x direction
 !!!     - ny, the number of cells in the y direction
@@ -75,7 +76,7 @@ module inputs
   ! Bath temperatures
   real(real12) :: T_Bathx1, T_Bathx2, T_Bathy1, T_Bathy2, T_Bathz1, T_Bathz2, T_System, T_Bath
   ! verbose, number of time steps, boundary condition, number of cells
-  integer(int12) :: IVERB, ntime, iboundary, nx, ny, nz, icattaneo, isteady, NA
+  integer(int12) :: IVERB, ntime, iboundary, nx, ny, nz, icattaneo, isteady, NA, write_every
   ! what cells to write to txt file
   integer(int12) :: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz 
   ! flags
@@ -184,10 +185,10 @@ contains
 !!! ... by the variable i.e. 1, 2, .TRUE., 5D-15
 !!!#################################################################################################
   subroutine read_param(unit)
-    integer:: unit, Reason, i
-    integer,dimension(37)::readvar
+    integer:: unit, Reason
+    integer,dimension(38)::readvar
     character(1024)::buffer
-    logical::ex
+
     readvar(:)=0
     !------------------------------------------
     ! assign defaults
@@ -203,6 +204,7 @@ contains
     RunName = trim(adjustl(RunName))
     WriteToTxt = .FALSE.
     ntime = 10
+    write_every = 1
     time_step = 1.0
     freq = 1
     iboundary = 1
@@ -279,6 +281,7 @@ contains
         CALL assignI(buffer,"end_iy",end_iy,readvar(35))
         CALL assignI(buffer,"start_iz",start_iz,readvar(36))
         CALL assignI(buffer,"end_iz",end_iz,readvar(37))
+        CALL assignI(buffer,"write_every",write_every,readvar(38))
 
     end do
     CALL check_param(readvar,size(readvar,1))
@@ -304,6 +307,9 @@ contains
        write(6,'(A)') ' --- ERROR: same KEYWORD apears more than once    ---'
        stop
     end if
+
+    if (((all(readvar(9:11).eq.1)).and.all(readvar(29:31).eq.1)) .and. (readvar(28).eq.0)) &
+        readvar(28) = 1
 
     !------------------------------------------------------------------------------------
     ! Disply that T_system and T_bath are being used and not individual, i.e T_bathx,y,z
@@ -354,7 +360,7 @@ contains
         write(6,*)
         stop
       end if
-      if (readvar(27) .gt. 1) then
+      if (readvar(27) .gt. 0) then
         T_Bathx1 = T_Bath
         T_Bathx2 = T_Bath
         T_Bathy1 = T_Bath
@@ -418,6 +424,7 @@ contains
        write(6,'(A35,A)')   '    _RunName         = ',trim(RunName)
        write(6,'(A35,L1)')   '   _WriteToTxt         = ',WriteToTxt
        write(6,'(A35,I12)')   '   ntime      = ',ntime
+       write(6,'(A35,I12)')   '   write_every      = ',write_every
        write(6,'(A35,F20.15)')'   Time_step  = ',time_step
        write(6,'(A35,F12.5)')'   frequency  = ',freq
        write(6,'(A35,I6)')   '   iboundary  = ',iboundary
@@ -449,7 +456,7 @@ contains
 !!!#################################################################################################
   subroutine read_system(unit)
     integer, intent(in) :: unit
-    integer(int12) :: ix, iy, iz, reason, c, pos ! counters
+    integer(int12) :: ix, iy, iz, reason, pos ! counters
     character(1024) :: buffer, array,line, part1, part2 ! buffer and array
     ! read mesh cell number
     read(unit,'(A)',iostat=Reason) buffer ! read the buffer

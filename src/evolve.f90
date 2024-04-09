@@ -43,9 +43,9 @@ contains
   subroutine simulate(itime)
     integer(int12), intent(in) :: itime
     real(real12), dimension(NA) :: S, x, Q, Qdens, S_CAT, B
-    integer(int12) :: i, j, ncg, itol, itmax, iss, ierr, xc, yc, zc
+    integer(int12) :: ncg, itol, itmax, iss
     integer(I4B) :: iter
-    real(real12) :: dt, To, Hb, e, err, tol
+    real(real12) :: e, err, tol
     
     !----------------------
     ! Initialize vectors
@@ -84,7 +84,8 @@ contains
             stop
          end if
     end if
-    heat = heat + sum(Q(:))
+    
+    if (IVERB .gt. 3) heat = heat + sum(Q(:))
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     !------------------------------------------
@@ -141,7 +142,6 @@ contains
     iter=ncg
     err=E
     iss=1
-    print*, 'time step ', itime, "      x before calculate =   ", x
     CALL linbcg(S,x,itol=int(itol,I4B),tol=tol, itmax=int(itmax,I4B), iter=iter, &
          err=E, iss=int(iss,I4B))
          

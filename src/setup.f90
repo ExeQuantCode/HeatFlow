@@ -32,7 +32,7 @@ module setup
 !!!#################################################################################################
    subroutine set_global_variables()
       integer(int12) :: ix,iy,iz,index
-      real(real12) :: TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau
+      real(real12) :: kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau
       allocate(Temp_cur(nx, ny, nz))
       allocate(Temp_p(NA))
       allocate(Temp_pp(NA))
@@ -51,7 +51,7 @@ module setup
             do ix = 1, nx
             index = index + 1
             CALL material(grid(ix,iy,iz)%imaterial_type,&
-             TC,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+                 kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
             grid(ix,iy,iz)%kappa = kappa
             grid(ix,iy,iz)%rho = rho
             grid(ix,iy,iz)%heat_capacity = heat_capacity
@@ -181,17 +181,13 @@ module setup
 !!! This sets up the H Matrix and converts it into sparse row storage
 !!!#################################################################################################
    subroutine build_Hmatrix()
-      integer(int12) ::  HCheck
       integer(int12) :: i,j, BCount
       real(real12) :: H(NA,NA),HT(NA,NA), H0
       H=0.0_real12
       BCount = 0
-      HCheck = 0
       do j=1,na
-         HCheck = 0
          do i =1,na
             H0 = hmatrixfunc(i,j)
-            HCheck = HCheck + H0
             H(i,j) = H0
          end do
 
@@ -213,8 +209,8 @@ module setup
 subroutine SparseToReal(HT)
    real(real12) :: H0
    real(real12), dimension(NA,NA) :: HT
-   integer(int12) :: i, j, len, k
-   integer, dimension(3) :: addit
+   integer(int12) :: i, j, k
+   integer(int12), dimension(3) :: addit
 
    addit(1) = 1
    addit(2) = nx

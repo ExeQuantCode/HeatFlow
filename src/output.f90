@@ -44,7 +44,7 @@
 module output
   use constants, only: real12, int12, TINY, fields
   use inputs, only: nx,ny,nz, time_step, grid, NA, Check_Steady_State, ntime, WriteToTxt
-  use inputs, only: Test_Run, freq, RunName, FullRestart
+  use inputs, only: Test_Run, freq, RunName, FullRestart, IVERB, write_every
   use inputs, only: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz
   use globe_data, only: Temp_p,Temp_pp, heat, heated_volume
   implicit none
@@ -54,35 +54,13 @@ contains
     implicit none
     integer(int12), intent(in) :: itime
     real(real12), dimension(nx,ny,nz) :: CT, Temp_cur
-    integer :: iounit, iounit_power, iounit_tempdis, iounit_tempdistpd, logunit
-    integer(int12) :: ix, iy, iz, indexA, newunit
-    character(len=1024) :: filename, file_prefix, file_extension, outdir, logname
+    integer(int12) :: ix, iy, iz, indexA, logunit
+    character(len=1024) :: file_prefix, file_extension, outdir, logname
     
     file_prefix = 'Temperture_'
     outdir='./outputs/'
     file_extension = '.out'
     
-    if (itime .eq. 1) then
-    ! Needs logica testing does not make sense
-       if(Test_run) then
-          !---------------------------------------
-          ! open test output files                
-          !---------------------------------------
-          open(unit=33,file='./outputs/Power.txt')
-          open(unit=30, file='./outputs/Test.txt')
-          !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-       else
-          !---------------------------------------
-          ! find most recent log file and open it
-          !---------------------------------------
-          CALL last_log(logname,outdir)
-          open(logunit,file=logname)
-
-          !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-       end if
-    end if
-
-
     !---------------------------------------
     !  make a 3d array
     !---------------------------------------
@@ -98,13 +76,41 @@ contains
     !---------------------------------------
 
 
+    if (itime .eq. 1) then
+    ! Needs logica testing does not make sense
+       if(Test_run) then
+          !---------------------------------------
+          ! open test output files                
+          !---------------------------------------
+          open(unit=33,file='./outputs/Power.txt')
+          open(unit=30, file='./outputs/Test.txt')
+          !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+       else
+          !---------------------------------------
+          ! find most recent log file and open it
+          !---------------------------------------
+          CALL last_log(logname,outdir)
+          open(newunit=logunit,file=logname)
+          write(logunit,*) real((itime-1)*(time_step)), &
+               (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
+          !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+       end if
+    end if
+
+
+
+
+
     !---------------------------------------
     ! write out to log file
     !---------------------------------------
     if (.not. Test_run) then
       if (WriteToTxt) then
-         write(logunit,*) real((itime-1)*(time_step)), &
-           (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
+         if (mod(itime, write_every) .eq. 0) then
+            write(*, *) 'Writing Temperature difference to file'
+            write(logunit,*) real((itime-1)*(time_step)), &
+               (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
+         end if
       endif
     end if
     !---------------------------------------
@@ -131,7 +137,7 @@ contains
     !---------------------------------------
     ! final step print and closes
     !---------------------------------------
-    if (itime == ntime) then
+    if (itime .eq. ntime) then
        if (.not.Test_run) close(logunit)
        CALL final_print()
     end if
@@ -164,9 +170,11 @@ contains
          end do
       end do
    end do
-   if (itime == 1) then
+   if (itime .eq. 1) then
       open(unit=31,file='./outputs/DTemperature.txt')
    end if
+   
+
    write(31,*) REAL(itime)*time_step, T0(:,1,1)
  end subroutine PlotdeltaT
 
@@ -198,15 +206,18 @@ contains
    integer(int12) :: unit
    character(len=64) :: form
    
-   TotalPower=heat
-   totaltime=real(ntime)*time_step
-   vol = heated_volume 
+   if (IVERB .gt. 3) then 
+      TotalPower=heat
+      totaltime=real(ntime)*time_step
+      vol = heated_volume 
 
-   write(*,*) ''
+      write(*,*) ''
    
-   write(*,'(A,EN12.3)') 'Total Power is ', TotalPower*vol
-   write(*,'(A,EN12.3)') 'Average Power is ', (TotalPower*vol/ntime)
-   write(*,'(A,EN12.3)') 'Total Energy is ', (TotalPower*vol/ntime)*totaltime
+      write(*,'(A,EN12.3)') 'Total Power is ', TotalPower*vol
+      write(*,'(A,EN12.3)') 'Average Power is ', (TotalPower*vol/ntime)
+      write(*,'(A,EN12.3)') 'Total Energy is ', (TotalPower*vol/ntime)*totaltime
+   
+   end if 
 
     open(newunit=unit,file='./outputs/TempDis.dat')
     write(form,'(A,I0,A)') '(',fields,'(ES16.8,1X))'

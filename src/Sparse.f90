@@ -300,7 +300,6 @@ contains
     real(real12), INTENT(IN) :: thresh
     TYPE(diag_sprs_dp), INTENT(OUT) :: da
     INTEGER(I4B) :: n, d, ndiags
-    logical, DIMENSION(size(a,1),size(a,2)) :: mask
     logical, DIMENSION(2*size(a,1)-1) :: any_diags
     integer(I4B) :: i, j, o, m, c
     integer(I4B), dimension(:), allocatable :: diag_off
@@ -502,10 +501,10 @@ SUBROUTINE SDStx(da, x, b)
     real(real12), INTENT(OUT) :: err
     real(real12), PARAMETER :: EPS=1.0e-14_dp
     INTEGER(I4B) :: n
-    real(real12) :: ak,akden,bk,bkden,bknum,bnrm,dxnrm,xnrm,zm1nrm,znrm
+    real(real12) :: ak,akden,bk,bkden,bknum,bnrm
     real(real12), DIMENSION(size(b)) :: p,pp,r,rr,z,zz
     n=assert_eq(size(b, kind=int12),size(x, kind=int12),'linbcg')
-    !iter=0
+    iter=0
     !Calculate initial residual. Input to atimes is
     !x(1:n), output is r(1:n); the final 0
     !indicates that the matrix (not its trans-
@@ -525,38 +524,52 @@ SUBROUTINE SDStx(da, x, b)
     select case(itol) 
     case(1)
        bnrm=sqrt(dot_product(b,b))
-       call asolve(r,z,0_int12,iss) 
+       call asolve(r,z,iss) 
     case(2)
-       call asolve(b,z,0_int12,iss)
+       call asolve(b,z,iss)
        bnrm=sqrt(dot_product(z,z))
-       call asolve(r,z,0_int12,iss)
+       call asolve(r,z,iss)
     case default
        call nrerror('illegal itol in linbcg')
     end select
 
+
+    call asolve(rr,zz,iss) 
+    bknum=dot_product(z,rr) 
+    p=z
+    pp=zz
+    call atimes(p,z,0_int12,iss)
+    bkden=bknum 
+    akden=dot_product(z,pp)
+    ak=bknum/akden
+    call atimes(pp,zz,1_int12,iss)
+    x=x+ak*p
+    r=r-ak*z
+    rr=rr-ak*zz
+    call asolve(r,z,iss) 
+
+    iter=1
     solve_loop: do
        if (iter > itmax) exit
        iter=iter+1
-       call asolve(rr,zz,1_int12,iss) 
+
+       call asolve(rr,zz,iss) 
        bknum=dot_product(z,rr) 
-       if (iter == 1) then
-          p=z
-          pp=zz
-       else
-          bk=bknum/bkden
-          p=bk*p+z
-          pp=bk*pp+zz
-       end if
+       bk=bknum/bkden
+       p=bk*p+z
+       pp=bk*pp+zz
 
        call atimes(p,z,0_int12,iss)
        bkden=bknum 
        akden=dot_product(z,pp)
        ak=bknum/akden
+
        call atimes(pp,zz,1_int12,iss)
        x=x+ak*p
        r=r-ak*z
        rr=rr-ak*zz
-       call asolve(r,z,0_int12,iss) 
+
+       call asolve(r,z,iss) 
 
        select case(itol)
        case(1)
@@ -565,7 +578,6 @@ SUBROUTINE SDStx(da, x, b)
           err=sqrt(dot_product(z,z))/bnrm
        end select
 
-      !  write (*,*) ' iter=',iter,' err=',err, tol
        if (err.le.tol) exit
     end do solve_loop
   END SUBROUTINE linbcg
@@ -597,13 +609,13 @@ SUBROUTINE SDStx(da, x, b)
     end select
   END SUBROUTINE atimes
 
-  SUBROUTINE asolve(b,x,itrnsp,iss)
+  SUBROUTINE asolve(b,x,iss)
     USE sptype
     USE sputil, ONLY : assert_eq,nrerror
     USE globe_data !The matrix is accessed through this module.
     real(real12), DIMENSION(:), INTENT(IN) :: b
     real(real12), DIMENSION(:), INTENT(OUT) :: x
-    INTEGER(I4B), INTENT(IN) :: itrnsp,iss
+    INTEGER(I4B), INTENT(IN) :: iss
     INTEGER(I4B) :: ndum
     ndum=assert_eq(size(b, kind=int12),size(x, kind=int12),'asolve')
     select case(iss)
