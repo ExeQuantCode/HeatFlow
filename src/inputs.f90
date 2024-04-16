@@ -210,6 +210,7 @@ contains
     iboundary = 1
     icattaneo = 1
     isteady = 0
+    !T_System = n or [Bx1:BNx,By1:BNy,Bz1:BNz]
     T_System = 300
     T_Bathx1 = T_Bath
     T_Bathx2 = T_Bath
@@ -218,12 +219,15 @@ contains
     T_Bathz1 = T_Bath
     T_Bathz2 = T_Bath
     power_in = 0
+    !kappaBound = [kx1:kNx,ky1:kNy,kz1:kNz]
     kappaBoundx1 = KappaBound
     kappaBoundy1 = KappaBound
     kappaBoundz1 = KappaBound
     kappaBoundNx = KappaBound
     kappaBoundNy = KappaBound
     kappaBoundNz = KappaBound
+    !t_output = !{all, every_n, single_n}
+    !s_output = !{all, region_[x:X,y:Y,z:Z], downsample_n}
     start_ix = 1 
     end_ix = Nx 
     start_iy = 1

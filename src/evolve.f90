@@ -141,9 +141,9 @@ contains
     ncg = 0
     iter=ncg
     err=E
-    iss=1
+
     CALL linbcg(S,x,itol=int(itol,I4B),tol=tol, itmax=int(itmax,I4B), iter=iter, &
-         err=E, iss=int(iss,I4B))
+         err=E)
          
     if (any(isnan(x(:)))) then
        write(*,*) "fatal error: NAN in x tempurature vector"
