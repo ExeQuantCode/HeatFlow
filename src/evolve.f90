@@ -75,6 +75,7 @@ contains
     !--------------------------------
     if ( power_in .gt. TINY) then
        CALL heater(itime, Q, Qdens)
+
        if (any(isnan(Q(:)))) then
             write(*,*) "fatal error: NAN in Q vector"
             stop
