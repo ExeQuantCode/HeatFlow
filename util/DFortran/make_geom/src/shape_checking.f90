@@ -2,25 +2,27 @@ module shape_checking
   use shapes
   implicit none
 contains
-  subroutine assign_point(grid, cuboids, spheres, cylinders, vol)
+  subroutine assign_point(grid, heater, cuboids, spheres, cylinders, vol)
     use shapes
     implicit none
-    integer, intent(inout) :: grid(:,:,:)
+    integer, intent(inout) :: grid(:,:,:), heater(:,:,:)
     type(volume), intent(in) :: vol
     type(cuboid), intent(in) :: cuboids(:)
     type(sphere), intent(in) :: spheres(:)
     type(cylinder), intent(in) :: cylinders(:)
     real :: coord(3)
-    integer :: material, i, j, k
+    integer :: material, heat, i, j, k
 
 
     do k = 1, size(grid, 3)
        do j = 1, size(grid, 2)
           do i = 1, size(grid, 1)
              material = grid(i, j, k)
+             heat = heater(i, j, k)
              call get_coords(vol,i,j,k,coord)
-             call check_shapes(coord, cuboids, spheres, cylinders, material)
+             call check_shapes(coord, cuboids, spheres, cylinders, material, heat)
              grid(i, j, k) = material
+             heater(i, j, k) = heat
           end do
        end do
     end do
@@ -45,27 +47,27 @@ contains
   end subroutine get_coords
   
 
-  subroutine check_shapes(coord, cuboids, spheres, cylinders, material)
+  subroutine check_shapes(coord, cuboids, spheres, cylinders, material, heat)
     use shapes
     implicit none
     type(cuboid), intent(in) :: cuboids(:)
     type(sphere), intent(in) :: spheres(:)
     type(cylinder), intent(in) :: cylinders(:)
     real, intent(in) :: coord(3)
-    integer, intent(inout) :: material
+    integer, intent(inout) :: material, heat
 
-    call check_cuboids(coord, cuboids, material)
-    call check_spheres(coord, spheres, material)
-    call check_cylinders(coord, cylinders, material)
+    call check_cuboids(coord, cuboids, material, heat)
+    call check_spheres(coord, spheres, material, heat)
+    call check_cylinders(coord, cylinders, material, heat)
     
   end subroutine check_shapes
 
-  subroutine check_cuboids(coord, cuboids, material)
+  subroutine check_cuboids(coord, cuboids, material, heat)
     use shapes
     implicit none
     real, intent(in) :: coord(3)
     type(cuboid), intent(in) :: cuboids(:)
-    integer, intent(inout) :: material
+    integer, intent(inout) :: material, heat
     integer :: num_cuboids,c
 
     num_cuboids = size(cuboids)
@@ -78,17 +80,18 @@ contains
             cuboids(c)%origin(3) <= coord(3) .and. &
             coord(3) <= (cuboids(c)%origin(3) + cuboids(c)%dimensions(3))) then
           material = cuboids(c)%material
+          heat = cuboids(c)%heat
           return
        end if
     end do
   end subroutine check_cuboids
 
-  subroutine check_spheres(coord, spheres, material)
+  subroutine check_spheres(coord, spheres, material, heat)
     use shapes
     implicit none
     real, intent(in) :: coord(3)
     type(sphere), intent(in) :: spheres(:)
-    integer, intent(inout) :: material
+    integer, intent(inout) :: material, heat
     integer :: num_spheres, s
     real :: distance
 
@@ -100,17 +103,18 @@ contains
                         (coord(3) - spheres(s)%center(3))**2)
         if (distance <= spheres(s)%radius) then
             material = spheres(s)%material
+            heat = spheres(s)%heat
             return
         end if
     end do
   end subroutine check_spheres
 
-  subroutine check_cylinders(coord, cyl, material)
+  subroutine check_cylinders(coord, cyl, material, heat)
     use shapes
     implicit none
     real, intent(in) :: coord(3)
     type(cylinder), intent(in) :: cyl(:)
-    integer, intent(inout) :: material
+    integer, intent(inout) :: material, heat
     integer :: num_cyl, c
     real, dimension(3) :: h, direction
     real :: dist_on_line, dist_to_line
@@ -126,6 +130,7 @@ contains
        dist_to_line = sqrt(dot_product(h, h) - dist_on_line**2)
        if (dist_on_line >= 0.0 .and. dist_on_line <= cyl(c)%length .and. dist_to_line <= cyl(c)%radius) then
           material = cyl(c)%material
+          heat = cyl(c)%heat
           return
        end if
     end do
