@@ -456,14 +456,17 @@ contains
 !!!#################################################################################################
   subroutine read_system(unit)
     integer, intent(in) :: unit
-    integer(int12) :: ix, iy, iz, reason, pos ! counters
-    character(1024) :: buffer, array,line, part1, part2 ! buffer and array
+    integer(int12) :: ix, iy, iz, reason, pos, pos_old ! counters
+    character(2048) :: buffer, array,line
+    character(10), dimension(:), allocatable :: temp
+    character(100)  :: part1, part2 ! buffer and array
     ! read mesh cell number
     read(unit,'(A)',iostat=Reason) buffer ! read the buffer
     read(buffer,*) nx, ny, nz ! read the buffer into nx, ny, nz
     Na = nx*ny*nz ! number of cells
     ! Allocate Global data arrays
-    allocate(grid(nx,ny,nz)) 
+    allocate(grid(nx,ny,nz))
+    allocate(temp(nx))
     ! read mesh volume dimessions
     read(unit,'(A)',iostat=Reason) buffer
     read(buffer,*) Lx, Ly, Lz 
@@ -480,14 +483,15 @@ contains
                 stop
             end if
             read(unit, '(A)', iostat=Reason) array 
+            pos = 1
+            temp = ''
+            read(array, '(A)', iostat=Reason) buffer
+            read(buffer, '(A)', iostat=Reason) line
+            read(line, *) temp        
             do ix = 1, nx
-                read(array, '(A)', iostat=Reason) buffer
-                read(buffer, '(A)', iostat=Reason) line
-                pos = index(line, ':')
-                part1 = trim(adjustl(line(:pos-1)))
-                part2 = trim(adjustl(line(pos+1:)))
-                read(part1, *) grid(ix,iy,iz)%imaterial_type
-                read(part2, *) grid(ix,iy,iz)%iheater
+                pos = index(temp(ix),":")
+                read(temp(ix)(:pos-1), *) grid(ix,iy,iz)%imaterial_type
+                read(temp(ix)(pos+1:), *) grid(ix,iy,iz)%iheater
             end do
         end do
     end do
@@ -495,6 +499,7 @@ contains
       write(*,*) 'grid%imaterial = ', grid%imaterial_type
       write(*,*) 'grid%iheater = ', grid%iheater
     end if
+    deallocate(temp)
   end subroutine read_system
 
 !!!#################################################################################################
