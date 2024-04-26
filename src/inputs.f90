@@ -353,18 +353,10 @@ contains
         write(6,*)
         stop
       end if
-      if (any(readvar(20:25) .eq.0) .and. (readvar(27) .eq. 0) ) then
-        write(6,*)
-        write(6,'(A43)') '###############################'
-        write(6,'(A43)') '##########   ERROR   ##########'
-        write(6,'(A43)') '###############################'
-        write(6,*)
-        write(6,'(A)') ' ---       Error in subroutine "check_param"       ---'
-        write(6,'(A)') ' --- ERROR: T_Bath and T_Bath x,y,z are not set    ---'
-        write(6,*)
-        stop
+      if (all(readvar(20:25) .eq.1) .and. (readvar(27) .eq. 0) ) then
+         readvar(27) = 1
       end if
-      if (readvar(27) .gt. 0) then
+      if (any(readvar(20:25) .eq. 0)) then
         T_Bathx1 = T_Bath
         T_Bathx2 = T_Bath
         T_Bathy1 = T_Bath
@@ -373,7 +365,7 @@ contains
         T_Bathz2 = T_Bath
         readvar(20:25) = 1
       end if
-      if (readvar(28) .gt. 0) then
+      if (any(readvar(9:11).eq. 0)) then
         kappaBoundx1 = KappaBound
         kappaBoundy1 = KappaBound
         kappaBoundz1 = KappaBound
