@@ -373,7 +373,7 @@ contains
         T_Bathz2 = T_Bath
         readvar(20:25) = 1
       end if
-      if (readvar(28) .gt. 1) then
+      if (readvar(28) .gt. 0) then
         kappaBoundx1 = KappaBound
         kappaBoundy1 = KappaBound
         kappaBoundz1 = KappaBound
