@@ -73,7 +73,7 @@ contains
     !--------------------------------
     ! Calculate heat
     !--------------------------------
-    if ( power_in .gt. TINY) then
+    if (any(grid%iheater .gt. 0)) then
        CALL heater(itime, Q, Qdens)
 
        if (any(isnan(Q(:)))) then
