@@ -2,7 +2,7 @@ module shape_checking
   use shapes
   implicit none
 contains
-  subroutine assign_point(grid, heater, cuboids, spheres, cylinders, vol)
+  subroutine assign_point(grid, heater, cuboids, spheres, cylinders, vol, alls)
     use shapes
     implicit none
     integer, intent(inout) :: grid(:,:,:), heater(:,:,:)
@@ -10,6 +10,7 @@ contains
     type(cuboid), intent(in) :: cuboids(:)
     type(sphere), intent(in) :: spheres(:)
     type(cylinder), intent(in) :: cylinders(:)
+    type(shape_list), intent(in) :: alls(:)
     real :: coord(3)
     integer :: material, heat, i, j, k
 
@@ -20,7 +21,7 @@ contains
              material = grid(i, j, k)
              heat = heater(i, j, k)
              call get_coords(vol,i,j,k,coord)
-             call check_shapes(coord, cuboids, spheres, cylinders, material, heat)
+             call check_shapes(coord, cuboids, spheres, cylinders, material, heat, alls)
              grid(i, j, k) = material
              heater(i, j, k) = heat
           end do
@@ -47,7 +48,7 @@ contains
   end subroutine get_coords
   
 
-  subroutine check_shapes(coord, cuboids, spheres, cylinders, material, heat)
+  subroutine check_shapes(coord, cuboids, spheres, cylinders, material, heat, alls)
     use shapes
     implicit none
     type(cuboid), intent(in) :: cuboids(:)
@@ -55,85 +56,82 @@ contains
     type(cylinder), intent(in) :: cylinders(:)
     real, intent(in) :: coord(3)
     integer, intent(inout) :: material, heat
-
-    call check_cuboids(coord, cuboids, material, heat)
-    call check_spheres(coord, spheres, material, heat)
-    call check_cylinders(coord, cylinders, material, heat)
+    type(shape_list), intent(in) :: alls(:)
+    integer :: num_all, c
     
+    num_all = size(alls)
+
+    do c = 1, num_all
+       if ( alls(c)%wshape .eq. 'cub' ) then
+          call check_cuboids(coord, cuboids, material, heat, alls(c)%idx)
+       else if ( alls(c)%wshape .eq. 'sph' ) then
+          call check_spheres(coord, spheres, material, heat, alls(c)%idx)
+       else if ( alls(c)%wshape .eq. 'cyl' ) then
+          call check_cylinders(coord, cylinders, material, heat, alls(c)%idx)
+       end if
+    end do    
   end subroutine check_shapes
 
-  subroutine check_cuboids(coord, cuboids, material, heat)
+  subroutine check_cuboids(coord, cuboids, material, heat, idx)
     use shapes
     implicit none
     real, intent(in) :: coord(3)
     type(cuboid), intent(in) :: cuboids(:)
     integer, intent(inout) :: material, heat
-    integer :: num_cuboids,c
+    integer, intent(in) :: idx
 
-    num_cuboids = size(cuboids)
-
-    do c = 1, num_cuboids
-       if (cuboids(c)%origin(1) <= coord(1) .and. &
-            coord(1) <= (cuboids(c)%origin(1) + cuboids(c)%dimensions(1)) .and. &
-            cuboids(c)%origin(2) <= coord(2) .and. &
-            coord(2) <= (cuboids(c)%origin(2) + cuboids(c)%dimensions(2)) .and. &
-            cuboids(c)%origin(3) <= coord(3) .and. &
-            coord(3) <= (cuboids(c)%origin(3) + cuboids(c)%dimensions(3))) then
-          material = cuboids(c)%material
-          heat = cuboids(c)%heat
-          return
-       end if
-    end do
+    if (cuboids(idx)%origin(1) <= coord(1) .and. &
+         coord(1) <= (cuboids(idx)%origin(1) + cuboids(idx)%dimensions(1)) .and. &
+         cuboids(idx)%origin(2) <= coord(2) .and. &
+         coord(2) <= (cuboids(idx)%origin(2) + cuboids(idx)%dimensions(2)) .and. &
+         cuboids(idx)%origin(3) <= coord(3) .and. &
+         coord(3) <= (cuboids(idx)%origin(3) + cuboids(idx)%dimensions(3))) then
+       material = cuboids(idx)%material
+       heat = cuboids(idx)%heat
+       return
+    end if
   end subroutine check_cuboids
 
-  subroutine check_spheres(coord, spheres, material, heat)
+  subroutine check_spheres(coord, spheres, material, heat, idx)
     use shapes
     implicit none
     real, intent(in) :: coord(3)
     type(sphere), intent(in) :: spheres(:)
     integer, intent(inout) :: material, heat
-    integer :: num_spheres, s
+    integer, intent(in) :: idx
     real :: distance
-
-    num_spheres = size(spheres)
-
-    do s = 1, num_spheres
-        distance = sqrt((coord(1) - spheres(s)%center(1))**2 + &
-                        (coord(2) - spheres(s)%center(2))**2 + &
-                        (coord(3) - spheres(s)%center(3))**2)
-        if (distance <= spheres(s)%radius) then
-            material = spheres(s)%material
-            heat = spheres(s)%heat
-            return
-        end if
-    end do
+    
+    distance = sqrt((coord(1) - spheres(idx)%center(1))**2 + &
+         (coord(2) - spheres(idx)%center(2))**2 + &
+         (coord(3) - spheres(idx)%center(3))**2)
+    if (distance <= spheres(idx)%radius) then
+       material = spheres(idx)%material
+       heat = spheres(idx)%heat
+       return
+    end if
   end subroutine check_spheres
 
-  subroutine check_cylinders(coord, cyl, material, heat)
+  subroutine check_cylinders(coord, cyl, material, heat, idx)
     use shapes
     implicit none
     real, intent(in) :: coord(3)
     type(cylinder), intent(in) :: cyl(:)
     integer, intent(inout) :: material, heat
-    integer :: num_cyl, c
+    integer, intent(in) :: idx
     real, dimension(3) :: h, direction
     real :: dist_on_line, dist_to_line
 
-    num_cyl = size(cyl)
-    
-    do c = 1, num_cyl
-       !write(*,*) cyl(c)%dir, cyl(c)%start
-       direction = cyl(c)%dir / norm(cyl(c)%dir)
-       h = coord - cyl(c)%start
+       direction = cyl(idx)%dir / norm(cyl(idx)%dir)
+       h = coord - cyl(idx)%start
        
        dist_on_line = dot_product(direction, h)
        dist_to_line = sqrt(dot_product(h, h) - dist_on_line**2)
-       if (dist_on_line >= 0.0 .and. dist_on_line <= cyl(c)%length .and. dist_to_line <= cyl(c)%radius) then
-          material = cyl(c)%material
-          heat = cyl(c)%heat
+       if (dist_on_line >= 0.0 .and. dist_on_line <= cyl(idx)%length .and. &
+            dist_to_line <= cyl(idx)%radius) then
+          material = cyl(idx)%material
+          heat = cyl(idx)%heat
           return
        end if
-    end do
   end subroutine check_cylinders
   
   function norm(vector) result(norm_val)

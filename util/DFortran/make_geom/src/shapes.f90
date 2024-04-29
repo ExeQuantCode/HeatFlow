@@ -27,4 +27,9 @@ module shapes
      integer :: heat, material
   end type cylinder
 
+  type shape_list
+     character(len=3) :: wshape
+     integer :: idx
+  end type shape_list
+
 end module shapes

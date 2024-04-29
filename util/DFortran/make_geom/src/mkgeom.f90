@@ -10,24 +10,26 @@ program geom_processor
   type(cuboid), allocatable :: cuboids(:)
   type(sphere), allocatable :: spheres(:)
   type(cylinder), allocatable :: cylinders(:)
+  type(shape_list), allocatable :: alls(:)
   integer, allocatable :: grid(:,:,:), heater(:,:,:)
-  integer :: num_cuboids, num_spheres, num_cylinders, i
+  integer :: num_cuboids, num_spheres, num_cylinders, num_all, i
   character(len=100) :: line
 
-  call count_blocks(num_cuboids, num_spheres, num_cylinders)
+  call count_blocks(num_cuboids, num_spheres, num_cylinders, num_all)
   rewind(5)
 
   allocate(cuboids(num_cuboids))
   allocate(spheres(num_spheres))
   allocate(cylinders(num_cylinders))
+  allocate(alls(num_all))
   
-  call read_input_file(vol,cuboids,spheres,cylinders)
+  call read_input_file(vol,cuboids,spheres,cylinders,alls)
 
   allocate(grid(vol%x_grid, vol%y_grid, vol%z_grid),heater(vol%x_grid, vol%y_grid, vol%z_grid))
   grid=vol%default_material
   heater=vol%default_heat
 
-  call assign_point(grid, heater, cuboids, spheres, cylinders, vol)
+  call assign_point(grid, heater, cuboids, spheres, cylinders, vol, alls)
   
   call write_output_file('system.in', grid, heater, vol)
 
@@ -51,9 +53,12 @@ contains
 
     ! Write grid dimensions and size
     write(20, *) vol%x_grid, vol%y_grid, vol%z_grid
-    write(20, *) vol%x, vol%y, vol%z
+    write(20, *) vol%x*vol%units, vol%y*vol%units, vol%z*vol%units
     write(20, *)
+    write(*, *) vol%x_grid, vol%y_grid, vol%z_grid
+    write(*, *) vol%x*vol%units, vol%y*vol%units, vol%z*vol%units
 
+    
     ! Write grid data
     do k = 1, size(grid, 3)
        do j = 1, size(grid, 2)
