@@ -2,46 +2,53 @@ module read
   use shapes
   implicit none
 contains
-  subroutine count_blocks(n_cub, n_sph, n_cyl)
+  subroutine count_blocks(n_cub, n_sph, n_cyl, n_all)
   implicit none
-  integer, intent(out) :: n_cub, n_sph, n_cyl
+  integer, intent(out) :: n_cub, n_sph, n_cyl, n_all
   integer :: error
   character(len=100) :: line
-
+  
+  
   n_cub = 0
   n_sph = 0
   n_cyl = 0
+  n_all = 0
 
   do
      read(*, '(A)',iostat=error) line
      if ( error /= 0) exit
      if (index(line, 'CUBOID') > 0) then
         n_cub = n_cub + 1
+        n_all = n_all + 1
      else if (index(line, 'SPHERE') > 0) then
         n_sph = n_sph + 1
+        n_all = n_all + 1
      else if (index(line, 'CYLINDER') > 0) then
         n_cyl = n_cyl + 1
+        n_all = n_all + 1
      end if
   end do
 
+  
 end subroutine count_blocks
 
-subroutine read_input_file(vol, cuboids, spheres, cylinders)
+subroutine read_input_file(vol, cuboids, spheres, cylinders, alls)
   use shapes
   implicit none
+  type(shape_list), intent(inout) :: alls(:)
   type(volume), intent(out) :: vol
   type(cuboid), intent(out) :: cuboids(*)
   type(sphere), intent(out) :: spheres(*)
   type(cylinder), intent(out) :: cylinders(*)
   character(len=1024) :: buffer
-  character(len=1024) :: sline(2),curbolck
+  character(len=1024) :: sline(2)
   integer :: error, i
-  integer :: num_cuboids, num_spheres, num_cylinders
+  integer :: num_cuboids, num_spheres, num_cylinders, num_all
 
   num_cuboids = 0
   num_spheres = 0
   num_cylinders = 0
-  
+  num_all = 0
   
   ! Read lines from the file
   read: do
@@ -50,19 +57,27 @@ subroutine read_input_file(vol, cuboids, spheres, cylinders)
      call filter_line(buffer)
      if (trim(adjustl(buffer)) == '') cycle read
 
-
      select case(trim(adjustl(buffer)))
      case('VOLUME')
         call read_vol(vol)
      case('CUBOID')
         num_cuboids = num_cuboids + 1
+        num_all = num_all + 1
         call read_cuboid(cuboids(num_cuboids))
+        alls(num_all)%idx = num_cuboids
+        alls(num_all)%wshape = 'cub'
      case('SPHERE')
         num_spheres = num_spheres + 1
+        num_all = num_all + 1
         call read_sphere(spheres(num_spheres))
+        alls(num_all)%idx = num_spheres
+        alls(num_all)%wshape = 'sph'
      case('CYLINDER')
         num_cylinders = num_cylinders + 1
+        num_all = num_all + 1
         call read_cylinder(cylinders(num_cylinders))
+        alls(num_all)%idx = num_cylinders
+        alls(num_all)%wshape = 'cyl'
      end select
 
   end do read
