@@ -73,13 +73,13 @@ module inputs
   integer :: unit, newunit
   ! time step, frequency, power in, boundary kappa
   real(real12) :: time_step, freq, power_in, kappaBoundx1, kappaBoundy1, kappaBoundz1, KappaBound
-  real(real12) :: kappaBoundNx, kappaBoundNy, kappaBoundNz, TempDepProp
+  real(real12) :: kappaBoundNx, kappaBoundNy, kappaBoundNz
   ! Bath temperatures
   real(real12) :: T_Bathx1, T_Bathx2, T_Bathy1, T_Bathy2, T_Bathz1, T_Bathz2, T_System, T_Bath
   ! verbose, number of time steps, boundary condition, number of cells
   integer(int12) :: IVERB, ntime, iboundary, nx, ny, nz, icattaneo, isteady, NA, write_every
   ! what cells to write to txt file
-  integer(int12) :: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz 
+  integer(int12) :: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz, TempDepProp
   ! flags
   logical :: Check_Sparse_Full, Check_Stability, Check_Steady_State
   logical :: WriteToTxt, LPercentage, InputTempDis
@@ -288,7 +288,7 @@ contains
         CALL assignI(buffer,"start_iz",start_iz,readvar(36))
         CALL assignI(buffer,"end_iz",end_iz,readvar(37))
         CALL assignI(buffer,"write_every",write_every,readvar(38))
-        CALL assignD(buffer,"TempDepProp",TempDepProp,readvar(39))
+        CALL assignI(buffer,"TempDepProp",TempDepProp,readvar(39))
 
     end do
     CALL check_param(readvar,size(readvar,1))
