@@ -397,7 +397,18 @@ contains
         write(6,*) ' --- USING: ', 'Start_ix = ', start_ix, ', end_ix = ', end_ix, ', start_iy = ', &
             start_iy,', end_iy = ', end_iy, ', start_iz = ', start_iz, ', end_iz = ', end_iz
       end if 
-    
+
+      if (readvar(39) .eq. 0) then
+        write(6,*)
+        write(6,'(A43)') '###############################'
+        write(6,'(A43)') '##########   WARNING  ##########'
+        write(6,'(A43)') '###############################'
+        write(6,*)
+        write(6,'(A)') ' ---       WARNING in subroutine "check_param"       ---'
+        write(6,'(A)') ' --- WARNING: TempDepProp not set, no action needed ---'
+        readvar(39) = 1
+      end if
+
      if (any(readvar.eq.0)) then
       write(6,*)
       write(6,'(A43)') '###############################'
@@ -415,16 +426,7 @@ contains
       write(6,*)
      end if
 
-     if (readvar(39) .eq. 0) then
-      write(6,*)
-      write(6,'(A43)') '###############################'
-      write(6,'(A43)') '##########   WARNING  ##########'
-      write(6,'(A43)') '###############################'
-      write(6,*)
-      write(6,'(A)') ' ---       WARNING in subroutine "check_param"       ---'
-      write(6,'(A)') ' --- WARNING: TempDepProp not set, no action needed ---'
-      readvar(39) = 1
-      end if
+     
 
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
