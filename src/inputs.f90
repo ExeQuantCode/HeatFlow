@@ -29,6 +29,7 @@
 !!!     - kappaBoundNy, the boundary kappa in the y direction plane y=ny
 !!!     - kappaBoundNz, the boundary kappa in the z direction plane z=nz
 !!!     - KappaBound, the boundary kappa
+!!!     - TempDepProp, the temperature dependent properties
 !!!     - T_Bathx1, the bath temperature in the x direction
 !!!     - T_Bathx2, the bath temperature in the x direction
 !!!     - T_Bathy1, the bath temperature in the y direction
@@ -72,7 +73,7 @@ module inputs
   integer :: unit, newunit
   ! time step, frequency, power in, boundary kappa
   real(real12) :: time_step, freq, power_in, kappaBoundx1, kappaBoundy1, kappaBoundz1, KappaBound
-  real(real12) :: kappaBoundNx, kappaBoundNy, kappaBoundNz 
+  real(real12) :: kappaBoundNx, kappaBoundNy, kappaBoundNz, TempDepProp
   ! Bath temperatures
   real(real12) :: T_Bathx1, T_Bathx2, T_Bathy1, T_Bathy2, T_Bathz1, T_Bathz2, T_System, T_Bath
   ! verbose, number of time steps, boundary condition, number of cells
@@ -186,7 +187,7 @@ contains
 !!!#################################################################################################
   subroutine read_param(unit)
     integer:: unit, Reason
-    integer,dimension(38)::readvar
+    integer,dimension(39)::readvar
     character(1024)::buffer
 
     readvar(:)=0
@@ -226,6 +227,7 @@ contains
     kappaBoundNx = KappaBound
     kappaBoundNy = KappaBound
     kappaBoundNz = KappaBound
+    TempDepProp = 0
     !t_output = !{all, every_n, single_n}
     !s_output = !{all, region_[x:X,y:Y,z:Z], downsample_n}
     start_ix = 1 
@@ -286,6 +288,7 @@ contains
         CALL assignI(buffer,"start_iz",start_iz,readvar(36))
         CALL assignI(buffer,"end_iz",end_iz,readvar(37))
         CALL assignI(buffer,"write_every",write_every,readvar(38))
+        CALL assignD(buffer,"TempDepProp",TempDepProp,readvar(39)
 
     end do
     CALL check_param(readvar,size(readvar,1))
@@ -411,6 +414,18 @@ contains
       end do
       write(6,*)
      end if
+
+     if (readvar(39) .eq. 0) then
+      write(6,*)
+      write(6,'(A43)') '###############################'
+      write(6,'(A43)') '##########   WARNING  ##########'
+      write(6,'(A43)') '###############################'
+      write(6,*)
+      write(6,'(A)') ' ---       WARNING in subroutine "check_param"       ---'
+      write(6,'(A)') ' --- WARNING: TempDepProp not set, no action needed ---'
+      readvar(39) = 1
+      end if
+
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
@@ -450,6 +465,7 @@ contains
        write(6,'(A35,F12.5)')   '   kappaBoundNx         = ',kappaBoundNx
        write(6,'(A35,F12.5)')   '   kappaBoundNy         = ',kappaBoundNy
        write(6,'(A35,F12.5)')   '   kappaBoundNz         = ',kappaBoundNz
+       write(6,'(A35,F12.5)')   '   TempDepProp         = ',TempDepProp
 
     end if
   end subroutine check_param
