@@ -28,6 +28,7 @@ module evolution
   use heating, only: heater
   use boundary_vector, only: boundary
   use cattaneo, only: S_catS
+  use tempdep, only: ChangeProp
   implicit none
 
   private
@@ -43,7 +44,7 @@ contains
   subroutine simulate(itime)
     integer(int12), intent(in) :: itime
     real(real12), dimension(NA) :: S, x, Q, Qdens, S_CAT, B
-    integer(int12) :: ncg, itol, itmax, iss
+    integer(int12) :: ncg, itol, itmax !, iss
     integer(I4B) :: iter
     real(real12) :: e, err, tol
     
@@ -162,7 +163,7 @@ contains
     Temp_p = x
 
     CALL ChangeProp()
-    
+
   end subroutine simulate
 
 

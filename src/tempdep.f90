@@ -9,20 +9,19 @@ module TempDep
     contains
 
     subroutine ChangeProp()
-        int(int12) :: iz, iy, ix, index
+        integer(int12) :: iz, iy, ix, index
         real(real12) :: Temp
         index = 1
-        select(TempDepProp)
+        select case(TempDepProp)
         case(0)
             ! Do nothing
             continue
         case(1)
             ! Linear
-            for iz in 1: Nz
-                for iy in 1: Ny
-                    for ix in 1: Nx
-                        Temp = Temp_p(index)
-                        Grid(ix,iy,iz)%kappa = Grid(ix,iy,iz)%kappa * (1.0 + Temp)
+            do iz = 1, Nz
+                do iy = 1, Ny
+                    do ix = 1, Nx
+                        Grid(ix,iy,iz)%kappa = Grid(ix,iy,iz)%kappa * (1.0 + Temp_p(index))
                         index = index + 1
                     end do
                 end do
@@ -30,11 +29,10 @@ module TempDep
             CALL sparse_Hmatrix()
         case(2)
             !Quadratic
-            for iz in 1: Nz
-                for iy in 1: Ny
-                    for ix in 1: Nx
-                        Temp = Temp_p(index)
-                        Grid(ix,iy,iz)%kappa = Grid(ix,iy,iz)%kappa * (1.0 + Temp + Temp**2)
+            do iz = 1, Nz
+                do iy = 1, Ny
+                    do ix = 1, Nx
+                        Grid(ix,iy,iz)%kappa = Grid(ix,iy,iz)%kappa * (1.0 + Temp_p(index) + Temp_p(index)**2)
                         index = index + 1
                     end do
                 end do
@@ -43,12 +41,11 @@ module TempDep
 
         case(3)
             !cubic
-            for iz in 1: Nz
-                for iy in 1: Ny
-                    for ix in 1: Nx
-                        Temp = Temp_p(index)
+            do iz = 1, Nz
+                do iy = 1, Ny
+                    do ix = 1, Nx
                         Grid(ix,iy,iz)%kappa = Grid(ix,iy,iz)%kappa * &
-                              (1.0 + Temp + Temp**2 + Temp**3)
+                              (1.0 + Temp_p(index) + Temp_p(index)**2 + Temp_p(index)**3)
                         index = index + 1
                     end do
                 end do
@@ -57,11 +54,11 @@ module TempDep
 
         case(4)
             !Exponential
-            for iz in 1: Nz
-                for iy in 1: Ny
-                    for ix in 1: Nx
-                        Temp = Temp_p(index)
-                        Grid(ix,iy,iz)%kappa = Grid(ix,iy,iz)%kappa * exp(Temp)
+            do iz = 1, Nz
+                do iy = 1, Ny
+                    do ix = 1, Nx
+                        Temp_p(index) = Temp_p(index)
+                        Grid(ix,iy,iz)%kappa = Grid(ix,iy,iz)%kappa * exp(Temp_p(index))
                         index = index + 1
                     end do
                 end do

@@ -476,10 +476,10 @@ contains
 !!!#################################################################################################
   subroutine read_system(unit)
     integer, intent(in) :: unit
-    integer(int12) :: ix, iy, iz, reason, pos, pos_old ! counters
+    integer(int12) :: ix, iy, iz, reason, pos !, pos_old ! counters
     character(2048) :: buffer, array,line
     character(10), dimension(:), allocatable :: temp
-    character(100)  :: part1, part2 ! buffer and array
+    ! character(100)  :: part1, part2 ! buffer and array
     ! read mesh cell number
     read(unit,'(A)',iostat=Reason) buffer ! read the buffer
     read(buffer,*) nx, ny, nz ! read the buffer into nx, ny, nz
