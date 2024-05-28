@@ -161,6 +161,8 @@ contains
     Temp_pp = Temp_p
     Temp_p = x
 
+    CALL ChangeProp()
+    
   end subroutine simulate
 
 
