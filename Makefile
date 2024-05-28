@@ -33,6 +33,7 @@ SRCS := constants.f90 \
 		boundary.f90 \
 		heating.f90 \
 		cattaneo.f90 \
+		tempdep.f90 \
 		evolve.f90 \
         output.f90 \
         main.f90
