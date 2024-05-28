@@ -288,7 +288,7 @@ contains
         CALL assignI(buffer,"start_iz",start_iz,readvar(36))
         CALL assignI(buffer,"end_iz",end_iz,readvar(37))
         CALL assignI(buffer,"write_every",write_every,readvar(38))
-        CALL assignD(buffer,"TempDepProp",TempDepProp,readvar(39)
+        CALL assignD(buffer,"TempDepProp",TempDepProp,readvar(39))
 
     end do
     CALL check_param(readvar,size(readvar,1))
