@@ -72,7 +72,7 @@ module TempDep
         character(len=*), intent(in) :: filename
         integer(int12) :: iz, iy, ix, index
         real(real12) :: Temp, kappa
-        integer :: i, j, k, num_rows, num_cols
+        integer :: i, j, k, num_rows, num_cols, isotat
         real, allocatable :: temp_table(:,:)
         
         ! Open the file
@@ -101,7 +101,7 @@ module TempDep
         do iz = 1, Nz
             do iy = 1, Ny
                 do ix = 1, Nx
-                    Temp = Grid(ix, iy, iz)%Temp
+                    Temp = Temp_p(index)
                     ! Find the corresponding kappa value in the temperature table
                     do k = 1, num_rows
                         if (Temp <= temp_table(k, 1)) then
