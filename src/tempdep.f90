@@ -1,7 +1,7 @@
 module TempDep
     use inputs, only: Grid, TempDepProp, Nz, Ny, Nx
     use setup, only: sparse_Hmatrix
-    use globe_data, only:  Temp_p
+    use globe_data, only:  Temp_p, lin_rhoc
     use constants, only: real12, int12
     
     implicit none
@@ -10,7 +10,7 @@ module TempDep
 
     subroutine ChangeProp()
         integer(int12) :: iz, iy, ix, index
-        real(real12) :: Temp
+        real(real12) :: Temp, kappa, rhoC, rho, heat_capacity
         index = 1
         select case(TempDepProp)
         case(0)
@@ -22,6 +22,10 @@ module TempDep
                 do iy = 1, Ny
                     do ix = 1, Nx
                         Grid(ix,iy,iz)%kappa = Grid(ix,iy,iz)%kappa * (1.0 + Temp_p(index))
+                        Grid(ix,iy,iz)%rho = Grid(ix,iy,iz)%rho * (1.0 + Temp_p(index))
+                        Grid(ix,iy,iz)%heat_capacity = Grid(ix,iy,iz)%heat_capacity * &
+                             (1.0 + Temp_p(index))
+                        lin_rhoc(index) = Grid(ix,iy,iz)%rho * Grid(ix,iy,iz)%heat_capacity
                         index = index + 1
                     end do
                 end do
@@ -32,7 +36,13 @@ module TempDep
             do iz = 1, Nz
                 do iy = 1, Ny
                     do ix = 1, Nx
-                        Grid(ix,iy,iz)%kappa = Grid(ix,iy,iz)%kappa * (1.0 + Temp_p(index) + Temp_p(index)**2)
+                        Grid(ix,iy,iz)%kappa = Grid(ix,iy,iz)%kappa * &
+                             (1.0 + Temp_p(index) + Temp_p(index)**2)
+                        Grid(ix,iy,iz)%rho = Grid(ix,iy,iz)%rho * &
+                             (1.0 + Temp_p(index) + Temp_p(index)**2)
+                        Grid(ix,iy,iz)%heat_capacity = Grid(ix,iy,iz)%heat_capacity * &
+                             (1.0 + Temp_p(index) + Temp_p(index)**2)
+                        lin_rhoc(index) = Grid(ix,iy,iz)%rho * Grid(ix,iy,iz)%heat_capacity
                         index = index + 1
                     end do
                 end do
@@ -46,6 +56,11 @@ module TempDep
                     do ix = 1, Nx
                         Grid(ix,iy,iz)%kappa = Grid(ix,iy,iz)%kappa * &
                               (1.0 + Temp_p(index) + Temp_p(index)**2 + Temp_p(index)**3)
+                        Grid(ix,iy,iz)%rho = Grid(ix,iy,iz)%rho * &
+                              (1.0 + Temp_p(index) + Temp_p(index)**2 + Temp_p(index)**3)
+                        Grid(ix,iy,iz)%heat_capacity = Grid(ix,iy,iz)%heat_capacity * &
+                              (1.0 + Temp_p(index) + Temp_p(index)**2 + Temp_p(index)**3)
+                        lin_rhoc(index) = Grid(ix,iy,iz)%rho * Grid(ix,iy,iz)%heat_capacity
                         index = index + 1
                     end do
                 end do
@@ -71,7 +86,7 @@ module TempDep
     subroutine ReadTempDepTable(filename)
         character(len=*), intent(in) :: filename
         integer(int12) :: iz, iy, ix, index
-        real(real12) :: Temp, kappa
+        real(real12) :: Temp, kappa, rhoC, rho, heat_capacity
         integer :: i, j, k, num_rows, num_cols, isotat
         real, allocatable :: temp_table(:,:)
         
@@ -106,10 +121,16 @@ module TempDep
                     do k = 1, num_rows
                         if (Temp <= temp_table(k, 1)) then
                             kappa = temp_table(k, 2)
+                            rhoC = temp_table(k, 3)*temp_table(k, 4)
+                            rho = temp_table(k, 3)
+                            heat_capacity = temp_table(k, 4)
                             exit
                         end if
                     end do
-                    Grid(ix, iy, iz)%kappa = Grid(ix, iy, iz)%kappa * kappa
+                    Grid(ix, iy, iz)%kappa =  kappa
+                    Grid(ix, iy, iz)%rho = rho
+                    Grid(ix, iy, iz)%heat_capacity = heat_capacity
+                    lin_rhoc(index) = rhoC
                     index = index + 1
                 end do
             end do
