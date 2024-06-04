@@ -22,6 +22,7 @@
 module evolution
   use constants, only: real12, int12, TINY
   use inputs, only: NA, icattaneo, isteady, nx, ny, nz, IVERB,T_System, time_step, grid, power_in
+  use inputs, only: TempDepProp
   use sptype, only: I4B
   use sparse, only: linbcg
   use globe_data, only: Temp_p, Temp_pp, inverse_time, heat, lin_rhoc
@@ -162,7 +163,9 @@ contains
     Temp_pp = Temp_p
     Temp_p = x
 
-    CALL ChangeProp()
+    if (TempDepProp .eq. 1) then
+      CALL ChangeProp()
+    end if
 
   end subroutine simulate
 
