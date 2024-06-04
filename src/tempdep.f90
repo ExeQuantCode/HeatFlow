@@ -9,90 +9,35 @@ module TempDep
     contains
 
     subroutine ChangeProp()
-        integer(int12) :: iz, iy, ix, index
-        real(real12) :: Temp, kappa, rhoC, rho, heat_capacity
+        character(len=100) :: filename
+        integer(int12) :: ix,iy,iz, index
         index = 1
-        select case(TempDepProp)
-        case(0)
-            ! Do nothing
-            continue
-        case(1)
-            ! Linear
-            do iz = 1, Nz
-                do iy = 1, Ny
-                    do ix = 1, Nx
-                        Grid(ix,iy,iz)%kappa = Grid(ix,iy,iz)%kappa * (1.0 + Temp_p(index))
-                        Grid(ix,iy,iz)%rho = Grid(ix,iy,iz)%rho * (1.0 + Temp_p(index))
-                        Grid(ix,iy,iz)%heat_capacity = Grid(ix,iy,iz)%heat_capacity * &
-                             (1.0 + Temp_p(index))
-                        lin_rhoc(index) = Grid(ix,iy,iz)%rho * Grid(ix,iy,iz)%heat_capacity
-                        index = index + 1
-                    end do
+        !Loop over all the grid points
+        do iz = 1, Nz
+            do iy = 1, Ny
+                do ix = 1, Nx
+                    ! Construct the filename for the Material table asscoiated with the grid point
+                    filename = trim('MatTable' // & 
+                         trim(adjustl(char(Grid(ix, iy, iz)%imaterial_type))))
+                    ! Read the temperature dependent properties from the file
+                    CALL ReadTempDepTable(filename, ix, iy, iz, index)
+                    index = index + 1
                 end do
             end do
-            CALL sparse_Hmatrix()
-        case(2)
-            !Quadratic
-            do iz = 1, Nz
-                do iy = 1, Ny
-                    do ix = 1, Nx
-                        Grid(ix,iy,iz)%kappa = Grid(ix,iy,iz)%kappa * &
-                             (1.0 + Temp_p(index) + Temp_p(index)**2)
-                        Grid(ix,iy,iz)%rho = Grid(ix,iy,iz)%rho * &
-                             (1.0 + Temp_p(index) + Temp_p(index)**2)
-                        Grid(ix,iy,iz)%heat_capacity = Grid(ix,iy,iz)%heat_capacity * &
-                             (1.0 + Temp_p(index) + Temp_p(index)**2)
-                        lin_rhoc(index) = Grid(ix,iy,iz)%rho * Grid(ix,iy,iz)%heat_capacity
-                        index = index + 1
-                    end do
-                end do
-            end do
-            CALL sparse_Hmatrix()
-
-        case(3)
-            !cubic
-            do iz = 1, Nz
-                do iy = 1, Ny
-                    do ix = 1, Nx
-                        Grid(ix,iy,iz)%kappa = Grid(ix,iy,iz)%kappa * &
-                              (1.0 + Temp_p(index) + Temp_p(index)**2 + Temp_p(index)**3)
-                        Grid(ix,iy,iz)%rho = Grid(ix,iy,iz)%rho * &
-                              (1.0 + Temp_p(index) + Temp_p(index)**2 + Temp_p(index)**3)
-                        Grid(ix,iy,iz)%heat_capacity = Grid(ix,iy,iz)%heat_capacity * &
-                              (1.0 + Temp_p(index) + Temp_p(index)**2 + Temp_p(index)**3)
-                        lin_rhoc(index) = Grid(ix,iy,iz)%rho * Grid(ix,iy,iz)%heat_capacity
-                        index = index + 1
-                    end do
-                end do
-            end do
-            CALL sparse_Hmatrix()
-
-        case(4)
-            !Exponential
-            do iz = 1, Nz
-                do iy = 1, Ny
-                    do ix = 1, Nx
-                        Temp_p(index) = Temp_p(index)
-                        Grid(ix,iy,iz)%kappa = Grid(ix,iy,iz)%kappa * exp(Temp_p(index))
-                        index = index + 1
-                    end do
-                end do
-            end do
-            CALL sparse_Hmatrix()
-        end select 
-    
+        end do
+        ! Construct the sparse matrix
+        CALL sparse_Hmatrix()
     end subroutine ChangeProp
 
-    subroutine ReadTempDepTable(filename)
+    subroutine ReadTempDepTable(filename, ix, iy, iz, index)
         character(len=*), intent(in) :: filename
-        integer(int12) :: iz, iy, ix, index
-        real(real12) :: Temp, kappa, rhoC, rho, heat_capacity
-        integer :: i, j, k, num_rows, num_cols, isotat
+        integer(int12), intent(in) :: iz, iy, ix, index
+        integer(int12) :: i, j, k, num_rows, num_cols, iostat
         real, allocatable :: temp_table(:,:)
         
         ! Open the file
         open(unit=10, file=filename, status='old', action='read', iostat=iostat)
-        if (iostat /= 0) then
+        if (iostat .ne. 0) then
             write(*,*) 'Error opening file: ', trim(filename)
             return
         end if
@@ -112,34 +57,29 @@ module TempDep
         close(10)
         
         ! Update the properties based on the temperature table
-        index = 1
-        do iz = 1, Nz
-            do iy = 1, Ny
-                do ix = 1, Nx
-                    Temp = Temp_p(index)
-                    ! Find the corresponding kappa value in the temperature table
-                    do k = 1, num_rows
-                        if (Temp <= temp_table(k, 1)) then
-                            kappa = temp_table(k, 2)
-                            rhoC = temp_table(k, 3)*temp_table(k, 4)
-                            rho = temp_table(k, 3)
-                            heat_capacity = temp_table(k, 4)
-                            exit
-                        end if
-                    end do
-                    Grid(ix, iy, iz)%kappa =  kappa
-                    Grid(ix, iy, iz)%rho = rho
-                    Grid(ix, iy, iz)%heat_capacity = heat_capacity
-                    lin_rhoc(index) = rhoC
-                    index = index + 1
-                end do
-            end do
+        ! Find the corresponding kappa value in the temperature table
+        do k = 1, num_rows
+            if (Temp_p(index) .le. temp_table(k, 1)) then
+                exit
+            end if
         end do
+        if (Temp_p(index) .gt. temp_table(num_rows, 1)) then
+            write(*,*) 'Temperature is out of range'
+        end if
+        !Apply Forward difference linear extrapolation and assing to global variables
+        Grid(ix, iy, iz)%kappa =  ((temp_table(k+1,2) - temp_table(k, 2))/&
+             (temp_table(k+1,1)-temp_table(k,1)))*Temp_p(index) + temp_table(k,2) 
+
+        Grid(ix, iy, iz)%rho = ((temp_table(k+1,3) - temp_table(k, 3))/&
+             (temp_table(k+1,1)-temp_table(k,1)))*Temp_p(index) + temp_table(k,3)
+
+        Grid(ix, iy, iz)%heat_capacity = ((temp_table(k+1,4) - temp_table(k, 4))/&
+             (temp_table(k+1,1)-temp_table(k,1)))*Temp_p(index) + temp_table(k,4)
+
+        lin_rhoc(index) = Grid(ix, iy, iz)%rho * Grid(ix, iy, iz)%heat_capacity
         
         ! Deallocate the temperature table
         deallocate(temp_table)
-        
-        CALL sparse_Hmatrix()
-        
+            
     end subroutine ReadTempDepTable
 end module TempDep
