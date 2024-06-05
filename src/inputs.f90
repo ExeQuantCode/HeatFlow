@@ -210,6 +210,7 @@ contains
     iboundary = 1
     icattaneo = 1
     isteady = 0
+    !T_System = n or [Bx1:BNx,By1:BNy,Bz1:BNz]
     T_System = 300
     T_Bathx1 = T_Bath
     T_Bathx2 = T_Bath
@@ -218,12 +219,15 @@ contains
     T_Bathz1 = T_Bath
     T_Bathz2 = T_Bath
     power_in = 0
+    !kappaBound = [kx1:kNx,ky1:kNy,kz1:kNz]
     kappaBoundx1 = KappaBound
     kappaBoundy1 = KappaBound
     kappaBoundz1 = KappaBound
     kappaBoundNx = KappaBound
     kappaBoundNy = KappaBound
     kappaBoundNz = KappaBound
+    !t_output = !{all, every_n, single_n}
+    !s_output = !{all, region_[x:X,y:Y,z:Z], downsample_n}
     start_ix = 1 
     end_ix = Nx 
     start_iy = 1
@@ -349,18 +353,10 @@ contains
         write(6,*)
         stop
       end if
-      if (any(readvar(20:25) .eq.0) .and. (readvar(27) .eq. 0) ) then
-        write(6,*)
-        write(6,'(A43)') '###############################'
-        write(6,'(A43)') '##########   ERROR   ##########'
-        write(6,'(A43)') '###############################'
-        write(6,*)
-        write(6,'(A)') ' ---       Error in subroutine "check_param"       ---'
-        write(6,'(A)') ' --- ERROR: T_Bath and T_Bath x,y,z are not set    ---'
-        write(6,*)
-        stop
+      if (all(readvar(20:25) .eq.1) .and. (readvar(27) .eq. 0) ) then
+         readvar(27) = 1
       end if
-      if (readvar(27) .gt. 0) then
+      if (any(readvar(20:25) .eq. 0)) then
         T_Bathx1 = T_Bath
         T_Bathx2 = T_Bath
         T_Bathy1 = T_Bath
@@ -369,7 +365,7 @@ contains
         T_Bathz2 = T_Bath
         readvar(20:25) = 1
       end if
-      if (readvar(28) .gt. 1) then
+      if (any(readvar(9:11).eq. 0)) then
         kappaBoundx1 = KappaBound
         kappaBoundy1 = KappaBound
         kappaBoundz1 = KappaBound
@@ -456,14 +452,17 @@ contains
 !!!#################################################################################################
   subroutine read_system(unit)
     integer, intent(in) :: unit
-    integer(int12) :: ix, iy, iz, reason, pos ! counters
-    character(1024) :: buffer, array,line, part1, part2 ! buffer and array
+    integer(int12) :: ix, iy, iz, reason, pos, pos_old ! counters
+    character(2048) :: buffer, array,line
+    character(10), dimension(:), allocatable :: temp
+    character(100)  :: part1, part2 ! buffer and array
     ! read mesh cell number
     read(unit,'(A)',iostat=Reason) buffer ! read the buffer
     read(buffer,*) nx, ny, nz ! read the buffer into nx, ny, nz
     Na = nx*ny*nz ! number of cells
     ! Allocate Global data arrays
-    allocate(grid(nx,ny,nz)) 
+    allocate(grid(nx,ny,nz))
+    allocate(temp(nx))
     ! read mesh volume dimessions
     read(unit,'(A)',iostat=Reason) buffer
     read(buffer,*) Lx, Ly, Lz 
@@ -480,14 +479,15 @@ contains
                 stop
             end if
             read(unit, '(A)', iostat=Reason) array 
+            pos = 1
+            temp = ''
+            read(array, '(A)', iostat=Reason) buffer
+            read(buffer, '(A)', iostat=Reason) line
+            read(line, *) temp        
             do ix = 1, nx
-                read(array, '(A)', iostat=Reason) buffer
-                read(buffer, '(A)', iostat=Reason) line
-                pos = index(line, ':')
-                part1 = trim(adjustl(line(:pos-1)))
-                part2 = trim(adjustl(line(pos+1:)))
-                read(part1, *) grid(ix,iy,iz)%imaterial_type
-                read(part2, *) grid(ix,iy,iz)%iheater
+                pos = index(temp(ix),":")
+                read(temp(ix)(:pos-1), *) grid(ix,iy,iz)%imaterial_type
+                read(temp(ix)(pos+1:), *) grid(ix,iy,iz)%iheater
             end do
         end do
     end do
@@ -495,6 +495,7 @@ contains
       write(*,*) 'grid%imaterial = ', grid%imaterial_type
       write(*,*) 'grid%iheater = ', grid%iheater
     end if
+    deallocate(temp)
   end subroutine read_system
 
 !!!#################################################################################################

@@ -18,7 +18,7 @@ OBJECTS = $(patsubst $(SRC_DIR)/%.f90, $(OBJ_DIR)/%.o, $(SOURCES))
 # Compiler
 FC = gfortran
 # Compiler flags
-FFLAGS = -O2 -J$(MOD_DIR)
+FFLAGS = -O2 -fcheck=all -J$(MOD_DIR) 
 
 # Name of the executable
 EXECUTABLE = $(BIN_DIR)/mkgeom.x
