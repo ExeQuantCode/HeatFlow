@@ -290,72 +290,6 @@ contains
   END SUBROUTINE SRSin
 
 
-  
-  
-  SUBROUTINE SDSin(a, thresh, da)
-    USE sptype; 
-    USE sputil, ONLY : arth, assert_eq, find_index
-    IMPLICIT NONE
-    real(real12), DIMENSION(:,:), INTENT(IN) :: a
-    real(real12), INTENT(IN) :: thresh
-    TYPE(diag_sprs_dp), INTENT(OUT) :: da
-    INTEGER(I4B) :: n, d, ndiags
-    logical, DIMENSION(2*size(a,1)-1) :: any_diags
-    integer(I4B) :: i, j, o, m, c
-    integer(I4B), dimension(:), allocatable :: diag_off
-
-    n = assert_eq(size(a,1, kind=int12), size(a,2, kind=int12), 'SDSin')
-
-
-    ! Identify diagonals with non-zero values
-    any_diags = .false.
-    ndiags = 0
-    col_loop: do i = 1, n
-       row_loop: do j = 1, n
-          o = i - j ! offset = col-row
-          d = o + n ! diag_index = offset + n (matrix side length)
-          if (abs(a(i,j)).gt.thresh.and..not.any_diags(d)) then
-             ndiags = ndiags + 1
-             any_diags(d) = .true.
-          end if
-       end do row_loop
-    end do col_loop
-
-    ! Extract diagonal offsets
-    allocate(diag_off(ndiags))
-    m = 0
-    c = 0
-    diag_loop: do i = 1, size(any_diags)
-       m = m + 1
-       if (any_diags(i)) then
-          c = c + 1
-          diag_off(c) = m - n
-       end if
-    end do diag_loop
-
-    da%n = n
-    da%num_diags = ndiags
-    allocate(da%diag_offsets(da%num_diags))
-    allocate(da%vals(da%num_diags, da%n))
-    da%diag_offsets = diag_off
-
-    ! Fill da%vals with non-zero values
-    col_loop2: do i = 1, n
-       row_loop2: do j = 1, n
-          o = i - j
-          d = o + n
-          if (abs(a(i,j)) > thresh) then
-             c = find_index(da%diag_offsets, d - n)
-             da%vals(c, j) = a(i, j)
-          end if
-       end do row_loop2
-    end do col_loop2
-  END SUBROUTINE SDSin
-
-
-
-
-
   SUBROUTINE SRSax(ra, x, b)
     USE sptype; USE sputil, ONLY : assert_eq
     IMPLICIT NONE
@@ -377,29 +311,6 @@ contains
     END DO
   END SUBROUTINE SRSax
 
-  SUBROUTINE SDSax(da, x, b)
-    use sptype 
-    use sputil, only : assert_eq
-    implicit none
-    type(diag_sprs_dp), intent(IN) :: da
-    real(real12), dimension (:), intent(IN) :: x
-    real(real12), dimension (:), intent(OUT) :: b
-    integer(I4B) :: ndum, n, i, j, col
-    ndum = assert_eq(size(x, kind=int12), size(b, kind=int12), 'SDSax')
-    n=da%n
-    b = 0.0_dp
-    diag_loop: do j = 1, da%num_diags
-       ! Loop over each element in the diagonal
-       row_loop: do i = 1, n
-          !row = i
-          col = da%diag_offsets(j)+i
-          mat_boundry: if (col.gt.0.and.col.le.da%n) then
-             b(i) = b(i) + da%vals(j, i) * x(col)
-          end if mat_boundry
-       end do row_loop
-    end do diag_loop
-  END SUBROUTINE SDSax
-
   SUBROUTINE SRStx(ra,x,b)
     USE sptype; USE sputil, ONLY : assert_eq,scatter_add
     IMPLICIT NONE
@@ -419,27 +330,6 @@ contains
     end do
   END SUBROUTINE SRStx
 
-SUBROUTINE SDStx(da, x, b)
-    use sptype 
-    use sputil, only : assert_eq
-    implicit none
-    type(diag_sprs_dp), intent(IN) :: da
-    real(real12), dimension (:), intent(IN) :: x
-    real(real12), dimension (:), intent(OUT) :: b
-    integer(I4B) :: n, i, j, col
-    n = assert_eq(da%n, size(x, kind=int12), size(b, kind=int12), 'SDSax')
-    b = 0.0_dp
-    diag_loop: do j = 1, da%num_diags
-       ! Loop over each element in the diagonal
-       row_loop: do i = 1, n
-          col = -da%diag_offsets(j)+i
-          mat_boundry: if (col.gt.0.and.col.le.da%n) then
-             b(col) = b(col) + da%vals(j, col) * x(i)
-          end if mat_boundry
-       end do row_loop
-    end do diag_loop
-  END SUBROUTINE SDStx
-
   SUBROUTINE SRStp(ra)
     USE sptype
     IMPLICIT NONE
@@ -452,50 +342,34 @@ SUBROUTINE SDStx(da, x, b)
   END SUBROUTINE SRStp
 
   SUBROUTINE SRSdiag(ra,b)
-    USE sptype; USE sputil, ONLY : array_copy,assert_eq
-    IMPLICIT NONE
-    TYPE(sprs2_dp), INTENT(IN) :: ra
-    real(real12), DIMENSION(:), INTENT(OUT) :: b
-    real(real12), DIMENSION(size(b)) :: val
-    INTEGER(I4B) :: k,l,ndum,nerr
-    INTEGER(I4B), DIMENSION(size(b)) :: i
-    LOGICAL(LGT), DIMENSION(:), ALLOCATABLE :: mask
-    ndum=assert_eq(ra%n,size(b, kind=int12),'SRSdiag')
-    l=ra%len
-    allocate(mask(l))
-    mask = (ra%irow(1:l) == ra%jcol(1:l))
-    call array_copy(pack(ra%val(1:l),mask),val,k,nerr)
-    i(1:k)=pack(ra%irow(1:l),mask)
-    deallocate(mask)
-    b=0.0_real12
-    b(i(1:k))=val(1:k)
+    use sptype, only: sprs2_dp
+    use sputil, only: assert_eq
+    implicit none
+    type(sprs2_dp), intent(in) :: ra
+    real(real12), dimension(:), intent(out) :: b
+    real(real12), dimension(:), allocatable :: val
+    integer(int12), dimension(:), allocatable :: i
+    integer(int12) :: ndum,c,k
+
+    k=0
+    do c=1,ra%len
+       if( ra%irow(c) .eq. ra%jcol(c) )then
+          k=k+1
+          b(k)=ra%val(c)
+       end if
+    end do
+
   END SUBROUTINE SRSdiag
 
-  SUBROUTINE SDSdiag(da,b)
-    USE sptype; 
-    USE sputil, ONLY : assert_eq
-    IMPLICIT NONE
-    TYPE(diag_sprs_dp), INTENT(IN) :: da
-    real(real12), DIMENSION(:), INTENT(OUT) :: b
-    integer(I4B) :: ndum, d
-    ndum=assert_eq(da%n,size(b, kind=int12),'SDSdiag')
-    d=find_index(da%diag_offsets, 0_int12)
-    !d=(da%n)/2
-    b(:)=da%vals(d,:)
-  END SUBROUTINE SDSdiag
 
 
 
-
-
-
-
-  SUBROUTINE linbcg(b,x,itol,tol,itmax,iter,err,iss)
+  SUBROUTINE linbcg(b,x,itol,tol,itmax,iter,err)
     USE sptype; USE sputil, ONLY : assert_eq,nrerror
     IMPLICIT NONE
     real(real12), DIMENSION(:), INTENT(IN) :: b
     real(real12), DIMENSION(:), INTENT(INOUT) :: x
-    INTEGER(I4B), INTENT(IN) :: itol,itmax,iss
+    INTEGER(I4B), INTENT(IN) :: itol,itmax
     real(real12), INTENT(IN) :: tol
     INTEGER(I4B), INTENT(INOUT) :: iter
     real(real12), INTENT(OUT) :: err
@@ -504,72 +378,37 @@ SUBROUTINE SDStx(da, x, b)
     real(real12) :: ak,akden,bk,bkden,bknum,bnrm
     real(real12), DIMENSION(size(b)) :: p,pp,r,rr,z,zz
     n=assert_eq(size(b, kind=int12),size(x, kind=int12),'linbcg')
-    iter=0
     !Calculate initial residual. Input to atimes is
     !x(1:n), output is r(1:n); the final 0
     !indicates that the matrix (not its trans-
     !pose) is to be used.
-    !write(6,*) 'x',x
-    !write(6,*) 'r',r
-    !write(6,*) 'iss',iss
-    call atimes(x,r,0_int12,iss)
-    !write(6,*) 'x',x
-    !write(6,*) 'r',r
-    !write(6,*) 'iss',iss
+    call atimes(x,r,0_int12)
     r=b-r
     rr=r
     !Uncomment this line to get the “minimum residual” variant of the algorithm.
-    call atimes(r,rr,0_int12,iss)
+    !call atimes(r,rr,0_int12)
     !Calculate norms for use in stopping criterion, and initialize z.
-    select case(itol) 
-    case(1)
-       bnrm=sqrt(dot_product(b,b))
-       call asolve(r,z,iss) 
-    case(2)
-       call asolve(b,z,iss)
-       bnrm=sqrt(dot_product(z,z))
-       call asolve(r,z,iss)
-    case default
-       call nrerror('illegal itol in linbcg')
-    end select
 
-
-    call asolve(rr,zz,iss) 
+    bnrm=sqrt(dot_product(b,b))
+    call asolve(r,z) 
+    call asolve(rr,zz) 
     bknum=dot_product(z,rr) 
     p=z
     pp=zz
-    call atimes(p,z,0_int12,iss)
-    bkden=bknum 
-    akden=dot_product(z,pp)
-    ak=bknum/akden
-    call atimes(pp,zz,1_int12,iss)
-    x=x+ak*p
-    r=r-ak*z
-    rr=rr-ak*zz
-    call asolve(r,z,iss) 
+    
+    solve_loop: do iter=1,itmax
 
-    iter=1
-    solve_loop: do
-       if (iter > itmax) exit
-       iter=iter+1
-
-       call asolve(rr,zz,iss) 
-       bknum=dot_product(z,rr) 
-       bk=bknum/bkden
-       p=bk*p+z
-       pp=bk*pp+zz
-
-       call atimes(p,z,0_int12,iss)
+       call atimes(p,z,0_int12)
        bkden=bknum 
        akden=dot_product(z,pp)
        ak=bknum/akden
 
-       call atimes(pp,zz,1_int12,iss)
+       call atimes(pp,zz,1_int12)
        x=x+ak*p
        r=r-ak*z
        rr=rr-ak*zz
 
-       call asolve(r,z,iss) 
+       call asolve(r,z) 
 
        select case(itol)
        case(1)
@@ -579,54 +418,45 @@ SUBROUTINE SDStx(da, x, b)
        end select
 
        if (err.le.tol) exit
+       
+       call asolve(rr,zz) 
+       bknum=dot_product(z,rr) 
+       bk=bknum/bkden
+       p=bk*p+z
+       pp=bk*pp+zz
+       
     end do solve_loop
   END SUBROUTINE linbcg
 
-  SUBROUTINE atimes(x,r,itrnsp,iss)
+  SUBROUTINE atimes(x,r,itrnsp)
     USE sptype 
     USE sputil, ONLY : assert_eq,nrerror
     USE globe_data !The matrix is accessed through this module.
     real(real12), DIMENSION(:), INTENT(IN) :: x
     real(real12), DIMENSION(:), INTENT(OUT) :: r
-    INTEGER(I4B), INTENT(IN) :: itrnsp,iss
+    INTEGER(I4B), INTENT(IN) :: itrnsp
     INTEGER(I4B) :: n
     n=assert_eq(size(x, kind=int12),size(r, kind=int12),'atimes')
-    select case(iss)
-    case(1)
-       if (itrnsp == 0) then
-          call SRSax(ra,x,r)
-       else
-          call SRStx(ra,x,r)
-       end if
-    case(2)
-       if (itrnsp == 0) then
-          call SDSax(da,x,r)
-       else
-          call SDStx(da,x,r)
-       end if
-    case default
-       call nrerror('illegal iss in atimes')  
-    end select
+    if (itrnsp == 0) then
+       call SRSax(ra,x,r)
+    else
+       call SRStx(ra,x,r)
+    end if
   END SUBROUTINE atimes
 
-  SUBROUTINE asolve(b,x,iss)
+  SUBROUTINE asolve(b,x)
     USE sptype
     USE sputil, ONLY : assert_eq,nrerror
-    USE globe_data !The matrix is accessed through this module.
+    USE globe_data, ONLY : ra
     real(real12), DIMENSION(:), INTENT(IN) :: b
     real(real12), DIMENSION(:), INTENT(OUT) :: x
-    INTEGER(I4B), INTENT(IN) :: iss
     INTEGER(I4B) :: ndum
     ndum=assert_eq(size(b, kind=int12),size(x, kind=int12),'asolve')
-    select case(iss)
-    case(1)
-       call SRSdiag(ra,x)
-    case(2)
-       call SDSdiag(da,x)
-    case default
-       call nrerror('illegal iss in asolve')  
-    end select
-    if (any(x == 0.0)) call nrerror('asolve: singular diagonal matrix')
+    call SRSdiag(ra,x)   
+    ! this only needs to be cheacked once accross all time steps and iterations ...
+    ! ... and it should be physically imposible. if we want to we can check ...
+    ! ... singularaty outside the CG algo.
+    !if (any(abs(x).lt.1.0e-12_real12)) call nrerror('asolve: singular diagonal matrix')
     x=b/x
   END SUBROUTINE asolve
 
