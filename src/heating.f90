@@ -87,7 +87,7 @@ contains
                 !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              case(4)
                 !------------------------------
-                ! AC oscillatory heating raw, with Volz correction
+                ! AC oscillatory heating raw, with power correction
                 !------------------------------
                 Q(IA) = POWER * (sin(time * 2.0_real12 * PI * freq)**2.0_real12)&
                   +POWER*2.0_real12*PI*freq*tau*sin(2.0_real12*time*2.0_real12*PI*freq)

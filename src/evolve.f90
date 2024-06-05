@@ -22,12 +22,14 @@
 module evolution
   use constants, only: real12, int12, TINY
   use inputs, only: NA, icattaneo, isteady, nx, ny, nz, IVERB,T_System, time_step, grid, power_in
+  use inputs, only: TempDepProp
   use sptype, only: I4B
   use sparse, only: linbcg
   use globe_data, only: Temp_p, Temp_pp, inverse_time, heat, lin_rhoc
   use heating, only: heater
   use boundary_vector, only: boundary
   use cattaneo, only: S_catS
+  use tempdep, only: ChangeProp
   implicit none
 
   private
@@ -43,7 +45,7 @@ contains
   subroutine simulate(itime)
     integer(int12), intent(in) :: itime
     real(real12), dimension(NA) :: S, x, Q, Qdens, S_CAT, B
-    integer(int12) :: ncg, itol, itmax, iss
+    integer(int12) :: ncg, itol, itmax !, iss
     integer(I4B) :: iter
     real(real12) :: e, err, tol
     
@@ -160,6 +162,10 @@ contains
     end if
     Temp_pp = Temp_p
     Temp_p = x
+
+    if (TempDepProp .eq. 1) then
+      CALL ChangeProp()
+    end if
 
   end subroutine simulate
 
