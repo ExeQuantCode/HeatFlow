@@ -32,14 +32,21 @@
 !!!   - nx, ny, nz, The number of grid points in the x, y, and z directions.
 !!!   - time_step, The value of the time step.
 !!!   - grid, The grid.
-
+!!!
 !!! Author: Harry Mclean, Frank Davies, Steven Hepplestone
+!!!#################################################################################################
+!!! The physical space is divided into elements. Each element has coordinates x, y, and z.
+!!! - x: Counts from left to right, forming columns.
+!!! - y: Counts from top to bottom, forming rows.
+!!! - z: Counts depth into the page or screen, counting forwards.
+!!! A flattened version of this space is created by iterating in row-major order.
+!!! in this case lexicographic order first counting x, then y, and finally z.
 !!!#################################################################################################
 module hmatrixmod
   use constants, only: real12, int12
   use inputs, only: nx, ny, nz, time_step, grid
   use inputs, only: isteady, icattaneo, kappaBoundx1, kappaBoundy1, kappaBoundz1
-  use inputs, only: kappaBoundNx, kappaBoundNy, kappaBoundNz
+  use inputs, only: kappaBoundNx, kappaBoundNy, kappaBoundNz, Periodic
   use globe_data, only: inverse_time, lin_rhoc
   implicit none
 
@@ -49,31 +56,51 @@ contains
     implicit none
     integer(int12), intent(in) :: i, j
     integer(int12) :: x, y, z
+    ! xp is x plus and xm is x minus
+    integer(int12) :: xp, yp, zp, xm, ym, zm 
     real(real12) :: alpha, A, B, D, E, F, G 
     real(real12) :: H
 
-
-    ! Calculate x, y, and z based on the 1D index j
+    ! Calculate x, y, and z based on the 1D index i
     x = altmod(i,nx)
     y = mod((i-altmod(i,nx))/nx,ny)+1
     z = (i-altmod(i,nx*ny))/(nx*ny)+1
 
     alpha = calculate_alpha(x,y,z, i)
-    A = calculate_conductivity(x - 1, y, z, x, y, z)
-    B = calculate_conductivity(x + 1, y, z, x, y, z)
-    D = calculate_conductivity(x, y - 1, z, x, y, z)
-    E = calculate_conductivity(x, y + 1, z, x, y, z)
-    F = calculate_conductivity(x, y, z - 1, x, y, z)
-    G = calculate_conductivity(x, y, z + 1, x, y, z)
+    if ( Periodic ) then
+       ! apply periodic boundries on the self term by mapping over shoots back into cell 
+       xp = x + 1; xm = x - 1
+       yp = y + 1; ym = y - 1
+       zp = z + 1; zm = z - 1
+       if ( xp .gt. nx ) xp = 1
+       if ( xm .lt.  1 ) xm = nx
+       if ( yp .gt. ny ) yp = 1
+       if ( ym .lt.  1 ) ym = ny
+       if ( zp .gt. nz ) zp = 1
+       if ( zm .lt.  1 ) zm = ny
 
-   
+       A = calculate_conductivity(xm, y, z, x, y, z)
+       B = calculate_conductivity(xp, y, z, x, y, z)
+       D = calculate_conductivity(x, ym, z, x, y, z)
+       E = calculate_conductivity(x, yp, z, x, y, z)
+       F = calculate_conductivity(x, y, zm, x, y, z) 
+       G = calculate_conductivity(x, y, zp, x, y, z)  
+    else  
+       A = calculate_conductivity(x - 1, y, z, x, y, z)
+       B = calculate_conductivity(x + 1, y, z, x, y, z)
+       D = calculate_conductivity(x, y - 1, z, x, y, z)
+       E = calculate_conductivity(x, y + 1, z, x, y, z)
+       F = calculate_conductivity(x, y, z - 1, x, y, z)
+       G = calculate_conductivity(x, y, z + 1, x, y, z)
+    end if
+
     ! Determine the value of H based on the relationship between i and j
     H=0.0_real12
     if ((i-j) .eq. 0)  then
 
       H = -(A + B + D + E + F + G ) - alpha  ! Diagonal term (self interaction)
     end if 
-    
+
     if ((i-j) .eq. 1) then
       if (x .eq. 1) then
         H=0.0_real12
@@ -108,18 +135,70 @@ contains
     if ((i-j) .eq. (nx*ny)) then
       if (z.eq. 1) then
         H=0.0_real12
-      else
-         H = F  ! Z in neighbor (forward cell interaction)
+     else
+        !write(*,*) 'F   this is forward (in) z',F
+         H = G  ! Z in neighbor (forward cell interaction)
       end if
     end if 
 
     if ((i-j) .eq. -(nx*ny)) then
       if (z .eq. nz) then
         H=0.0_real12
-      else  
-        H = G  ! Z out neighbor (backward cell interaction)
+     else  
+        !write(*,*) 'G   this is backward (out) z?',G
+        H = F  ! Z out neighbor (backward cell interaction)
       end if
-    end if 
+   end if
+   
+   if( Periodic ) then
+      if ( (i-j) .eq. -(nx-1) ) then
+         if (x .eq. 1) then
+            H = A  ! X right periodic neighbor
+         else
+            H=0.0_real12
+         end if
+      end if
+      if ( (i-j) .eq. (nx-1) ) then
+         if (x .eq. nx) then
+            H = B  ! X left periodic neighbor
+         else
+            H=0.0_real12
+         end if
+      end if
+      
+      if ( (i-j) .eq. -(ny-1)*nx ) then
+         if (y .eq. 1) then
+            H = D  ! Y up periodic neighbor
+         else
+            H=0.0_real12
+         end if
+      end if
+      if ( (i-j) .eq. (ny-1)*nx ) then
+         if (y .eq. ny) then
+            H = E  ! Y down periodic neighbor
+         else
+            H=0.0_real12
+         end if
+      end if
+      
+      if ( (i-j) .eq. -(nz-1)*nx*ny ) then
+         if (z .eq. 1) then
+            H = F  ! Z out periodic neighbor
+         else
+            H=0.0_real12
+         end if
+      end if
+      if ( (i-j) .eq. (nz-1)*nx*ny ) then
+         if (z .eq. nz) then
+            !write(*,*) 'G   this is backward (out) z?',G
+            H = G  ! Z in periodic neighbor
+         else
+            H=0.0_real12
+         end if
+      end if
+      
+   end if
+   
   end function hmatrixfunc
 
   function calculate_alpha(x, y, z, i) result(alpha)
@@ -142,6 +221,7 @@ contains
     integer(int12), intent(in) :: x_in, y_in, z_in, x_out, y_out, z_out
     real(real12) :: kappa_out, kappa_in, kappa_ab
     real(real12) :: conductivity
+
 
     kappa_ab=0
     
@@ -183,6 +263,57 @@ contains
     end if
   end function calculate_conductivity
 
+
+  subroutine calc_cond(x_in, y_in, z_in, x_out, y_out, z_out)
+    integer(int12), intent(in) :: x_in, y_in, z_in, x_out, y_out, z_out
+    real(real12) :: kappa_out, kappa_in, kappa_ab
+    real(real12) :: conductivity
+
+
+    kappa_ab=0
+    
+    ! if not an edge element
+    if ((x_in .ge. 1) .and. (x_in .le. nx) .and. (y_in .ge. 1) .and. &
+         (y_in .le. ny) .and. (z_in .ge. 1) .and. (z_in .le. nz)) then
+       kappa_in = grid(x_in,y_in,z_in)%kappa
+       kappa_out = grid(x_out,y_out,z_out)%kappa
+
+
+       if(x_in .ne. x_out) then
+       write(*,*) 'xxxxx'
+          kappa_ab = (grid(x_in, y_in, z_in)%Length(1) + &
+               grid(x_out, y_out, z_out)%Length(1))*kappa_in*kappa_out/&
+               (grid(x_in, y_in, z_in)%Length(1)*kappa_out + &
+               grid(x_out, y_out, z_out)%Length(1)*kappa_in)
+               
+          kappa_ab = kappa_ab/(grid(x_out, y_out, z_out)%Length(1))**2
+
+       else if (y_in .ne. y_out) then
+       write(*,*) 'yyyyy'
+          kappa_ab = (grid(x_in, y_in, z_in)%Length(2) + &
+              grid(x_out, y_out, z_out)%Length(2))*kappa_in*kappa_out/&
+              (grid(x_in, y_in, z_in)%Length(2)*kappa_out + &
+              grid(x_out, y_out, z_out)%Length(2)*kappa_in)
+        
+          kappa_ab = kappa_ab/(grid(x_out, y_out, z_out)%Length(2))**2
+
+       else if (z_in .ne. z_out) then
+       write(*,*) 'zzzzz'
+          kappa_ab = (grid(x_in, y_in, z_in)%Length(3) + &
+              grid(x_out, y_out, z_out)%Length(3))*kappa_in*kappa_out/&
+              (grid(x_in, y_in, z_in)%Length(3)*kappa_out + &
+              grid(x_out, y_out, z_out)%Length(3)*kappa_in)
+        
+          kappa_ab = kappa_ab/(grid(x_out, y_out, z_out)%Length(3))**2
+       end if
+       write(*,*) 'cond is ', kappa_ab
+       conductivity = (kappa_ab) 
+    else
+       call boundry_diag_term(x_in, y_in, z_in, x_out, y_out, z_out, kappa_ab)
+       conductivity = kappa_ab 
+    end if
+  end subroutine calc_cond
+
   function altmod(a,b) result(c)
     integer(int12) :: a, b, c
     c=mod(a,b)
@@ -223,5 +354,7 @@ contains
     end if
     
   end subroutine boundry_diag_term
+
+  
 
 end module hmatrixmod

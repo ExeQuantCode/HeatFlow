@@ -17,7 +17,7 @@
 module setup
   use constants, only: real12, int12, TINY
   use inputs, only: nx, ny, nz, NA, grid, time_step, kappaBoundx1, kappaBoundy1, kappaBoundz1 & !
-                     ,Check_Sparse_Full, Check_Stability, ntime,IVERB ! 
+                     ,Check_Sparse_Full, Check_Stability, ntime,IVERB, Periodic ! 
   use hmatrixmod, only: hmatrixfunc
   use globe_data, only:  ra, Temp_cur, Temp_p, Temp_pp,inverse_time, heat, lin_rhoc
   use sparse, only: SRSin
@@ -79,35 +79,47 @@ module setup
 !!! This sets up the H Matrix directly in sparse row storage
 !!!#################################################################################################
    subroutine sparse_Hmatrix()
-      ! use omp_lib
+     implicit none
       real(real12) :: H0 ! Holds the value of the H matrix
       integer(int12) :: i, j, len, count, k ! i and j are the row and column of the H matrix
       ! Holds the values to add to the row to get the column
       integer(int12), allocatable, dimension(:) :: addit 
       ! The number of non-zero elements in the H matrix to look for
-      len = 7*nx*ny*nz - 2*(nx*ny + ny*nz + nz*nx) 
+      len = 7*nx*ny*nz - 2*(nx*ny + ny*nz + nz*nx)
+      if (Periodic) len = 7*nx*ny*nz
       ra%n = NA ! The number of rows in the H matrix
       ra%len = len ! The number of non-zero elements in the H matrix
       ! Allocate the arrays to hold the H matrix in sparse row storage
-      allocate(ra%val(len), ra%irow(len), ra%jcol(len)) 
-
+      allocate(ra%val(len), ra%irow(len), ra%jcol(len))
+      ra%val(:)=0
+      ra%irow(:)=-2
+      ra%jcol(:)=-1
+      
       addit = [1] ! The values to add to the row to get the column
-      if (nx .gt. 1) addit = [addit, nx] ! Add the values to add to the row to get the column
-      if (ny .gt. 1) addit = [addit, nx*ny]  ! Add the values to add to the row to get the column
-
-
+      if (Periodic) addit = [addit, (nx-1)]
+      if (ny .gt. 1) addit = [addit, nx] ! Add the values to add to the row to get the column
+      if ((Periodic).and.(ny .gt. 1)) addit = [addit, (ny-1)*nx]
+      if (nz .gt. 1) addit = [addit, nx*ny]  ! Add the values to add to the row to get the column
+      if ((Periodic).and.(nz .gt. 1)) addit = [addit, (nz-1)*ny*nx]
 
       
+      !write(6,*) NA, nx,ny,nz
+      !write(6,*) addit,size(addit,1)
+      !write(6,*) NA
+      !write(6,*) "========================================="
+
       count = 0 ! The number of non-zero elements in the H matrix
       parent_loop: do j = 1, NA ! Loop over the columns of the H matrix
+         
          i=j ! The row of the H matrix
          count = count + 1 ! The number of non-zero elements in the H matrix
          H0 = hmatrixfunc(i,j) ! The value of the H matrix
          ra%val(count) = H0 ! The value of the H matrix
          ra%irow(count) = i ! The row of the H matrix
          ra%jcol(count) = j ! The column of the H matrix
+         !write(6,*) j,i, H0, count
          ! Loop over the values to add to the row to get the column
-         neighbour_loop: do k = 1, size(addit,1) 
+         neighbour_loop: do k = 1, size(addit,1)
              i = j + addit(k) ! The row of the H matrix
              ! If the row is greater than the number of rows ...
              !...in the H matrix then go to the next column
@@ -124,10 +136,12 @@ module setup
              ra%val(count) = H0 ! The value of the H matrix
              ra%irow(count) = j ! The row of the H matrix
              ra%jcol(count) = i ! The column of the H matrix
-         end do neighbour_loop
+             !write(6,*) j,i, H0, count
+          end do neighbour_loop
      end do parent_loop
 
-      
+     !write(6,*) "========================================="
+     !write(6,*) 'c len',count, len
    end subroutine sparse_Hmatrix
 !!!#################################################################################################
 

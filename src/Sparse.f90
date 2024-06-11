@@ -303,12 +303,15 @@ contains
 
     n = size(ra%val)
     m = size(b)
+!!!$omp parallel do private(i) shared(b, ra, x, m)
     do j = 1, n
        i = ra%irow(j)
        if (i.gt.0.and.i.le.m) THEN
+!!!$omp atomic
           b(i) = b(i) + ra%val(j) * x(ra%jcol(j))
        END IF
     END DO
+!!!$omp end parallel do
   END SUBROUTINE SRSax
 
   SUBROUTINE SRStx(ra,x,b)
@@ -322,12 +325,15 @@ contains
     b=0.0_dp
     n = size(ra%val)
     m = size(b)
+!!!$omp parallel do private(j) shared(b, ra, x, m)
     do i = 1, n
        j = ra%jcol(i)
        if (j.gt.0.and.j.le.m) then
+!!!$omp atomic
           b(j) = b(j) + ra%val(i) * x(ra%irow(i))
        end if
     end do
+!!!$omp end parallel do
   END SUBROUTINE SRStx
 
   SUBROUTINE SRStp(ra)
@@ -340,16 +346,14 @@ contains
     ra%irow=>ra%jcol
     ra%jcol=>temp
   END SUBROUTINE SRStp
-
+  
   SUBROUTINE SRSdiag(ra,b)
     use sptype, only: sprs2_dp
     use sputil, only: assert_eq
     implicit none
     type(sprs2_dp), intent(in) :: ra
     real(real12), dimension(:), intent(out) :: b
-    real(real12), dimension(:), allocatable :: val
-    integer(int12), dimension(:), allocatable :: i
-    integer(int12) :: ndum,c,k
+    integer(int12) :: c,k
 
     k=0
     do c=1,ra%len
@@ -360,6 +364,7 @@ contains
     end do
 
   END SUBROUTINE SRSdiag
+  
 
 
 

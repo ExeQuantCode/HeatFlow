@@ -22,7 +22,7 @@
 module evolution
   use constants, only: real12, int12, TINY
   use inputs, only: NA, icattaneo, isteady, nx, ny, nz, IVERB,T_System, time_step, grid, power_in
-  use inputs, only: TempDepProp
+  use inputs, only: TempDepProp, Periodic
   use sptype, only: I4B
   use sparse, only: linbcg
   use globe_data, only: Temp_p, Temp_pp, inverse_time, heat, lin_rhoc
@@ -62,13 +62,15 @@ contains
     !--------------------------------
     ! Calculate boundary Vector
     !--------------------------------
-    CALL boundary(B)
-    if (IVERB .gt. 3) write(*,*) "B average", sum(B)/size(B)
-    if (IVERB .gt. 4) write(*,*) "B", B
-   
-    if (any(isnan(B(:)))) then
-      write(*,*) "fatal error: NAN in B vector"
-      stop
+    if (.not.Periodic) then
+       CALL boundary(B)
+       if (IVERB .gt. 3) write(*,*) "B average", sum(B)/size(B)
+       if (IVERB .gt. 4) write(*,*) "B", B
+
+       if (any(isnan(B(:)))) then
+          write(*,*) "fatal error: NAN in B vector"
+          stop
+       end if
     end if
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -114,7 +116,11 @@ contains
           S = S + S_CAT
        end if
     else
-       S = -Qdens - B
+       if (Periodic) then
+          S = -Qdens
+       else
+          S = -Qdens - B
+       end if
     end if
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     if (IVERB .gt.3) write(*,*) "S average", sum(S)/size(S)
