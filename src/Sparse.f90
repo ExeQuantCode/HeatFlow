@@ -303,15 +303,15 @@ contains
 
     n = size(ra%val)
     m = size(b)
-!!!$omp parallel do private(i) shared(b, ra, x, m)
+    !$omp parallel do private(i) shared(b, ra, x, m)
     do j = 1, n
        i = ra%irow(j)
        if (i.gt.0.and.i.le.m) THEN
-!!!$omp atomic
+          !$omp atomic
           b(i) = b(i) + ra%val(j) * x(ra%jcol(j))
        END IF
     END DO
-!!!$omp end parallel do
+    !$omp end parallel do
   END SUBROUTINE SRSax
 
   SUBROUTINE SRStx(ra,x,b)
@@ -325,15 +325,15 @@ contains
     b=0.0_dp
     n = size(ra%val)
     m = size(b)
-!!!$omp parallel do private(j) shared(b, ra, x, m)
+    !$omp parallel do private(j) shared(b, ra, x, m)
     do i = 1, n
        j = ra%jcol(i)
        if (j.gt.0.and.j.le.m) then
-!!!$omp atomic
+          !$omp atomic
           b(j) = b(j) + ra%val(i) * x(ra%irow(i))
        end if
     end do
-!!!$omp end parallel do
+    !$omp end parallel do
   END SUBROUTINE SRStx
 
   SUBROUTINE SRStp(ra)

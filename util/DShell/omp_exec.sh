@@ -1,7 +1,23 @@
 #!/bin/bash
 
-# Get path to exec
-executable_path=$(readlink -f ../../bin/ThermalFlow.x)
+find_parent_dir() {
+  current_dir=$(pwd)
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/heatflow-mk2" ]; then
+      echo "$current_dir/heatflow-mk2"
+      return
+    fi
+    current_dir=$(dirname "$current_dir")
+  done
+  echo "Parent directory 'heatflow-mk2' not found." >&2
+  exit 1
+}
+
+# Get the parent dir
+parent_dir=$(find_parent_dir)
+
+# get path to executable
+executable_path="$parent_dir/bin/ThermalFlow.x"
 executable_dir=$(dirname "$executable_path")
 
 # Confirm path
@@ -13,7 +29,7 @@ while [[ ! -f "$executable_path" ]]; do
 done
 
 # ask for threads number
-read -p "Enter the number of threads to use: " -i "4" Thread_num
+read -e -p "Enter the number of threads to use: " -i "4" Thread_num
 
 # Create wrapper
 cat << EOF > Thermal-omp.x
@@ -59,4 +75,4 @@ chmod +x Thermal-omp.x
 # Move the Thermal-omp.x script to the same directory as ThermalFlow.x
 mv Thermal-omp.x "$executable_dir"
 
-echo "The Thermal-omp.x script has been created and moved to $executable_dir."
+echo "The Thermal-omp.x script has been created and moved to $executable_dir"
