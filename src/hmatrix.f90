@@ -46,7 +46,7 @@ module hmatrixmod
   use constants, only: real12, int12
   use inputs, only: nx, ny, nz, time_step, grid
   use inputs, only: isteady, icattaneo, kappaBoundx1, kappaBoundy1, kappaBoundz1
-  use inputs, only: kappaBoundNx, kappaBoundNy, kappaBoundNz, Periodic
+  use inputs, only: kappaBoundNx, kappaBoundNy, kappaBoundNz, Periodicx, Periodicy, Periodicz
   use globe_data, only: inverse_time, lin_rhoc
   implicit none
 
@@ -67,32 +67,30 @@ contains
     z = (i-altmod(i,nx*ny))/(nx*ny)+1
 
     alpha = calculate_alpha(x,y,z, i)
-    if ( Periodic ) then
-       ! apply periodic boundries on the self term by mapping over shoots back into cell 
-       xp = x + 1; xm = x - 1
-       yp = y + 1; ym = y - 1
-       zp = z + 1; zm = z - 1
+
+    ! apply periodic boundries on the self term by mapping over shoots back into cell 
+    xp = x + 1; xm = x - 1
+    zp = z + 1; zm = z - 1
+    yp = y + 1; ym = y - 1
+    if ( Periodicx ) then
        if ( xp .gt. nx ) xp = 1
        if ( xm .lt.  1 ) xm = nx
+    end if
+    if ( Periodicy ) then
        if ( yp .gt. ny ) yp = 1
        if ( ym .lt.  1 ) ym = ny
+    end if
+    if ( Periodicz ) then
        if ( zp .gt. nz ) zp = 1
        if ( zm .lt.  1 ) zm = ny
-
-       A = calculate_conductivity(xm, y, z, x, y, z)
-       B = calculate_conductivity(xp, y, z, x, y, z)
-       D = calculate_conductivity(x, ym, z, x, y, z)
-       E = calculate_conductivity(x, yp, z, x, y, z)
-       F = calculate_conductivity(x, y, zm, x, y, z) 
-       G = calculate_conductivity(x, y, zp, x, y, z)  
-    else  
-       A = calculate_conductivity(x - 1, y, z, x, y, z)
-       B = calculate_conductivity(x + 1, y, z, x, y, z)
-       D = calculate_conductivity(x, y - 1, z, x, y, z)
-       E = calculate_conductivity(x, y + 1, z, x, y, z)
-       F = calculate_conductivity(x, y, z - 1, x, y, z)
-       G = calculate_conductivity(x, y, z + 1, x, y, z)
     end if
+
+    A = calculate_conductivity(xm, y, z, x, y, z)
+    B = calculate_conductivity(xp, y, z, x, y, z)
+    D = calculate_conductivity(x, ym, z, x, y, z)
+    E = calculate_conductivity(x, yp, z, x, y, z)
+    F = calculate_conductivity(x, y, zm, x, y, z) 
+    G = calculate_conductivity(x, y, zp, x, y, z)  
 
     ! Determine the value of H based on the relationship between i and j
     H=0.0_real12
@@ -150,7 +148,7 @@ contains
       end if
    end if
    
-   if( Periodic ) then
+   if( Periodicx ) then
       if ( (i-j) .eq. -(nx-1) ) then
          if (x .eq. 1) then
             H = A  ! X right periodic neighbor
@@ -165,7 +163,9 @@ contains
             H=0.0_real12
          end if
       end if
+   end if
       
+   if( Periodicy ) then
       if ( (i-j) .eq. -(ny-1)*nx ) then
          if (y .eq. 1) then
             H = D  ! Y up periodic neighbor
@@ -180,7 +180,9 @@ contains
             H=0.0_real12
          end if
       end if
+   end if
       
+   if( Periodicz ) then
       if ( (i-j) .eq. -(nz-1)*nx*ny ) then
          if (z .eq. 1) then
             H = F  ! Z out periodic neighbor
@@ -196,7 +198,6 @@ contains
             H=0.0_real12
          end if
       end if
-      
    end if
    
   end function hmatrixfunc

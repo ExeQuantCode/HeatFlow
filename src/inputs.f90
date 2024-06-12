@@ -22,7 +22,9 @@
 !!!     - time_step, the time step of the simulation
 !!!     - freq, the frequency of the heater in simulation
 !!!     - power_in, the power in of the heater in the simulation
-!!!     - Periodic, the boundry condition is periodic
+!!!     - Periodicx, the boundry condition is periodic in specified directions 
+!!!     - Periodicy, the boundry condition is periodic in specified directions 
+!!!     - Periodicz, the boundry condition is periodic in specified directions 
 !!!     - kappaBoundx, the boundary kappa in the x direction plane x=1
 !!!     - kappaBoundy, the boundary kappa in the y direction plane y=1
 !!!     - kappaBoundz, the boundary kappa in the z direction plane z=1
@@ -73,7 +75,7 @@ module inputs
 
   integer :: unit, newunit
   ! time step, frequency, power in, boundary kappa
-  logical :: Periodic
+  logical :: Periodicx,Periodicy,Periodicz
   real(real12) :: time_step, freq, power_in, kappaBoundx1, kappaBoundy1, kappaBoundz1, KappaBound
   real(real12) :: kappaBoundNx, kappaBoundNy, kappaBoundNz
   ! Bath temperatures
@@ -87,7 +89,8 @@ module inputs
   logical :: WriteToTxt, LPercentage, InputTempDis
   logical ::  Test_Run = .FALSE., FullRestart = .FALSE.
   ! Name of simiulation run
-  character(1024) :: RunName 
+  character(1024) :: RunName
+  character(12)::Periodic
   ! Essentially it is the system that is being simulated
   type(heatblock), dimension(:,:,:), allocatable :: grid 
   type(material), dimension(:), allocatable :: input_materials ! The materials
@@ -224,7 +227,7 @@ contains
     T_Bathz1 = T_Bath
     T_Bathz2 = T_Bath
     power_in = 0
-    Periodic = .FALSE.
+    Periodic = ''
     !kappaBound = [kx1:kNx,ky1:kNy,kz1:kNz]
     KappaBound = 0.0
     kappaBoundx1 = 0.0
@@ -295,9 +298,22 @@ contains
        CALL assignI(buffer,"end_iz",end_iz,readvar(37))
        CALL assignI(buffer,"write_every",write_every,readvar(38))
        CALL assignI(buffer,"TempDepProp",TempDepProp,readvar(39))
-       CALL assignL(buffer,"Periodic",Periodic,readvar(40))
+       CALL assignS(buffer,"Periodic",Periodic,readvar(40))
 
     end do
+    
+    !--------------------------------------------------
+    ! parse the periodic string
+    !--------------------------------------------------
+    Periodicx = .false.
+    Periodicy = .false.
+    Periodicz = .false.
+    
+    if ((index(Periodic, 'x') .gt. 0 ).or.(index(Periodic, 'X') .gt. 0)) Periodicx = .true.
+    if ((index(Periodic, 'y') .gt. 0 ).or.(index(Periodic, 'Y') .gt. 0)) Periodicy = .true.
+    if ((index(Periodic, 'z') .gt. 0 ).or.(index(Periodic, 'Z') .gt. 0)) Periodicz = .true.
+    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
     CALL check_param(readvar,size(readvar,1))
 
   end subroutine read_param
@@ -324,7 +340,7 @@ contains
     end if
 
 
-    PB:if ( .not. Periodic  ) then
+    PB:if ((.not. Periodicx).or.(.not. Periodicy).or.(.not. Periodicz)) then
        !------------------------------------------------------------------------------------
        ! Error about missing kappa bound 
        !------------------------------------------------------------------------------------
@@ -474,7 +490,7 @@ contains
        write(6,'(A35,F12.5)')   '   kappaBoundNy  = ', kappaBoundNy
        write(6,'(A35,F12.5)')   '   kappaBoundNz  = ', kappaBoundNz
        write(6,'(A35,I6)')      '   TempDepProp   = ', TempDepProp
-       write(6,'(A35,L1)')      '   Periodic      = ', Periodic
+       write(6,'(A35,A12)')      '   Periodic      = ', Periodic
 
     end if
   end subroutine check_param

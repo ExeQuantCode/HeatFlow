@@ -16,8 +16,9 @@
 !!!#################################################################################################
 module setup
   use constants, only: real12, int12, TINY
-  use inputs, only: nx, ny, nz, NA, grid, time_step, kappaBoundx1, kappaBoundy1, kappaBoundz1 & !
-                     ,Check_Sparse_Full, Check_Stability, ntime,IVERB, Periodic ! 
+  use inputs, only: nx, ny, nz, NA, grid, time_step, kappaBoundx1, kappaBoundy1, kappaBoundz1 
+  use inputs, only: Check_Sparse_Full, Check_Stability, ntime,IVERB, Periodicx, Periodicy
+  use inputs, only: Periodicz ! 
   use hmatrixmod, only: hmatrixfunc
   use globe_data, only:  ra, Temp_cur, Temp_p, Temp_pp,inverse_time, heat, lin_rhoc
   use sparse, only: SRSin
@@ -86,7 +87,9 @@ module setup
       integer(int12), allocatable, dimension(:) :: addit 
       ! The number of non-zero elements in the H matrix to look for
       len = 7*nx*ny*nz - 2*(nx*ny + ny*nz + nz*nx)
-      if (Periodic) len = 7*nx*ny*nz
+      if (Periodicx) len = len + 2*ny*nz
+      if (Periodicy) len = len + 2*nz*nx
+      if (Periodicz) len = len + 2*nx*ny
       ra%n = NA ! The number of rows in the H matrix
       ra%len = len ! The number of non-zero elements in the H matrix
       ! Allocate the arrays to hold the H matrix in sparse row storage
@@ -96,11 +99,11 @@ module setup
       ra%jcol(:)=-1
       
       addit = [1] ! The values to add to the row to get the column
-      if (Periodic) addit = [addit, (nx-1)]
+      if (Periodicx) addit = [addit, (nx-1)]
       if (ny .gt. 1) addit = [addit, nx] ! Add the values to add to the row to get the column
-      if ((Periodic).and.(ny .gt. 1)) addit = [addit, (ny-1)*nx]
+      if ((Periodicy).and.(ny .gt. 1)) addit = [addit, (ny-1)*nx]
       if (nz .gt. 1) addit = [addit, nx*ny]  ! Add the values to add to the row to get the column
-      if ((Periodic).and.(nz .gt. 1)) addit = [addit, (nz-1)*ny*nx]
+      if ((Periodicz).and.(nz .gt. 1)) addit = [addit, (nz-1)*ny*nx]
 
       
       !write(6,*) NA, nx,ny,nz
