@@ -11,9 +11,9 @@
 !!! Author: Harry Mclean, Frank Davies, Steven Hepplestone
 !!!#################################################################################################
 module Heating
-  use constants, only: real12, int12, pi
+  use constants, only: real12, int12, pi, StefBoltz
   use globe_data, only: Temp_p, Temp_pp, Heat, heated_volume
-  use inputs, only: nx,ny,nz, grid, NA, power_in, time_step, T_System, freq, ntime
+  use inputs, only: nx,ny,nz, grid, NA, power_in, time_step, T_System, freq, ntime, T_Bath
   use materials, only: material
   implicit none
 contains
@@ -111,10 +111,12 @@ contains
              end select
 
              !------------------------------
-             ! convert from Q~density to Q
+             ! If emissitivity is not zero, then calculate the radiative heating
              !------------------------------
-             !Qdens(IA)=Q(IA)
-             Q(IA)=Q(IA)
+              
+               Q(IA) = Q(IA) - grid(ix,iy,iz)%em * grid(ix,iy,iz)%length(1)*&
+                       grid(ix,iy,iz)%length(2)*StefBoltz &
+                       * ((Temp_p(IA)**4.0_real12) - (T_Bath**4.0_real12)) 
              !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
              
@@ -127,6 +129,7 @@ contains
                 heated_num = heated_num + 1
              end if
              !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            
           end do
        end do
     end do
@@ -143,6 +146,7 @@ contains
     !write(*,*) "sum(Qdens(:))/heated_volume",sum(Qdens(:))/heated_volume
     !write(*,*) "heated_num = ",heated_num
     !write(*,*) "==============================="
+   
 
     ! Normalize all heat sources by the heated volume
     if (heated_volume .gt. 0.0) Qdens(:) = Q(:) / heated_volume
