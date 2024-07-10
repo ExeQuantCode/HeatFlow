@@ -22,11 +22,11 @@ module materials
 
 contains
 
-subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
+subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau, em)
   
    integer(int12), intent(in) ::imaterial_type
    integer(int12) :: i, tmp
-   real(real12), intent(inout) :: kappa3D, kappa, h_conv, heat_capacity, sound_speed, rho, tau
+   real(real12), intent(inout) :: kappa3D, kappa, h_conv, heat_capacity, sound_speed, rho, tau, em
    logical :: found
 
 !!!=============================================
@@ -66,6 +66,7 @@ subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_
             rho           = input_materials(i)%rho
             sound_speed   = input_materials(i)%sound_speed
             tau           = input_materials(i)%tau
+            em            = input_materials(i)%em
 
             exit mat_loop
          end if

@@ -11,9 +11,9 @@
 !!! Author: Harry Mclean, Frank Davies, Steven Hepplestone
 !!!#################################################################################################
 module Heating
-  use constants, only: real12, int12, pi
+  use constants, only: real12, int12, pi, StefBoltz
   use globe_data, only: Temp_p, Temp_pp, Heat, heated_volume
-  use inputs, only: nx,ny,nz, grid, NA, power_in, time_step, T_System, freq, ntime
+  use inputs, only: nx,ny,nz, grid, NA, power_in, time_step, T_System, freq, ntime, T_Bath
   use materials, only: material
   implicit none
 contains
@@ -35,7 +35,7 @@ contains
     Q = 0._real12
     POWER = power_in
     time = time_step * real(itime,real12)
-    time_pulse = 0.5_real12
+    time_pulse = 1E-12_real12
     heated_volume=0.0
     heated_num=0
 
@@ -89,20 +89,20 @@ contains
                 !------------------------------
                 ! AC oscillatory heating raw, with power correction
                 !------------------------------
-                Q(IA) = POWER * (sin(time * 2.0_real12 * PI * freq)**2.0_real12)&
-                  +POWER*2.0_real12*PI*freq*tau*sin(2.0_real12*time*2.0_real12*PI*freq)
+                Q(IA) = POWER * (sin(time * 2.0_real12 * PI * freq)**2.0_real12)
                 !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              case(5)
                 !------------------------------
-                ! Radiative heating 
+                !  AC oscillatory heating raw, with power correction
                 !------------------------------
-                ! Q(IA)= e*eps* T**4
+                Q(IA) = POWER * (sin(time * 2.0_real12 * PI * freq)**2.0_real12)&
+                  +POWER*2.0_real12*PI*freq*tau*sin(2.0_real12*time*2.0_real12*PI*freq)
                 !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              case(6)
                 !------------------------------
-                ! Step one heating
+                ! Pulsed heating
                 !------------------------------
-                if (itime == 1) then
+               if ((itime .le. time_pulse)) then
                    Q(IA) = POWER
                 else
                    Q(IA) = 0.0
@@ -111,11 +111,14 @@ contains
              end select
 
              !------------------------------
-             ! convert from Q~density to Q
+             ! If emissitivity is not zero, then calculate the radiative heating
              !------------------------------
-             !Qdens(IA)=Q(IA)
-             Q(IA)=Q(IA)
+              
+               Q(IA) = Q(IA) - grid(ix,iy,iz)%em * grid(ix,iy,iz)%length(1)*&
+                       grid(ix,iy,iz)%length(2)*StefBoltz &
+                       * ((Temp_p(IA)**4.0_real12) - (T_Bath**4.0_real12)) 
              !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 
              
              
