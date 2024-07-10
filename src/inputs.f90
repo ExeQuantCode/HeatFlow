@@ -526,10 +526,13 @@ subroutine read_mat(unit)
     character(1024) :: buffer
     integer :: reason, j
     integer, dimension(8) :: readvarmat
+    character(24), dimension(8) :: readvarmatident
     integer :: i, index
 
     i=0
     readvarmat(:) = 0
+    readvarmatident = [character(len=24)::"heat_capacity","h_conv","kappa","kappa3D","rho","sound_speed","tau","em"]
+
     read: do
        read(unit,'(A)',iostat=Reason) buffer ! read the buffer
        if(Reason.ne.0) exit read ! if the buffer is empty exit the read loop
@@ -546,8 +549,12 @@ subroutine read_mat(unit)
           ! If 0 reset readvar and check for missing parameters
           if(index .eq. 0) then
                 ! Check for missing parameters after the loop
-              if (any(readvarmat .ne. 1)) then 
-                write(6,*) "Error in parameters : material ", readvarmat
+              if (any(readvarmat .ne. 1)) then
+                do j = 1, 8
+                  if (readvarmat(j) .eq. 0) then
+                    write(6,*) "Error: A material is missing a parameter, ", readvarmatident(j)
+                  end if
+                end do
                 stop
               end if
              readvarmat(:) = 0
@@ -581,6 +588,7 @@ subroutine read_mat(unit)
           stop
        end if
     end do
+
 
     
     allocate(input_materials(i))
