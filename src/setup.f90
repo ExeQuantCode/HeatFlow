@@ -32,7 +32,7 @@ module setup
 !!!#################################################################################################
    subroutine set_global_variables()
       integer(int12) :: ix,iy,iz,index
-      real(real12) :: kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau, em
+      real(real12) :: kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau
       allocate(Temp_cur(nx, ny, nz))
       allocate(Temp_p(NA))
       allocate(Temp_pp(NA))
@@ -51,12 +51,11 @@ module setup
             do ix = 1, nx
             index = index + 1
             CALL material(grid(ix,iy,iz)%imaterial_type,&
-                 kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau, em)
+                 kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau)
             grid(ix,iy,iz)%kappa = kappa
             grid(ix,iy,iz)%rho = rho
             grid(ix,iy,iz)%heat_capacity = heat_capacity
             grid(ix,iy,iz)%tau = tau*inverse_time*inverse_time
-            grid(ix,iy,iz)%em = em
             lin_rhoc(index) = rho*heat_capacity
             if (Check_Stability) CALL stability(kappa, rho, heat_capacity, ix, iy, iz)
             end do               

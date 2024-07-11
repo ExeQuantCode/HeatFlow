@@ -27,7 +27,7 @@ module constructions
      real(real12) :: volume !volume of the block
      real(real12), dimension(3) :: Length !length of the block in 3 dimensions
      integer(int12) :: iheater !whether the block is a heater
-     real(real12) :: kappa, rho, heat_capacity, tau, em !physical properties of the material
+     real(real12) :: kappa, rho, heat_capacity, tau !physical properties of the material
   end type heatblock
 !!Defines the material to be used in the simulation
   type material
@@ -39,7 +39,6 @@ module constructions
      real(real12) :: rho !density of the material
      real(real12) :: sound_speed   !speed of sound in the material
      real(real12) :: tau !relaxation time
-     real(real12) :: em !emissivity of the material
      logical :: source !whether the material is a source of heat ??
   end type material
 end module constructions
