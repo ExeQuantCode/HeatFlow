@@ -459,7 +459,7 @@ contains
        write(6,'(A35,F12.5)')   '   kappaBoundNx         = ',kappaBoundNx
        write(6,'(A35,F12.5)')   '   kappaBoundNy         = ',kappaBoundNy
        write(6,'(A35,F12.5)')   '   kappaBoundNz         = ',kappaBoundNz
-       write(6,'(A35,F12.5)')   '   TempDepProp         = ',TempDepProp
+       write(6,'(A35,I6)')   '   TempDepProp         = ',TempDepProp
 
     end if
   end subroutine check_param
