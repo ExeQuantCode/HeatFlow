@@ -67,7 +67,6 @@ contains
     z = (i-altmod(i,nx*ny))/(nx*ny)+1
 
     alpha = calculate_alpha(x,y,z, i)
-
     ! apply periodic boundries on the self term by mapping over shoots back into cell 
     xp = x + 1; xm = x - 1
     zp = z + 1; zm = z - 1
@@ -135,7 +134,7 @@ contains
         H=0.0_real12
      else
         !write(*,*) 'F   this is forward (in) z',F
-         H = G  ! Z in neighbor (forward cell interaction)
+         H = F  ! Z in neighbor (forward cell interaction) !!!Frank had this as G during testing
       end if
     end if 
 
@@ -144,7 +143,7 @@ contains
         H=0.0_real12
      else  
         !write(*,*) 'G   this is backward (out) z?',G
-        H = F  ! Z out neighbor (backward cell interaction)
+        H = G  ! Z out neighbor (backward cell interaction) !!!Frank Had this as F during testing
       end if
    end if
    
@@ -153,14 +152,14 @@ contains
          if (x .eq. 1) then
             H = A  ! X right periodic neighbor
          else
-            H=0.0_real12
+            !H=0.0_real12
          end if
       end if
       if ( (i-j) .eq. (nx-1) ) then
          if (x .eq. nx) then
             H = B  ! X left periodic neighbor
          else
-            H=0.0_real12
+            !H=0.0_real12
          end if
       end if
    end if
@@ -170,14 +169,14 @@ contains
          if (y .eq. 1) then
             H = D  ! Y up periodic neighbor
          else
-            H=0.0_real12
+            !H=0.0_real12
          end if
       end if
       if ( (i-j) .eq. (ny-1)*nx ) then
          if (y .eq. ny) then
             H = E  ! Y down periodic neighbor
          else
-            H=0.0_real12
+            !H=0.0_real12
          end if
       end if
    end if
@@ -187,7 +186,7 @@ contains
          if (z .eq. 1) then
             H = F  ! Z out periodic neighbor
          else
-            H=0.0_real12
+            !H=0.0_real12
          end if
       end if
       if ( (i-j) .eq. (nz-1)*nx*ny ) then
@@ -195,7 +194,7 @@ contains
             !write(*,*) 'G   this is backward (out) z?',G
             H = G  ! Z in periodic neighbor
          else
-            H=0.0_real12
+            !H=0.0_real12
          end if
       end if
    end if
