@@ -81,7 +81,7 @@ contains
     end if
     if ( Periodicz ) then
        if ( zp .gt. nz ) zp = 1
-       if ( zm .lt.  1 ) zm = ny
+       if ( zm .lt.  1 ) zm = nz
     end if
 
     A = calculate_conductivity(xm, y, z, x, y, z)

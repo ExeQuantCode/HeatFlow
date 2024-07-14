@@ -113,7 +113,6 @@ contains
              !------------------------------
              ! If emissitivity is not zero, then calculate the radiative heating
              !------------------------------
-              
                Q(IA) = Q(IA) - grid(ix,iy,iz)%em * grid(ix,iy,iz)%length(1)*&
                        grid(ix,iy,iz)%length(2)*StefBoltz &
                        * ((Temp_p(IA)**4.0_real12) - (T_Bath**4.0_real12)) 
