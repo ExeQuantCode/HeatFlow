@@ -13,7 +13,8 @@
 module Heating
   use constants, only: real12, int12, pi, StefBoltz
   use globe_data, only: Temp_p, Temp_pp, Heat, heated_volume
-  use inputs, only: nx,ny,nz, grid, NA, power_in, time_step, T_System, freq, ntime, T_Bath
+  use inputs, only: nx,ny,nz, grid, NA, power_in, time_step, heated_steps, T_System, freq, ntime, &
+       T_Bath
   use materials, only: material
   implicit none
 contains
@@ -35,7 +36,7 @@ contains
     Q = 0._real12
     POWER = power_in
     time = time_step * real(itime,real12)
-    time_pulse = 0.5_real12
+    time_pulse = heated_steps  * time_step
     heated_volume=0.0
     heated_num=0
 
@@ -70,7 +71,7 @@ contains
                 !------------------------------
                  ! Heater on for a time period
                 !------------------------------
-                if (time <= time_pulse) then
+                if ( time .le. time_pulse ) then
                    Q(IA) = POWER
                 else
                    Q(IA) = 0.0_real12

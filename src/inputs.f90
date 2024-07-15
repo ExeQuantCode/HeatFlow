@@ -43,6 +43,7 @@
 !!!     - T_Bath, the bath temperature
 !!!     - IVERB, the verbose
 !!!     - ntime, the number of time steps
+!!!     - heated_steps, the number of steps for which heating is applied in heating case 2
 !!!     - write_every, the number of time steps to write to txt file
 !!!     - iboundary, the boundary condition
 !!!     - nx, the number of cells in the x direction
@@ -83,7 +84,7 @@ module inputs
   ! verbose, number of time steps, boundary condition, number of cells
   integer(int12) :: IVERB, ntime, iboundary, nx, ny, nz, icattaneo, isteady, NA, write_every
   ! what cells to write to txt file
-  integer(int12) :: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz, TempDepProp
+  integer(int12) :: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz, TempDepProp, heated_steps
   ! flags
   logical :: Check_Sparse_Full, Check_Stability, Check_Steady_State
   logical :: WriteToTxt, LPercentage, InputTempDis
@@ -194,7 +195,7 @@ contains
   subroutine read_param(unit)
     implicit none
     integer:: unit, Reason
-    integer,dimension(40)::readvar
+    integer,dimension(41)::readvar
     character(1024)::buffer
 
     readvar(:)=0
@@ -212,6 +213,7 @@ contains
     RunName = trim(adjustl(RunName))
     WriteToTxt = .FALSE.
     ntime = 10
+    heated_steps = 0
     write_every = 1
     time_step = 1.0
     freq = 1
@@ -299,6 +301,7 @@ contains
        CALL assignI(buffer,"write_every",write_every,readvar(38))
        CALL assignI(buffer,"TempDepProp",TempDepProp,readvar(39))
        CALL assignS(buffer,"Periodic",Periodic,readvar(40))
+       CALL assignI(buffer,"heattime",heated_steps,readvar(41))
 
     end do
     
@@ -467,6 +470,7 @@ contains
        write(6,'(A35,A)')       '  _RunName           = ', trim(RunName)
        write(6,'(A35,L1)')      '  _WriteToTxt        = ', WriteToTxt
        write(6,'(A35,I12)')     '   ntime       = ', ntime
+       write(6,'(A35,I12)')     '   heattime    = ', heated_steps
        write(6,'(A35,I12)')     '   write_every = ', write_every
        write(6,'(A35,F20.15)')  '   Time_step   = ', time_step
        write(6,'(A35,F12.5)')   '   frequency   = ', freq
@@ -490,7 +494,7 @@ contains
        write(6,'(A35,F12.5)')   '   kappaBoundNy  = ', kappaBoundNy
        write(6,'(A35,F12.5)')   '   kappaBoundNz  = ', kappaBoundNz
        write(6,'(A35,I6)')      '   TempDepProp   = ', TempDepProp
-       write(6,'(A35,A12)')      '   Periodic      = ', Periodic
+       write(6,'(A35,A12)')     '   Periodic      = ', Periodic
 
     end if
   end subroutine check_param
