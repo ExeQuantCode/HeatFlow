@@ -90,14 +90,14 @@ contains
                 !------------------------------
                 ! AC oscillatory heating raw, with power correction
                 !------------------------------
-                Q(IA) = POWER * (sin(time * 2.0_real12 * PI * freq)**2.0_real12)&
-                  +POWER*2.0_real12*PI*freq*tau*sin(2.0_real12*time*2.0_real12*PI*freq)
+                Q(IA) = POWER * (sin(time * 2.0_real12 * PI * freq)**2.0_real12)
                 !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              case(5)
                 !------------------------------
-                ! Radiative heating 
+                ! AC oscillatory heating raw, with power correction
                 !------------------------------
-                ! Q(IA)= e*eps* T**4
+                Q(IA) = POWER * (sin(time * 2.0_real12 * PI * freq)**2.0_real12)&
+                  +POWER*2.0_real12*PI*freq*tau*sin(2.0_real12*time*2.0_real12*PI*freq)
                 !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              case(6)
                 !------------------------------
