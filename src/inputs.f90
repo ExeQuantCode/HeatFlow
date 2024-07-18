@@ -355,11 +355,27 @@ contains
           write(6,'(A43)') '###############################'
           write(6,*)
           write(6,'(A)')   ' ---            Error in subroutine "check_param"            ---'
-          write(6,'(A)')   ' --- ERORR: KappaBoundx,y,z and KappaBound are not set       ---'
+          write(6,'(A)')   ' --- ERROR: KappaBoundx,y,z and KappaBound are not set       ---'
           stop
        end if ErrKB
        !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+       !------------------------------------------------------------------------------------
+       ! warning about missing kappa bound. reassine to Kappabound
+       !------------------------------------------------------------------------------------
 
+        WarKBO:if (((all(readvar(9:11).eq.1)) .or. all(readvar(29:31).eq.1)) &
+            .and. (readvar(28) .eq. 0) )then
+          write(6,*)
+          write(6,'(A43)') '###############################'
+          write(6,'(A43)') '##########   Warning   ##########'
+          write(6,'(A43)') '###############################'
+          write(6,*)
+          write(6,'(A)')   ' ---            Warning in subroutine "check_param"            ---'
+          write(6,'(A)')   ' --- Warning:  KappaBound are not set       ---'
+          readvar(28) = 1
+          
+       end if WarKBO
+       !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
        !------------------------------------------------------------------------------------
        ! warning about missing kappa bound. reassine to Kappabound
        !------------------------------------------------------------------------------------
@@ -607,7 +623,7 @@ subroutine read_mat(unit)
        CALL assignD(buffer,"rho"          ,dum_mat(i)%rho          ,readvarmat(5))! assign rho
        CALL assignD(buffer,"sound_speed"  ,dum_mat(i)%sound_speed  ,readvarmat(6))! assign sound_speed
        CALL assignD(buffer,"tau"          ,dum_mat(i)%tau          ,readvarmat(7))! assign tau
-       CALL assignD(buffer,"e"            ,dum_mat(i)%em            ,readvarmat(8))! assign e
+       CALL assignD(buffer,"em"            ,dum_mat(i)%em            ,readvarmat(8))! assign e
     end do read
     
     ! Check for duplicate indices
