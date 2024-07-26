@@ -20,7 +20,7 @@ module setup
   use inputs, only: Check_Sparse_Full, Check_Stability, ntime,IVERB, Periodicx, Periodicy
   use inputs, only: Periodicz ! 
   use hmatrixmod, only: hmatrixfunc
-  use globe_data, only:  ra, Temp_cur, Temp_p, Temp_pp,inverse_time, heat, lin_rhoc
+  use globe_data, only:  ra, Temp_cur, Temp_p, Temp_pp,inverse_time, heat, lin_rhoc, Q_P
   use sparse, only: SRSin
   use materials, only: material
   implicit none
@@ -39,6 +39,8 @@ module setup
       allocate(Temp_p(NA))
       allocate(Temp_pp(NA))
       allocate(lin_rhoc(NA))
+      allocate(Q_P(NA))
+      Q_P(:) = 0.0_real12
       heat = 0.0_real12
       inverse_time = 1.0_real12/time_step
       !---------------------------------------------------

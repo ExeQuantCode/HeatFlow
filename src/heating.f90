@@ -12,7 +12,7 @@
 !!!#################################################################################################
 module Heating
   use constants, only: real12, int12, pi, StefBoltz
-  use globe_data, only: Temp_p, Temp_pp, Heat, heated_volume
+  use globe_data, only: Temp_p, Temp_pp, Heat, heated_volume, Q_P
   use inputs, only: nx,ny,nz, grid, NA, power_in, time_step, heated_steps, T_System, freq, ntime, &
        T_Bath
   use materials, only: material
@@ -39,7 +39,7 @@ contains
     time_pulse = heated_steps  * time_step
     heated_volume=0.0
     heated_num=0
-
+    
     ! Iterate over all cells in the grid
     do iz = 1, nz
        do iy = 1, ny
@@ -119,7 +119,12 @@ contains
                        * ((Temp_p(IA)**4.0_real12) - (T_Bath**4.0_real12)) 
              !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-             
+             !------------------------------
+             ! Additional PowerTerm FD
+             !------------------------------
+              ! Q(IA) = Q(IA) +(tau/time_step)*(Q(IA)-Q_P(IA))
+            
+             !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              
              !------------------------------
              ! count heated volume
@@ -133,6 +138,7 @@ contains
           end do
        end do
     end do
+    Q_P = Q
 
     !write(*,*) ""
     !write(*,*) "==============================="
