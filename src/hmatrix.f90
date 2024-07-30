@@ -11,6 +11,8 @@
 !!!   - altmod, This function calculates the modulus of a and b, and returns b if the modulus is 0.
 !!!   - boundry_diag_term, This subroutine calculates the value of the diagonal term of ...
 !!!     ... the H matrix based on the indices x_b, y_b, z_b, x, y, and z.
+!!!   - grad_term, This function calculates the gradient term of the conductivity based on ...
+!!!     ... the indices x_b, y_b, z_b, x, y, and z.
 !!! This module contains the variables:
 !!!   - H, The value of the H matrix.
 !!!   - alpha, The value of alpha.
@@ -18,6 +20,7 @@
 !!!   - kappa_ab, The value of kappa_ab.
 !!!   - x, y, z: The indices of the grid.
 !!!   - A, B, D, E, F, G, The values of the conductivities of the neighbors of the grid point.
+!!!   - Agrad, Bgrad, Dgrad, Egrad, Fgrad, Ggrad, The values of the gradient terms of the conductivities.
 !!!   - i, j, The indices of the grid points.
 !!!   - x_in, y_in, z_in, x_out, y_out, z_out, The indices of the grid points.
 !!!   - x_b, y_b, z_b, The indices of the grid points.
