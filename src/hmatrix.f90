@@ -253,7 +253,8 @@ contains
       else if (x_b .gt. nx) then
         kappam1x = grid(x-1,y,z)%kappa
         kappaout = (kappam1x-kappaBoundNx)/(2*lx) !Agrad
-      else
+      end if
+      if ((x .gt. 1) .and. (x .lt. nx)) then
         kappap1x = grid(x+1,y,z)%kappa
         kappam1x = grid(x-1,y,z)%kappa
         if (x_b .eq. x+1) then
@@ -271,7 +272,8 @@ contains
       else if (y_b .gt. ny) then
         kappam1y = grid(x,y-1,z)%kappa
         kappaout = (kappam1y-kappaBoundNy)/(2*ly) !Dgrad
-      else
+      end if
+      if ((y .gt. 1) .and. (y .lt. ny)) then
         kappap1y = grid(x,y+1,z)%kappa
         kappam1y = grid(x,y-1,z)%kappa
         if (y_b .eq. y+1) then
@@ -289,7 +291,8 @@ contains
       else if (z_b .gt. nz) then
         kappam1z = grid(x,y,z-1)%kappa
         kappaout = (kappam1z-kappaBoundNz)/(2*lz) !Fgrad
-      else
+      end if 
+      if ((z .gt. 1) .and. (z .lt. nz)) then
         kappap1z = grid(x,y,z+1)%kappa
         kappam1z = grid(x,y,z-1)%kappa
         if (z_b .eq. z+1) then
