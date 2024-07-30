@@ -67,10 +67,10 @@ contains
                 
                 !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              case(2)
-                !------------------------------
+                !--------------------------.----
                  ! Heater on for a time period
                 !------------------------------
-                if (time <= time_pulse) then
+                if ((time_pulse*2 .lt. time) .and. (time .le. time_pulse*3)) then
                    Q(IA) = POWER
                 else
                    Q(IA) = 0.0_real12
@@ -117,12 +117,8 @@ contains
                Q(IA) = Q(IA) - grid(ix,iy,iz)%em * grid(ix,iy,iz)%length(1)*&
                        grid(ix,iy,iz)%length(2)*StefBoltz &
                        * ((Temp_p(IA)**4.0_real12) - (T_Bath**4.0_real12)) 
-             !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-             
-             
-             !------------------------------
+             !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+             !-----------------------------
              ! count heated volume
              !------------------------------
              if (grid(ix,iy,iz)%iheater .gt. 0) then

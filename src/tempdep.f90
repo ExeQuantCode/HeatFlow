@@ -88,22 +88,26 @@ module TempDep
         ! Update the properties based on the temperature table
         ! Find the corresponding kappa value in the temperature table
         do k = 1, num_rows
+            if (Temp_p(index) .gt. temp_table(num_rows, 1)) then
+                write(*,*) 'Temperature is out of range of MatTable'
+                stop
+            end if
             if (Temp_p(index) .le. temp_table(k, 1)) then
+                cycle
+            else if (Temp_p(index) .gt. temp_table(k, 1)) then
                 exit
             end if
         end do
-        if (Temp_p(index) .gt. temp_table(num_rows, 1)) then
-            write(*,*) 'Temperature is out of range'
-        end if
+
         !Apply Forward difference linear extrapolation and assing to global variables
-        Grid(ix, iy, iz)%kappa =  ((temp_table(k+1,2) - temp_table(k, 2))/&
-             (temp_table(k+1,1)-temp_table(k,1)))*Temp_p(index) + temp_table(k,2) 
+        Grid(ix, iy, iz)%kappa =  ((temp_table(k,2) - temp_table(k-1, 2))/&
+             (temp_table(k,1)-temp_table(k-1,1)))*Temp_p(index) + temp_table(k,2) 
 
         Grid(ix, iy, iz)%rho = ((temp_table(k+1,3) - temp_table(k, 3))/&
-             (temp_table(k+1,1)-temp_table(k,1)))*Temp_p(index) + temp_table(k,3)
+             (temp_table(k,1)-temp_table(k-1,1)))*Temp_p(index) + temp_table(k,3)
 
         Grid(ix, iy, iz)%heat_capacity = ((temp_table(k+1,4) - temp_table(k, 4))/&
-             (temp_table(k+1,1)-temp_table(k,1)))*Temp_p(index) + temp_table(k,4)
+             (temp_table(k,1)-temp_table(k-1,1)))*Temp_p(index) + temp_table(k,4)
 
         lin_rhoc(index) = Grid(ix, iy, iz)%rho * Grid(ix, iy, iz)%heat_capacity
         
