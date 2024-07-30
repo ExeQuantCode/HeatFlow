@@ -49,7 +49,8 @@ contains
     implicit none
     integer(int12), intent(in) :: i, j
     integer(int12) :: x, y, z
-    real(real12) :: alpha, A, B, D, E, F, G 
+    real(real12) :: alpha, A, B, D, E, F, G
+    real(real12) :: Agrad, Bgrad, Dgrad, Egrad, Fgrad, Ggrad
     real(real12) :: H
 
 
@@ -66,7 +67,13 @@ contains
     F = calculate_conductivity(x, y, z - 1, x, y, z)
     G = calculate_conductivity(x, y, z + 1, x, y, z)
 
-   
+    !kappa gradient terms
+    Agrad = grad_term(x - 1, y, z, x, y, z)
+    Bgrad = grad_term(x + 1, y, z, x, y, z)
+    Dgrad = grad_term(x, y - 1, z, x, y, z)
+    Egrad = grad_term(x, y + 1, z, x, y, z)
+    Fgrad = grad_term(x, y, z - 1, x, y, z)
+    Ggrad = grad_term(x, y, z + 1, x, y, z)
     ! Determine the value of H based on the relationship between i and j
     H=0.0_real12
     if ((i-j) .eq. 0)  then
@@ -78,15 +85,15 @@ contains
       if (x .eq. 1) then
         H=0.0_real12
       else
-         H = A  ! X left neighbor (left cell interaction)
+        H = A + Agrad ! X left neighbor (left cell interaction)
       end if
     end if 
 
     if ((i-j) .eq. -1) then
       if (x .eq. nx) then
-        H=0.0_real12
+        H=0.0_real12 
       else
-        H = B  ! X right neighbor (right cell interaction)
+        H = B + Bgrad  ! X right neighbor (right cell interaction)
       end if
     end if
 
@@ -94,14 +101,14 @@ contains
       if (y.eq.1) then
         H=0.0_real12
       else
-        H = D  ! Y down neighbor (down cell interaction)
+        H = D + Dgrad ! Y down neighbor (down cell interaction)
       end if 
     end if 
     if ((i-j) .eq. -nx) then
       if (y.eq.ny) then
         H=0.0_real12
       else
-        H = E  ! Y up neighbor (up cell interaction)
+        H = E + Egrad  ! Y up neighbor (up cell interaction)
       end if 
     end if 
 
@@ -109,7 +116,7 @@ contains
       if (z.eq. 1) then
         H=0.0_real12
       else
-         H = F  ! Z in neighbor (forward cell interaction)
+         H = F + Fgrad ! Z in neighbor (forward cell interaction)
       end if
     end if 
 
@@ -117,7 +124,7 @@ contains
       if (z .eq. nz) then
         H=0.0_real12
       else  
-        H = G  ! Z out neighbor (backward cell interaction)
+        H = G + Ggrad ! Z out neighbor (backward cell interaction)
       end if
     end if 
   end function hmatrixfunc
@@ -223,5 +230,74 @@ contains
     end if
     
   end subroutine boundry_diag_term
+
+  function grad_term(x_b, y_b, z_b, x, y, z) result(kappaout)
+    integer(int12), intent(in) :: x, y, z, x_b, y_b, z_b
+    real(real12) :: kappap1x, kappap1y, kappap1z
+    real(real12) :: kappam1x, kappam1y, kappam1z
+    real(real12) :: kappaout
+    real(real12) :: lx, ly, lz
+
+
+    lx = grid(x,y,z)%Length(1)
+    ly = grid(x,y,z)%Length(2)
+    lz = grid(x,y,z)%Length(3)  
+    
+    if ((y_b .eq. y) .and. (z_b .eq. z)) then
+      if (x_b .lt. 1) then
+        kappap1x = grid(x+1,y,z)%kappa
+        kappaout = (kappap1x-kappaBoundx1)/(2*lx) !Bgrad
+      else if (x_b .gt. nx) then
+        kappam1x = grid(x-1,y,z)%kappa
+        kappaout = (kappam1x-kappaBoundNx)/(2*lx) !Agrad
+      else
+        kappap1x = grid(x+1,y,z)%kappa
+        kappam1x = grid(x-1,y,z)%kappa
+        if (x_b .eq. x+1) then
+          kappaout = (kappap1x-kappam1x)/(2*lx) !Bgrad
+        else if (x_b .eq. x-1) then
+          kappaout = -1.0_real12*(kappap1x-kappam1x)/(2*lx) !Agrad
+        end if
+      end if
+    end if 
+    
+    if ((x_b .eq. x) .and. (z_b .eq. z)) then
+      if (y_b .lt. 1) then
+        kappap1y = grid(x,y+1,z)%kappa
+        kappaout = (kappap1y-kappaBoundy1)/(2*ly) !Egrad
+      else if (y_b .gt. ny) then
+        kappam1y = grid(x,y-1,z)%kappa
+        kappaout = (kappam1y-kappaBoundNy)/(2*ly) !Dgrad
+      else
+        kappap1y = grid(x,y+1,z)%kappa
+        kappam1y = grid(x,y-1,z)%kappa
+        if (y_b .eq. y+1) then
+          kappaout = (kappap1y-kappam1y)/(2*ly) !Egrad
+        else if (y_b .eq. y-1) then
+          kappaout = -1*(kappap1y-kappam1y)/(2*ly) !Dgrad
+        end if
+      end if
+    end if 
+
+    if ((x_b .eq. x) .and. (y_b .eq. y)) then
+      if (z_b .lt. 1) then
+        kappap1z = grid(x,y,z+1)%kappa
+        kappaout = (kappap1z-kappaBoundz1)/(2*lz) !Ggrad
+      else if (z_b .gt. nz) then
+        kappam1z = grid(x,y,z-1)%kappa
+        kappaout = (kappam1z-kappaBoundNz)/(2*lz) !Fgrad
+      else
+        kappap1z = grid(x,y,z+1)%kappa
+        kappam1z = grid(x,y,z-1)%kappa
+        if (z_b .eq. z+1) then
+          kappaout = (kappap1z-kappam1z)/(2*lz) !Ggrad
+        else if (z_b .eq. z-1) then
+          Kappaout = -1*(kappap1z-kappam1z)/(2*lz) !Fgrad
+        end if
+      end if
+    end if 
+
+
+  end function grad_term
 
 end module hmatrixmod
