@@ -5,6 +5,7 @@
 !!! The variables in this module are:
 !!! - B, The boundary term for the S vector.
 !!! - kappa, The thermal conductivity of the material.
+!!! - kappa2, The thermal conductivity of the material at the neighbouring grid point.
 !!! - I, The index of the grid point.
 !!! - ix, iy, iz, The indices of the grid point in the x, y, and z directions.
 !!! Author: Harry Mclean, Frank Davies, Steven Hepplestone
@@ -19,7 +20,7 @@ contains
 
   subroutine boundary(B)
     real(real12), dimension(NA), intent(out) :: B
-    real(real12) :: kappa
+    real(real12) :: kappa, kappa2
     integer(int12) :: I,ix,iy,iz
 
 
@@ -34,41 +35,65 @@ contains
             do ix= 1,nx
               I = I+1
             kappa = grid(ix,iy,iz)%kappa
-
+            
              select case (ix) 
-               case (1) 
+               case (1)
+                kappa2 = grid(ix+1,iy,iz)%kappa
                 B(I)=B(I)+((2*kappaBoundx1*kappa)/(kappaBoundx1+kappa))/(&
                     (grid(ix,iy,iz)%Length(1)**2))*T_Bathx1
+                !grad term
+                B(I) = B(I)+((kappaBoundx1-kappa2)/(&
+                    (grid(ix,iy,iz)%Length(1)*2)))*T_Bathx1
                end select
 
               select case(nx-ix) 
-               case(0) 
+               case(0)
+               kappa2 = grid(ix-1,iy,iz)%kappa
                B(I)=B(I)+((2*kappaBoundNx*kappa)/(kappaBoundNx+kappa))/(&
                     (grid(ix,iy,iz)%Length(1)**2))*T_Bathx2
+                !grad term
+                B(I) = B(I)+((kappa2-kappaBoundNx)/(&
+                    (grid(ix,iy,iz)%Length(1)*2)))*T_Bathx2
                end select
 
              select case (iy)
              case (1)
+                kappa2 = grid(ix,iy+1,iz)%kappa
                 B(I)=B(I)+((2*kappaBoundy1*kappa)/(kappaBoundy1+kappa))/(&
                     (grid(ix,iy,iz)%Length(2)**2))*T_Bathy1
+                !grad term
+                B(I) = B(I)+((kappaBoundy1-kappa2)/(&
+                    (grid(ix,iy,iz)%Length(2)*2)))*T_Bathy1
             end select
 
              select case(ny-iy)
              case(0)
-               B(I)=B(I)+((2*kappaBoundNy*kappa)/(kappaBoundNy+kappa))/(&
+                kappa2 = grid(ix,iy-1,iz)%kappa
+                B(I)=B(I)+((2*kappaBoundNy*kappa)/(kappaBoundNy+kappa))/(&
                     (grid(ix,iy,iz)%Length(2)**2))*T_Bathy2
+                !grad term
+                B(I) = B(I)+((kappa2-kappaBoundNy)/(&
+                    (grid(ix,iy,iz)%Length(2)*2)))*T_Bathy2
              end select
 
              select case (iz) 
              case (1)
+                kappa2 = grid(ix,iy,iz+1)%kappa
                 B(I)=B(I)+((2*kappaBoundz1*kappa)/(kappaBoundz1+kappa))/(&
                     (grid(ix,iy,iz)%Length(3)**2))*T_Bathz1
+                !grad term
+                B(I) = B(I)+((kappaBoundz1-kappa2)/(&
+                    (grid(ix,iy,iz)%Length(3)*2)))*T_Bathz1
                end select
 
             select case(nz-iz)  
              case(0)
+                kappa2 = grid(ix,iy,iz-1)%kappa
                 B(I)=B(I)+((2*kappaBoundNz*kappa)/(kappaBoundNz+kappa))/(&
                     (grid(ix,iy,iz)%Length(3)**2))*T_Bathz2
+                !grad term
+                B(I) = B(I)+((kappa2-kappaBoundNz)/(&
+                    (grid(ix,iy,iz)%Length(3)*2)))*T_Bathz2
             end select
           end do
       end do
