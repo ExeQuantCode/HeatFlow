@@ -11,7 +11,7 @@
 !!! Author: Harry Mclean, Frank Davies, Steven Hepplestone
 !!!#################################################################################################
 module boundary_vector
-  use constants, only: real12, int12
+  use constants, only: real12, int12, TINY
   use inputs, only: NA,nx,ny,nz, grid, kappaBoundx1, kappaBoundy1, kappaBoundz1
   use inputs, only: kappaBoundNx, kappaBoundNy, kappaBoundNz
   use inputs, only: T_Bathx1, T_Bathx2, T_Bathy1, T_Bathy2, T_Bathz1, T_Bathz2
@@ -20,7 +20,7 @@ contains
 
   subroutine boundary(B)
     real(real12), dimension(NA), intent(out) :: B
-    real(real12) :: kappa, kappa2
+    real(real12) :: kappa
     integer(int12) :: I,ix,iy,iz
 
 
@@ -38,62 +38,62 @@ contains
             
              select case (ix) 
                case (1)
-                kappa2 = grid(ix+1,iy,iz)%kappa
                 B(I)=B(I)+((2*kappaBoundx1*kappa)/(kappaBoundx1+kappa))/(&
                     (grid(ix,iy,iz)%Length(1)**2))*T_Bathx1
                 !grad term
-                B(I) = B(I)+((kappaBoundx1-kappa2)/(&
-                    (grid(ix,iy,iz)%Length(1)*2)))*T_Bathx1
+                !if (.not. ((kappaBoundx1 .le. TINY) .or. (kappa .le. TINY))) 
+                B(I) = B(I)+((kappaBoundx1-kappa)/(&
+                      (grid(ix,iy,iz)%Length(1)**2)))*T_Bathx1
                end select
 
               select case(nx-ix) 
                case(0)
-               kappa2 = grid(ix-1,iy,iz)%kappa
                B(I)=B(I)+((2*kappaBoundNx*kappa)/(kappaBoundNx+kappa))/(&
                     (grid(ix,iy,iz)%Length(1)**2))*T_Bathx2
                 !grad term
-                B(I) = B(I)+((kappa2-kappaBoundNx)/(&
-                    (grid(ix,iy,iz)%Length(1)*2)))*T_Bathx2
+               !if (.not. ((kappaBoundNx .le. TINY) .or. (kappa .lt. TINY))) 
+               B(I) = B(I)+((kappaBoundNx-kappa)/(&
+                      (grid(ix,iy,iz)%Length(1)**2)))*T_Bathx2
                end select
 
              select case (iy)
              case (1)
-                kappa2 = grid(ix,iy+1,iz)%kappa
                 B(I)=B(I)+((2*kappaBoundy1*kappa)/(kappaBoundy1+kappa))/(&
                     (grid(ix,iy,iz)%Length(2)**2))*T_Bathy1
                 !grad term
-                B(I) = B(I)+((kappaBoundy1-kappa2)/(&
-                    (grid(ix,iy,iz)%Length(2)*2)))*T_Bathy1
+              !if (.not. ((kappaBoundy1 .le. TINY) .or. (kappa .le. TINY))) 
+              B(I) = B(I)+((kappaBoundy1-kappa)/(&
+                      (grid(ix,iy,iz)%Length(2)**2)))*T_Bathy1
             end select
 
              select case(ny-iy)
              case(0)
-                kappa2 = grid(ix,iy-1,iz)%kappa
                 B(I)=B(I)+((2*kappaBoundNy*kappa)/(kappaBoundNy+kappa))/(&
                     (grid(ix,iy,iz)%Length(2)**2))*T_Bathy2
                 !grad term
-                B(I) = B(I)+((kappa2-kappaBoundNy)/(&
-                    (grid(ix,iy,iz)%Length(2)*2)))*T_Bathy2
+                !if (.not. ((kappaBoundNy .le. TINY) .or. (kappa .le. TINY))) 
+                B(I) = B(I)+((kappaBoundNy-kappa)/(&
+                      (grid(ix,iy,iz)%Length(2)**2)))*T_Bathy2
              end select
 
              select case (iz) 
              case (1)
-                kappa2 = grid(ix,iy,iz+1)%kappa
                 B(I)=B(I)+((2*kappaBoundz1*kappa)/(kappaBoundz1+kappa))/(&
                     (grid(ix,iy,iz)%Length(3)**2))*T_Bathz1
                 !grad term
-                B(I) = B(I)+((kappaBoundz1-kappa2)/(&
-                    (grid(ix,iy,iz)%Length(3)*2)))*T_Bathz1
+                !if (.not. ((kappaBoundz1 .le. TINY) .or. (kappa .le. TINY))) 
+                B(I) = B(I)+((kappaBoundz1-kappa)/(&
+                      (grid(ix,iy,iz)%Length(3)**2)))*T_Bathz1
                end select
 
             select case(nz-iz)  
              case(0)
-                kappa2 = grid(ix,iy,iz-1)%kappa
                 B(I)=B(I)+((2*kappaBoundNz*kappa)/(kappaBoundNz+kappa))/(&
                     (grid(ix,iy,iz)%Length(3)**2))*T_Bathz2
                 !grad term
-                B(I) = B(I)+((kappa2-kappaBoundNz)/(&
-                    (grid(ix,iy,iz)%Length(3)*2)))*T_Bathz2
+                !if (.not. ((kappaBoundNz .le. TINY) .or. (kappa .le. TINY))) 
+                B(I) = B(I)+((kappaBoundNz-kappa)/(&
+                      (grid(ix,iy,iz)%Length(3)**2)))*T_Bathz2
             end select
           end do
       end do

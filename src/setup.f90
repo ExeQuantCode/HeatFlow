@@ -22,6 +22,7 @@ module setup
   use globe_data, only:  ra, Temp_cur, Temp_p, Temp_pp,inverse_time, heat, lin_rhoc
   use sparse, only: SRSin
   use materials, only: material
+  use gmatrixmod, only: gmatrixfunc
   implicit none
   
    contains
@@ -81,7 +82,7 @@ module setup
 !!!#################################################################################################
    subroutine sparse_Hmatrix()
       ! use omp_lib
-      real(real12) :: H0 ! Holds the value of the H matrix
+      real(real12) :: H0, Hm ! Holds the value of the H+G matrix and H matrix respecitively
       integer(int12) :: i, j, len, count, k ! i and j are the row and column of the H matrix
       ! Holds the values to add to the row to get the column
       integer(int12), allocatable, dimension(:) :: addit 
@@ -91,19 +92,18 @@ module setup
       ra%len = len ! The number of non-zero elements in the H matrix
       ! Allocate the arrays to hold the H matrix in sparse row storage
       allocate(ra%val(len), ra%irow(len), ra%jcol(len)) 
-
+      Hm=0.0_real12
+      H0=0.0_real12
       addit = [1] ! The values to add to the row to get the column
       if (nx .gt. 1) addit = [addit, nx] ! Add the values to add to the row to get the column
       if (ny .gt. 1) addit = [addit, nx*ny]  ! Add the values to add to the row to get the column
 
-
-
-      
       count = 0 ! The number of non-zero elements in the H matrix
       parent_loop: do j = 1, NA ! Loop over the columns of the H matrix
          i=j ! The row of the H matrix
          count = count + 1 ! The number of non-zero elements in the H matrix
-         H0 = hmatrixfunc(i,j) ! The value of the H matrix
+         Hm = hmatrixfunc(i,j) ! The value of the H matrix
+         H0 = Hm + gmatrixfunc(i,j)! The value of the H matrix + Gmatrix
          ra%val(count) = H0 ! The value of the H matrix
          ra%irow(count) = i ! The row of the H matrix
          ra%jcol(count) = j ! The column of the H matrix
@@ -113,15 +113,17 @@ module setup
              ! If the row is greater than the number of rows ...
              !...in the H matrix then go to the next column
              if ((i.gt.NA)) cycle parent_loop 
-             H0=hmatrixfunc(i,j) ! The value of the H matrix
+             Hm = hmatrixfunc(i,j)
+             H0 = Hm+gmatrixfunc(i,j) ! The value of the H matrix
              ! If the value of the H matrix is less than TINY then go to the next value ...
              !...to add to the row to get the column
-             if (abs(H0).lt.TINY) cycle neighbour_loop 
+             if (abs(H0) .lt. TINY) then cycle neighbour_loop
              count = count + 1 ! The number of non-zero elements in the H matrix
              ra%val(count) = H0 ! The value of the H matrix
              ra%irow(count) = i ! The row of the H matrix
              ra%jcol(count) = j ! The column of the H matrix
              count = count + 1 ! The number of non-zero elements in the H matrix
+             H0 = Hm + gmatrixfunc(j,i) ! The value of the H matrix
              ra%val(count) = H0 ! The value of the H matrix
              ra%irow(count) = j ! The row of the H matrix
              ra%jcol(count) = i ! The column of the H matrix
@@ -188,7 +190,7 @@ module setup
       BCount = 0
       do j=1,na
          do i =1,na
-            H0 = hmatrixfunc(i,j)
+            H0 = hmatrixfunc(i,j)+gmatrixfunc(i,j)
             H(i,j) = H0
          end do
 
@@ -220,15 +222,15 @@ subroutine SparseToReal(HT)
    HT = 0.0_real12
    parent_loop: do j = 1, NA
       i=j
-      H0 = hmatrixfunc(i,j)
+      H0 = hmatrixfunc(i,j) + gmatrixfunc(i,j)
       HT(i,j) = H0
       neighbour_loop: do k = 1, size(addit,1)
           i = j + addit(k)
           if ((i.gt.NA)) cycle parent_loop
-          H0=hmatrixfunc(i,j)
+          H0=hmatrixfunc(i,j) + gmatrixfunc(i,j)
           if (abs(H0).lt.TINY) cycle neighbour_loop
           HT(i,j)=H0
-          H0=hmatrixfunc(j,i)
+          H0=hmatrixfunc(j,i) + gmatrixfunc(j,i)
           HT(j,i)=H0
 
       end do neighbour_loop
