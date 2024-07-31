@@ -122,6 +122,7 @@ module setup
              ra%irow(count) = i ! The row of the H matrix
              ra%jcol(count) = j ! The column of the H matrix
              count = count + 1 ! The number of non-zero elements in the H matrix
+             H0=hmatrixfunc(j,i) ! The value of the H matrix
              ra%val(count) = H0 ! The value of the H matrix
              ra%irow(count) = j ! The row of the H matrix
              ra%jcol(count) = i ! The column of the H matrix
