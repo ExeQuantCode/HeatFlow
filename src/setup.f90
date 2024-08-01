@@ -117,7 +117,7 @@ module setup
              H0 = Hm+gmatrixfunc(i,j) ! The value of the H matrix
              ! If the value of the H matrix is less than TINY then go to the next value ...
              !...to add to the row to get the column
-             if (abs(H0) .lt. TINY) then cycle neighbour_loop
+             if (abs(H0) .lt. TINY) cycle neighbour_loop
              count = count + 1 ! The number of non-zero elements in the H matrix
              ra%val(count) = H0 ! The value of the H matrix
              ra%irow(count) = i ! The row of the H matrix

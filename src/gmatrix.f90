@@ -118,64 +118,77 @@ contains
   function calculate_conductivity(x_in, y_in, z_in, x_out, y_out, z_out) result(conductivity)
     integer(int12), intent(in) :: x_in, y_in, z_in, x_out, y_out, z_out
     real(real12) :: kappa_ab, kappa, a, b, c, d, e, f
-    real(real12) :: conductivity, lx, ly, lz
-    lx = grid(x_out, y_out, z_out)%Length(1) **2
-    ly = grid(x_out, y_out, z_out)%Length(2) **2
-    lz = grid(x_out, y_out, z_out)%Length(3) **2
+    real(real12) :: conductivity, lx2, ly2, lz2
+    lx2 = grid(x_out, y_out, z_out)%Length(1)**2
+    ly2 = grid(x_out, y_out, z_out)%Length(2)**2
+    lz2 = grid(x_out, y_out, z_out)%Length(3)**2
 
     kappa_ab=0.0_real12
     kappa = 0.0_real12
     ! if not an edge element
     kappa = grid(x_out, y_out, z_out)%kappa
-    if ((x_out .eq. 1)) then
+
+    if ((x_out .eq. 1) .and. (nx .ne. 1)) then
        a = kappaBoundx1
        b = grid(x_out+1, y_out, z_out)%kappa
-    else if ((x_out .eq. nx)) then
+    else if ((x_out .eq. nx) .and. (nx .ne. 1)) then
         b = kappaBoundNx
         a = grid(x_out-1, y_out, z_out)%kappa
+    else if (nx .eq. 1) then
+        a = kappaBoundx1
+        b = kappaBoundNx
     else
        a = grid(x_out-1, y_out, z_out)%kappa
        b = grid(x_out+1, y_out, z_out)%kappa
     end if
-    if ((y_out .eq. 1)) then
+
+    if ((y_out .eq. 1) .and. (ny .ne. 1 )) then
         c = kappaBoundy1
         d = grid(x_out, y_out+1, z_out)%kappa
-    else if ((y_out .eq. ny)) then
+    else if ((y_out .eq. ny) .and. (ny.ne.1)) then
         c = grid(x_out, y_out-1, z_out)%kappa
         d = kappaBoundNy
+    else if (ny.eq.1) then
+        c= kappaBoundy1
+        d= kappaBoundNy
     else
         c = grid(x_out, y_out-1, z_out)%kappa
         d = grid(x_out, y_out+1, z_out)%kappa
     end if
-    if ((z_out .eq. 1)) then
+
+    if ((z_out .eq. 1) .and. (nz .ne. 1)) then
         e = kappaBoundz1
         f = grid(x_out, y_out, z_out+1)%kappa
-    else if ((z_out .eq. nz)) then
+    else if ((z_out .eq. nz) .and. (nz .ne. 1)) then
         e = grid(x_out, y_out, z_out-1)%kappa
+        f = kappaBoundNz
+    else if (nz .eq. 1) then
+        e = kappaBoundz1
         f = kappaBoundNz
     else
         e = grid(x_out, y_out, z_out-1)%kappa
         f = grid(x_out, y_out, z_out+1)%kappa
     end if
-    if ((x_in .eq. x_out) .and. (y_in .eq. y_out) .and. (z_in .eq. z_out)) kappa_ab = 2*kappa - &
-          ((a + b)/(lx)) - ((c + d)/ly) - ((e + f)/lz) 
+
+    if ((x_in .eq. x_out) .and. (y_in .eq. y_out) .and. (z_in .eq. z_out)) kappa_ab = 2*(kappa/lx2)+2*(kappa/ly2)+2*(kappa/lz2) - &
+          ((a + b)/(lx2)) - ((c + d)/ly2) - ((e + f)/lz2) 
 
     if(x_in .ne. x_out) then
        if (x_in .lt. x_out) kappa_ab = a - kappa
        if (x_in .gt. x_out) kappa_ab = b - kappa 
             
-       kappa_ab = kappa_ab/lx
+       kappa_ab = kappa_ab/lx2
 
     else if (y_in .ne. y_out) then
         if (y_in .lt. y_out) kappa_ab = c - kappa
         if (y_in .gt. y_out) kappa_ab = d - kappa 
 
-       kappa_ab = kappa_ab/ly
+       kappa_ab = kappa_ab/ly2
 
     else if (z_in .ne. z_out) then
       if (z_in .lt. z_out) kappa_ab = e - kappa
       if (z_in .gt. z_out) kappa_ab = f - kappa
-      kappa_ab = kappa_ab/lz
+      kappa_ab = kappa_ab/lz2
     end if
 
            

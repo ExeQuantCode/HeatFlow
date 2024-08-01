@@ -65,7 +65,7 @@ contains
     CALL boundary(B)
     if (IVERB .gt. 3) write(*,*) "B average", sum(B)/size(B)
     if (IVERB .gt. 4) write(*,*) "B", B
-   
+   !  write(*,*) "B", B
     if (any(isnan(B(:)))) then
       write(*,*) "fatal error: NAN in B vector"
       stop
@@ -139,7 +139,7 @@ contains
     x=Temp_p+(Temp_p-Temp_pp) 
     if (any(x-Temp_p .lt. TINY)) x=x+TINY !avoid nan solver issue
     itol=1
-    tol=1.e-32_real12
+    tol=1.e-64_real12
     itmax=50000
     ncg = 0
     iter=ncg
