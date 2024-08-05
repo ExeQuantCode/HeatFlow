@@ -34,48 +34,40 @@ contains
                case (1)
                 B(I)=B(I)+((2*kappaBoundx1*kappa)/(kappaBoundx1+kappa))/(&
                     (grid(ix,iy,iz)%Length(1)**2))*T_Bathx1
-                !grad term
-                B(I) = B(I)+((kappaBoundx1-kappa)/((grid(ix,iy,iz)%Length(1)**2)))*T_Bathx1
+
                end select
 
               select case(nx-ix) 
                case(0)
                B(I)=B(I)+((2*kappaBoundNx*kappa)/(kappaBoundNx+kappa))/(&
                     (grid(ix,iy,iz)%Length(1)**2))*T_Bathx2
-                !grad term
-                B(I) = B(I)+((kappaBoundNx-kappa)/((grid(ix,iy,iz)%Length(1)**2)))*T_Bathx2
+
                end select
 
              select case (iy)
              case (1)
                 B(I)=B(I)+((2*kappaBoundy1*kappa)/(kappaBoundy1+kappa))/(&
                     (grid(ix,iy,iz)%Length(2)**2))*T_Bathy1
-                !grad term
-              B(I) = B(I)+((kappaBoundy1-kappa)/((grid(ix,iy,iz)%Length(2)**2)))*T_Bathy1
+
             end select
 
              select case(ny-iy)
              case(0)
                 B(I)=B(I)+((2*kappaBoundNy*kappa)/(kappaBoundNy+kappa))/(&
                     (grid(ix,iy,iz)%Length(2)**2))*T_Bathy2
-                !grad term
-                B(I) = B(I)+((kappaBoundNy-kappa)/((grid(ix,iy,iz)%Length(2)**2)))*T_Bathy2
+
              end select
 
              select case (iz) 
              case (1)
                 B(I)=B(I)+((2*kappaBoundz1*kappa)/(kappaBoundz1+kappa))/(&
                     (grid(ix,iy,iz)%Length(3)**2))*T_Bathz1
-                !grad term
-                B(I) = B(I)+((kappaBoundz1-kappa)/((grid(ix,iy,iz)%Length(3)**2)))*T_Bathz1
                end select
 
             select case(nz-iz)  
              case(0)
                 B(I)=B(I)+((2*kappaBoundNz*kappa)/(kappaBoundNz+kappa))/(&
                     (grid(ix,iy,iz)%Length(3)**2))*T_Bathz2
-                !grad term
-                B(I) = B(I)+((kappaBoundNz-kappa)/((grid(ix,iy,iz)%Length(3)**2)))*T_Bathz2
             end select
           end do
       end do

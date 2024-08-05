@@ -28,6 +28,7 @@ SRCS := constants.f90 \
 		inputs.f90 \
 		material.f90 \
 		hmatrix.f90 \
+		gmatrix.f90 \
 		init_evolve.f90 \
 		setup.f90 \
 		boundary.f90 \
