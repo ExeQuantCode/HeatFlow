@@ -68,8 +68,8 @@ contains
     if (IVERB .gt. 4) write(*,*) "B", B
 
     if (any(isnan(B(:)))) then
-       write(*,*) "fatal error: NAN in B vector"
-       stop
+       write(0,*) "fatal error: NAN in B vector"
+       stop 1
     end if
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -80,12 +80,12 @@ contains
        CALL heater(itime, Q, Qdens)
 
        if (any(isnan(Q(:)))) then
-            write(*,*) "fatal error: NAN in Q vector"
-            stop
+            write(0,*) "fatal error: NAN in Q vector"
+            stop 1
          end if
        if (any(isnan(Qdens(:)))) then
-            write(*,*) "fatal error: NAN in Qdens vector"
-            stop
+            write(0,*) "fatal error: NAN in Qdens vector"
+            stop 1
          end if
     end if
     
@@ -101,7 +101,7 @@ contains
        if (IVERB .gt. 4) write(*,*) "S_CAT", S_CAT
        if (any(isnan(S_CAT))) then
             write(*,*) "fatal error: NAN in S_CAT vector"
-            stop
+            stop 1
          end if
     end if
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -122,8 +122,8 @@ contains
     if (IVERB .gt.4) write(*,*) "S", S
     
     if (any(isnan(S(:)))) then
-       write(*,*) "fatal error: NAN in S vector"
-       stop
+       write(0,*) "fatal error: NAN in S vector"
+       stop 1
     end if
     
    !----------------------------------------------------
@@ -150,10 +150,10 @@ contains
          err=E)
          
     if (any(isnan(x(:)))) then
-       write(*,*) "fatal error: NAN in x tempurature vector"
-       write(*,*) 'time step ', itime, "      T   ", sum(Temp_p)/size(Temp_p), E ,iter
-       write(*,*) 'time step ',itime, "      x   ", sum(x)/size(x), E ,iter
-       stop
+       write(0,*) "fatal error: NAN in x tempurature vector"
+       write(0,*) 'time step ', itime, "      T   ", sum(Temp_p)/size(Temp_p), E ,iter
+       write(0,*) 'time step ',itime, "      x   ", sum(x)/size(x), E ,iter
+       stop 1
     end if
    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     if (IVERB .gt. 4) then
