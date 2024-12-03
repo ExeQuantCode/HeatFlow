@@ -8,6 +8,7 @@ module globe_data
   implicit none
   real(real12), dimension(:,:,:), allocatable :: Temp_cur
   real(real12), dimension(:), allocatable :: Temp_p, Temp_pp
+  real(real12), dimension(:), allocatable :: Q_P
   real(real12) :: inverse_time, heat, heated_volume
   real(real12), dimension(:), allocatable :: lin_rhoc ! 1D array for HeatCapacity*Rho
   TYPE(sprs2_dp) :: ra !Techniqually rH

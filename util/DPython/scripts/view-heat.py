@@ -199,7 +199,7 @@ def main():
     
     plot_options(matrix, limits, args.upper, args.lower, args.cut)
     
-    plotline(matrix, 2, 25, 25)
+    plotline(matrix, 2, 3, 3)
 
 if __name__ == "__main__":
     main()

@@ -22,6 +22,9 @@
 !!!     - time_step, the time step of the simulation
 !!!     - freq, the frequency of the heater in simulation
 !!!     - power_in, the power in of the heater in the simulation
+!!!     - Periodicx, the boundry condition is periodic in specified directions 
+!!!     - Periodicy, the boundry condition is periodic in specified directions 
+!!!     - Periodicz, the boundry condition is periodic in specified directions 
 !!!     - kappaBoundx, the boundary kappa in the x direction plane x=1
 !!!     - kappaBoundy, the boundary kappa in the y direction plane y=1
 !!!     - kappaBoundz, the boundary kappa in the z direction plane z=1
@@ -40,6 +43,7 @@
 !!!     - T_Bath, the bath temperature
 !!!     - IVERB, the verbose
 !!!     - ntime, the number of time steps
+!!!     - heated_steps, the number of steps for which heating is applied in heating case 2
 !!!     - write_every, the number of time steps to write to txt file
 !!!     - iboundary, the boundary condition
 !!!     - nx, the number of cells in the x direction
@@ -72,6 +76,7 @@ module inputs
 
   integer :: unit, newunit
   ! time step, frequency, power in, boundary kappa
+  logical :: Periodicx,Periodicy,Periodicz
   real(real12) :: time_step, freq, power_in, kappaBoundx1, kappaBoundy1, kappaBoundz1, KappaBound
   real(real12) :: kappaBoundNx, kappaBoundNy, kappaBoundNz
   ! Bath temperatures
@@ -79,13 +84,14 @@ module inputs
   ! verbose, number of time steps, boundary condition, number of cells
   integer(int12) :: IVERB, ntime, iboundary, nx, ny, nz, icattaneo, isteady, NA, write_every
   ! what cells to write to txt file
-  integer(int12) :: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz, TempDepProp
+  integer(int12) :: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz, TempDepProp, heated_steps
   ! flags
   logical :: Check_Sparse_Full, Check_Stability, Check_Steady_State
   logical :: WriteToTxt, LPercentage, InputTempDis
   logical ::  Test_Run = .FALSE., FullRestart = .FALSE.
   ! Name of simiulation run
-  character(1024) :: RunName 
+  character(1024) :: RunName
+  character(12)::Periodic
   ! Essentially it is the system that is being simulated
   type(heatblock), dimension(:,:,:), allocatable :: grid 
   type(material), dimension(:), allocatable :: input_materials ! The materials
@@ -99,6 +105,7 @@ contains
 !!! read_all_files will call the routines to read each input file
 !!!#################################################################################################
   subroutine read_all_files()
+    implicit none
     integer :: unit, reason ! file unit and reason
     character(64) :: param_infile, mat_infile, mesh_infile ! file names
     logical :: file_exists ! check if file exists
@@ -186,8 +193,9 @@ contains
 !!! ... by the variable i.e. 1, 2, .TRUE., 5D-15
 !!!#################################################################################################
   subroutine read_param(unit)
+    implicit none
     integer:: unit, Reason
-    integer,dimension(39)::readvar
+    integer,dimension(41)::readvar
     character(1024)::buffer
 
     readvar(:)=0
@@ -205,6 +213,7 @@ contains
     RunName = trim(adjustl(RunName))
     WriteToTxt = .FALSE.
     ntime = 10
+    heated_steps = 0
     write_every = 1
     time_step = 1.0
     freq = 1
@@ -220,13 +229,15 @@ contains
     T_Bathz1 = T_Bath
     T_Bathz2 = T_Bath
     power_in = 0
+    Periodic = ''
     !kappaBound = [kx1:kNx,ky1:kNy,kz1:kNz]
-    kappaBoundx1 = KappaBound
-    kappaBoundy1 = KappaBound
-    kappaBoundz1 = KappaBound
-    kappaBoundNx = KappaBound
-    kappaBoundNy = KappaBound
-    kappaBoundNz = KappaBound
+    KappaBound = 0.0
+    kappaBoundx1 = 0.0
+    kappaBoundy1 = 0.0
+    kappaBoundz1 = 0.0
+    kappaBoundNx = 0.0
+    kappaBoundNy = 0.0
+    kappaBoundNz = 0.0
     TempDepProp = 0
     !t_output = !{all, every_n, single_n}
     !s_output = !{all, region_[x:X,y:Y,z:Z], downsample_n}
@@ -247,7 +258,7 @@ contains
        ! assignD works for doubles
        ! assignL for logicals
        ! assignI for integers
-        ! assignS for strings
+       ! assignS for strings
        !---------------------------------------
        ! looks for all the keywords relating to inputs and defines their variables
        CALL assignI(buffer,"IVERB",IVERB,readvar(1))
@@ -268,29 +279,44 @@ contains
        CALL assignL(buffer,"_Test_Run",Test_Run,readvar(16))
        CALL assignL(buffer,"_InputTempDis",InputTempDis,readvar(17))
        CALL assignS(buffer,"_RunName",RunName,readvar(18))
-        CALL assignL(buffer,"_FullRestart",FullRestart,readvar(19))
-        CALL assignD(buffer,"T_Bathx1",T_Bathx1,readvar(20)) 
-        CALL assignD(buffer,"T_Bathx2",T_Bathx2,readvar(21))
-        CALL assignD(buffer,"T_Bathy1",T_Bathy1,readvar(22))
-        CALL assignD(buffer,"T_Bathy2",T_Bathy2,readvar(23))
-        CALL assignD(buffer,"T_Bathz1",T_Bathz1,readvar(24))
-        CALL assignD(buffer,"T_Bathz2",T_Bathz2,readvar(25))
-        CALL assignD(buffer,"T_System",T_System,readvar(26))
-        CALL assignD(buffer,"T_Bath",T_Bath,readvar(27))
-        CALL assignD(buffer,"kappaBound",KappaBound,readvar(28))
-        CALL assignD(buffer,"kappaBoundNx",kappaBoundNx,readvar(29))
-        CALL assignD(buffer,"kappaBoundNy",kappaBoundNy,readvar(30))
-        CALL assignD(buffer,"kappaBoundNz",kappaBoundNz,readvar(31))
-        CALL assignI(buffer,"start_ix",start_ix,readvar(32))
-        CALL assignI(buffer,"end_ix",end_ix,readvar(33))
-        CALL assignI(buffer,"start_iy",start_iy,readvar(34))
-        CALL assignI(buffer,"end_iy",end_iy,readvar(35))
-        CALL assignI(buffer,"start_iz",start_iz,readvar(36))
-        CALL assignI(buffer,"end_iz",end_iz,readvar(37))
-        CALL assignI(buffer,"write_every",write_every,readvar(38))
-        CALL assignI(buffer,"TempDepProp",TempDepProp,readvar(39))
+       CALL assignL(buffer,"_FullRestart",FullRestart,readvar(19))
+       CALL assignD(buffer,"T_Bathx1",T_Bathx1,readvar(20)) 
+       CALL assignD(buffer,"T_Bathx2",T_Bathx2,readvar(21))
+       CALL assignD(buffer,"T_Bathy1",T_Bathy1,readvar(22))
+       CALL assignD(buffer,"T_Bathy2",T_Bathy2,readvar(23))
+       CALL assignD(buffer,"T_Bathz1",T_Bathz1,readvar(24))
+       CALL assignD(buffer,"T_Bathz2",T_Bathz2,readvar(25))
+       CALL assignD(buffer,"T_System",T_System,readvar(26))
+       CALL assignD(buffer,"T_Bath",T_Bath,readvar(27))
+       CALL assignD(buffer,"kappaBound",KappaBound,readvar(28))
+       CALL assignD(buffer,"kappaBoundNx",kappaBoundNx,readvar(29))
+       CALL assignD(buffer,"kappaBoundNy",kappaBoundNy,readvar(30))
+       CALL assignD(buffer,"kappaBoundNz",kappaBoundNz,readvar(31))
+       CALL assignI(buffer,"start_ix",start_ix,readvar(32))
+       CALL assignI(buffer,"end_ix",end_ix,readvar(33))
+       CALL assignI(buffer,"start_iy",start_iy,readvar(34))
+       CALL assignI(buffer,"end_iy",end_iy,readvar(35))
+       CALL assignI(buffer,"start_iz",start_iz,readvar(36))
+       CALL assignI(buffer,"end_iz",end_iz,readvar(37))
+       CALL assignI(buffer,"write_every",write_every,readvar(38))
+       CALL assignI(buffer,"TempDepProp",TempDepProp,readvar(39))
+       CALL assignS(buffer,"Periodic",Periodic,readvar(40))
+       CALL assignI(buffer,"heattime",heated_steps,readvar(41))
 
     end do
+    
+    !--------------------------------------------------
+    ! parse the periodic string
+    !--------------------------------------------------
+    Periodicx = .false.
+    Periodicy = .false.
+    Periodicz = .false.
+    
+    if ((index(Periodic, 'x') .gt. 0 ).or.(index(Periodic, 'X') .gt. 0)) Periodicx = .true.
+    if ((index(Periodic, 'y') .gt. 0 ).or.(index(Periodic, 'Y') .gt. 0)) Periodicy = .true.
+    if ((index(Periodic, 'z') .gt. 0 ).or.(index(Periodic, 'Z') .gt. 0)) Periodicz = .true.
+    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
     CALL check_param(readvar,size(readvar,1))
 
   end subroutine read_param
@@ -300,6 +326,7 @@ contains
 !!! check_param gives errors and warnings regarding the INPUT file
 !!!#################################################################################################
   subroutine check_param(readvar,n)
+    implicit none
     integer::n,i
     integer,dimension(n)::readvar
     ! Not currently in use
@@ -310,156 +337,180 @@ contains
        write(6,'(A43)') '##########   ERROR   ##########'
        write(6,'(A43)') '###############################'
        write(6,*)
-       write(6,'(A)') ' ---       Error in subroutine "check_param"       ---'
+       write(6,'(A)') ' ---       Error in subroutine "check_param"      ---'
        write(6,'(A)') ' --- ERROR: same KEYWORD apears more than once    ---'
        stop
     end if
 
-    if (((all(readvar(9:11).eq.1)).and.all(readvar(29:31).eq.1)) .and. (readvar(28).eq.0)) &
-        readvar(28) = 1
+
+    PB:if ((.not. Periodicx).or.(.not. Periodicy).or.(.not. Periodicz)) then
+       !------------------------------------------------------------------------------------
+       ! Error about missing kappa bound 
+       !------------------------------------------------------------------------------------
+       ErrKB:if (((any(readvar(9:11).eq.0)) .or. any(readvar(29:31).eq.0)) &
+            .and. (readvar(28) .gt. 0) )then
+          write(6,*)
+          write(6,'(A43)') '###############################'
+          write(6,'(A43)') '##########   ERORR   ##########'
+          write(6,'(A43)') '###############################'
+          write(6,*)
+          write(6,'(A)')   ' ---            Error in subroutine "check_param"            ---'
+          write(6,'(A)')   ' --- ERROR: KappaBoundx,y,z and KappaBound are not set       ---'
+          stop
+       end if ErrKB
+       !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+       !------------------------------------------------------------------------------------
+       ! warning about missing kappa bound. reassine to Kappabound
+       !------------------------------------------------------------------------------------
+
+        WarKBO:if (((all(readvar(9:11).eq.1)) .or. all(readvar(29:31).eq.1)) &
+            .and. (readvar(28) .eq. 0) )then
+          write(6,*)
+          write(6,'(A43)') '###############################'
+          write(6,'(A43)') '##########   Warning   ##########'
+          write(6,'(A43)') '###############################'
+          write(6,*)
+          write(6,'(A)')   ' ---            Warning in subroutine "check_param"            ---'
+          write(6,'(A)')   ' --- Warning:  KappaBound are not set       ---'
+          readvar(28) = 1
+          
+       end if WarKBO
+       !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+       !------------------------------------------------------------------------------------
+       ! warning about missing kappa bound. reassine to Kappabound
+       !------------------------------------------------------------------------------------
+       WarKB:if (((any(readvar(9:11).eq.0)) .or. any(readvar(29:31).eq.0)) &
+            .and. (readvar(28) .gt. 1) )then
+          write(6,*)
+          write(6,'(A43)') '###############################'
+          write(6,'(A43)') '##########  WARNING  ##########'
+          write(6,'(A43)') '###############################'
+          write(6,*)
+          write(6,'(A)')   ' ---           Warning in subroutine "check_param"           ---'
+          write(6,'(A)')   ' --- WARNING: KappaBoundx,y,z not set, using KappaBound      ---'
+          kappaBoundx1 = KappaBound
+          kappaBoundy1 = KappaBound
+          kappaBoundz1 = KappaBound
+          kappaBoundNx = KappaBound
+          kappaBoundNy = KappaBound
+          kappaBoundNz = KappaBound
+       end if WarKB
+       !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    elseif (((any(readvar(9:11).eq.0)) .or. any(readvar(29:31).eq.0)) &
+         .or. (readvar(28) .gt. 0) ) then
+       write(6,*)
+       write(6,'(A43)') '###############################'
+       write(6,'(A43)') '##########  WARNING  ##########'
+       write(6,'(A43)') '###############################'
+       write(6,*)
+       write(6,'(A)')   ' ---            Warning in subroutine "check_param"             ---'
+       write(6,'(A)')   ' --- WARNING: Periodic Boundry set, set Kappa are ignored       ---'
+    end if PB
 
     !------------------------------------------------------------------------------------
-    ! Disply that T_system and T_bath are being used and not individual, i.e T_bathx,y,z
+    ! warning about missing bath temps. reassine to T_Bath
     !------------------------------------------------------------------------------------
-    if (((any(readvar(9:11).eq.0)) .and. any(readvar(29:31).eq.0)) .and. (readvar(28) .gt. 0) )then
-        write(6,*)
-        write(6,'(A43)') '###############################'
-        write(6,'(A43)') '##########   WARNING   ##########'
-        write(6,'(A43)') '###############################'
-        write(6,*)
-        write(6,'(A)') ' ---       Warning in subroutine "check_param"       ---'
-        write(6,'(A)') ' --- WARNING: KappaBoundx,y,z are not set, KappaBound will be used    ---'
+    WarBath:if ( any(readvar(20:25).eq.0) ) then
+       write(6,*)
+       write(6,'(A43)') '###############################'
+       write(6,'(A43)') '##########  WARNING  ##########'
+       write(6,'(A43)') '###############################'
+       write(6,*)
+       write(6,'(A)')   ' ---            Warning in subroutine "check_param"             ---'
+       write(6,'(A)')   ' --- WARNING: T_Bath x,y,z not set T_Bath will be used          ---'
+       T_Bathx1 = T_Bath
+       T_Bathx2 = T_Bath
+       T_Bathy1 = T_Bath
+       T_Bathy2 = T_Bath
+       T_Bathz1 = T_Bath
+       T_Bathz2 = T_Bath
+    end if WarBath
+    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    !------------------------------------------------------------------------------------
+    ! Further warnings
+    !------------------------------------------------------------------------------------
+    if (any(readvar(32:37).eq.0)) then
+       write(6,*)
+       write(6,'(A43)') '###############################'
+       write(6,'(A43)') '##########  WARNING  ##########'
+       write(6,'(A43)') '###############################'
+       write(6,*)
+       write(6,'(A)') ' ---       WARNING in subroutine "check_param"       ---'
+       write(6,'(A)') ' --- WARNING: Some or All output write cells paramters are not defined ---'
+       write(6,*) ' --- USING: ', 'Start_ix = ', start_ix, ', end_ix = ', end_ix, ', start_iy = ', &
+            start_iy,', end_iy = ', end_iy, ', start_iz = ', start_iz, ', end_iz = ', end_iz
     end if
 
-    if (any(readvar(20:25).eq.0)  .and. (readvar(27) .gt. 0) ) then
-        write(6,*)
-        write(6,'(A43)') '###############################'
-        write(6,'(A43)') '##########   WARNING   ##########'
-        write(6,'(A43)') '###############################'
-        write(6,*)
-        write(6,'(A)') ' ---       Warning in subroutine "check_param"       ---'
-        write(6,'(A)') ' --- WARNING: T_Bath x,y,z not set T_Bath will be used    ---'
-    end if 
-    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    !------------------------------------------------------------------------------------
-    ! Check for missing parameters
-    !------------------------------------------------------------------------------------
+    if (readvar(39) .eq. 0) then
+       write(6,*)
+       write(6,'(A43)') '###############################'
+       write(6,'(A43)') '##########  WARNING  ##########'
+       write(6,'(A43)') '###############################'
+       write(6,*)
+       write(6,'(A)') ' ---       WARNING in subroutine "check_param"       ---'
+       write(6,'(A)') ' --- WARNING: TempDepProp not set, no action needed ---'
+       readvar(39) = 1
+    end if
 
-      if ((any(readvar(9:11) .eq.0) .and. any(readvar(29:31).eq.0)) .and. (readvar(28) .eq. 0) ) then
-        write(6,*)
-        write(6,'(A43)') '###############################'
-        write(6,'(A43)') '##########   ERROR   ##########'
-        write(6,'(A43)') '###############################'
-        write(6,*)
-        write(6,'(A)') ' ---       Error in subroutine "check_param"       ---'
-        write(6,'(A)') ' --- ERROR: KappaBound missing and KappaBound x,y,z not set ---'
-        write(6,*)
-        stop
-      end if
-      if (all(readvar(20:25) .eq.1) .and. (readvar(27) .eq. 0) ) then
-         readvar(27) = 1
-      end if
-      if (any(readvar(20:25) .eq. 0)) then
-        T_Bathx1 = T_Bath
-        T_Bathx2 = T_Bath
-        T_Bathy1 = T_Bath
-        T_Bathy2 = T_Bath
-        T_Bathz1 = T_Bath
-        T_Bathz2 = T_Bath
-        readvar(20:25) = 1
-      end if
-      if (any(readvar(9:11).eq. 0)) then
-        kappaBoundx1 = KappaBound
-        kappaBoundy1 = KappaBound
-        kappaBoundz1 = KappaBound
-        kappaBoundNx = KappaBound
-        kappaBoundNy = KappaBound
-        kappaBoundNz = KappaBound
-        readvar(9:11) = 1
-      end if 
-
-      if (any(readvar(32:37).eq.0)) then
-        write(6,*)
-        write(6,'(A43)') '###############################'
-        write(6,'(A43)') '##########   WARNING  ##########'
-        write(6,'(A43)') '###############################'
-        write(6,*)
-        write(6,'(A)') ' ---       WARNING in subroutine "check_param"       ---'
-        write(6,'(A)') ' --- WARNING: Some or All output write cells paramters are not defined ---'
-        write(6,*) ' --- USING: ', 'Start_ix = ', start_ix, ', end_ix = ', end_ix, ', start_iy = ', &
-            start_iy,', end_iy = ', end_iy, ', start_iz = ', start_iz, ', end_iz = ', end_iz
-      end if 
-
-      if (readvar(39) .eq. 0) then
-        write(6,*)
-        write(6,'(A43)') '###############################'
-        write(6,'(A43)') '##########   WARNING  ##########'
-        write(6,'(A43)') '###############################'
-        write(6,*)
-        write(6,'(A)') ' ---       WARNING in subroutine "check_param"       ---'
-        write(6,'(A)') ' --- WARNING: TempDepProp not set, no action needed ---'
-        readvar(39) = 1
-      end if
-
-     if (any(readvar.eq.0)) then
-      write(6,*)
-      write(6,'(A43)') '###############################'
-      write(6,'(A43)') '##########   WARNING  ##########'
-      write(6,'(A43)') '###############################'
-      write(6,*)
-      write(6,'(A)') ' ---       WARNING in subroutine "check_param"       ---'
-      write(6,'(A)') ' --- WARNING: Essential parameters missing    ---'
-      ! Print all indices of readvar that are 0
-      do i = 1, size(readvar)
-        if (readvar(i) == 0) then
-          write(6, '(A,I3)') 'Index ', i, ' of readvar is 0'
-        end if
-      end do
-      write(6,*)
-     end if
-
-     
-
+    if (any(readvar.eq.0)) then
+       write(6,*)
+       write(6,'(A43)') '###############################'
+       write(6,'(A43)') '##########  WARNING  ##########'
+       write(6,'(A43)') '###############################'
+       write(6,*)
+       write(6,'(A)') ' ---       WARNING in subroutine "check_param"       ---'
+       write(6,'(A)') ' --- WARNING: Essential parameters missing    ---'
+       ! Print all indices of readvar that are 0
+       do i = 1, size(readvar)
+          if (readvar(i) == 0) then
+             write(6, '(A,I3)') 'Index ', i, ' of readvar is 0'
+          end if
+       end do
+       write(6,*)
+    end if
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 
     if(IVERB .ge. 1) then
-       write(6,'(A)')        ' vebose printing option'
-       write(6,'(A)')        ' running calculation with :'
-       write(6,'(A35,I6)')   '   IVERB      = ',IVERB
-       write(6,'(A35,L1)')   '   _Check_Sparse_Full  = ',Check_Sparse_Full
-       write(6,'(A35,L1)')   '   _Check_Stability         = ',Check_Stability
-       write(6,'(A35,L1)')   '  _Percentage_Completion         = ',LPercentage
-       write(6,'(A35,L1)')   '   _Test_Run         = ',Test_Run
-       write(6,'(A35,L1)')   '   _InputTempDis         = ',InputTempDis
-       write(6,'(A35,L1)')   '    _FullRestart         = ',FullRestart
-       write(6,'(A35,A)')   '    _RunName         = ',trim(RunName)
-       write(6,'(A35,L1)')   '   _WriteToTxt         = ',WriteToTxt
-       write(6,'(A35,I12)')   '   ntime      = ',ntime
-       write(6,'(A35,I12)')   '   write_every      = ',write_every
-       write(6,'(A35,F20.15)')'   Time_step  = ',time_step
-       write(6,'(A35,F12.5)')'   frequency  = ',freq
-       write(6,'(A35,I6)')   '   iboundary  = ',iboundary
-       write(6,'(A35,I6)')   '   icattaneo  = ' , icattaneo
-       write(6,'(A35,I6)')   '   isteady    = ', isteady
-       write(6,'(A35,F12.5)')'   T_System   = ', T_System
-       write(6,'(A35,F12.5)')'   T_Bath      = ', T_Bath
-       write(6,'(A35,F12.5)')'   T_Bathx1     = ', T_Bathx1
-       write(6,'(A35,F12.5)')'   T_Bathx2     = ', T_Bathx2
-       write(6,'(A35,F12.5)')'   T_Bathy1     = ', T_Bathy1
-       write(6,'(A35,F12.5)')'   T_Bathy2     = ', T_Bathy2
-       write(6,'(A35,F12.5)')'   T_Bathz1     = ', T_Bathz1
-       write(6,'(A35,F12.5)')'   T_Bathz2     = ', T_Bathz2
-       write(6,'(A35,F12.5)')'   power_in   = ',power_in
-       write(6,'(A35,F12.5)')   '   KappaBound         = ',KappaBound
-       write(6,'(A35,F12.5)')   '   kappaBoundx1         = ',kappaBoundx1
-       write(6,'(A35,F12.5)')   '   kappaBoundy1         = ',kappaBoundy1
-       write(6,'(A35,F12.5)')   '   kappaBoundz1         = ',kappaBoundz1
-       write(6,'(A35,F12.5)')   '   kappaBoundNx         = ',kappaBoundNx
-       write(6,'(A35,F12.5)')   '   kappaBoundNy         = ',kappaBoundNy
-       write(6,'(A35,F12.5)')   '   kappaBoundNz         = ',kappaBoundNz
-       write(6,'(A35,I6)')   '   TempDepProp         = ',TempDepProp
+       write(6,'(A)')           ' vebose printing option'
+       write(6,'(A)')           ' running calculation with :'
+       write(6,'(A35,I6)')      '   IVERB             = ', IVERB
+       write(6,'(A35,L1)')      '  _Check_Sparse_Full = ', Check_Sparse_Full
+       write(6,'(A35,L1)')      '  _Check_Stability   = ', Check_Stability
+       write(6,'(A35,L1)')      '  _Percentage_Completion = ', LPercentage
+       write(6,'(A35,L1)')      '  _Test_Run          = ', Test_Run
+       write(6,'(A35,L1)')      '  _InputTempDis      = ', InputTempDis
+       write(6,'(A35,L1)')      '  _FullRestart       = ', FullRestart
+       write(6,'(A35,A)')       '  _RunName           = ', trim(RunName)
+       write(6,'(A35,L1)')      '  _WriteToTxt        = ', WriteToTxt
+       write(6,'(A35,I12)')     '   ntime       = ', ntime
+       write(6,'(A35,I12)')     '   heattime    = ', heated_steps
+       write(6,'(A35,I12)')     '   write_every = ', write_every
+       write(6,'(A35,F20.15)')  '   Time_step   = ', time_step
+       write(6,'(A35,F12.5)')   '   frequency   = ', freq
+       write(6,'(A35,I6)')      '   iboundary   = ', iboundary
+       write(6,'(A35,I6)')      '   icattaneo   = ', icattaneo
+       write(6,'(A35,I6)')      '   isteady     = ', isteady
+       write(6,'(A35,F12.5)')   '   T_System    = ', T_System
+       write(6,'(A35,F12.5)')   '   T_Bath      = ', T_Bath
+       write(6,'(A35,F12.5)')   '   T_Bathx1    = ', T_Bathx1
+       write(6,'(A35,F12.5)')   '   T_Bathx2    = ', T_Bathx2
+       write(6,'(A35,F12.5)')   '   T_Bathy1    = ', T_Bathy1
+       write(6,'(A35,F12.5)')   '   T_Bathy2    = ', T_Bathy2
+       write(6,'(A35,F12.5)')   '   T_Bathz1    = ', T_Bathz1
+       write(6,'(A35,F12.5)')   '   T_Bathz2    = ', T_Bathz2
+       write(6,'(A35,F12.5)')   '   power_in    = ', power_in
+       write(6,'(A35,F12.5)')   '   KappaBound    = ', KappaBound
+       write(6,'(A35,F12.5)')   '   kappaBoundx1  = ', kappaBoundx1
+       write(6,'(A35,F12.5)')   '   kappaBoundy1  = ', kappaBoundy1
+       write(6,'(A35,F12.5)')   '   kappaBoundz1  = ', kappaBoundz1
+       write(6,'(A35,F12.5)')   '   kappaBoundNx  = ', kappaBoundNx
+       write(6,'(A35,F12.5)')   '   kappaBoundNy  = ', kappaBoundNy
+       write(6,'(A35,F12.5)')   '   kappaBoundNz  = ', kappaBoundNz
+       write(6,'(A35,I6)')      '   TempDepProp   = ', TempDepProp
+       write(6,'(A35,A12)')     '   Periodic      = ', Periodic
 
     end if
   end subroutine check_param
@@ -469,6 +520,7 @@ contains
 !!! The read in the system file, system.in
 !!!#################################################################################################
   subroutine read_system(unit)
+    implicit none
     integer, intent(in) :: unit
     integer(int12) :: ix, iy, iz, reason, pos !, pos_old ! counters
     character(2048) :: buffer, array,line
@@ -525,7 +577,7 @@ subroutine read_mat(unit)
     type(material), dimension(100) :: dum_mat
     character(1024) :: buffer
     integer :: reason, j
-    integer, dimension(7) :: readvarmat
+    integer, dimension(8) :: readvarmat
     integer :: i, index
 
     i=0
@@ -571,6 +623,7 @@ subroutine read_mat(unit)
        CALL assignD(buffer,"rho"          ,dum_mat(i)%rho          ,readvarmat(5))! assign rho
        CALL assignD(buffer,"sound_speed"  ,dum_mat(i)%sound_speed  ,readvarmat(6))! assign sound_speed
        CALL assignD(buffer,"tau"          ,dum_mat(i)%tau          ,readvarmat(7))! assign tau
+       CALL assignD(buffer,"em"            ,dum_mat(i)%em            ,readvarmat(8))! assign e
     end do read
     
     ! Check for duplicate indices
@@ -593,6 +646,7 @@ subroutine read_mat(unit)
 !!! assigns a DP value to variable if the line contains the right keyword
 !!!#################################################################################################
   subroutine assignD(buffer,keyword,variable,found)
+    implicit none
     ! for the line with the keyword trim everything before the = inclusively 
     ! and assign that value to the keyword
     integer::found
@@ -614,6 +668,7 @@ subroutine read_mat(unit)
 !!! assigns an integer
 !!!#################################################################################################
   subroutine assignI(buffer,keyword,variable,found)
+    implicit none
     ! for the line with the keyword trim everything before the = inclusively 
     ! and assign that value to the keyword
     integer::found
@@ -635,6 +690,7 @@ subroutine read_mat(unit)
 !!! assigns an logical
 !!!#################################################################################################
   subroutine assignL(buffer,keyword,variable,found)
+    implicit none
     ! for the line with the keyword trim everything before the = inclusively 
     ! and assign that value to the keyword
     integer::found
@@ -661,6 +717,7 @@ subroutine read_mat(unit)
 !!! assigns a string
 !!!#################################################################################################
   subroutine assignS(buffer,keyword,variable,found)
+    implicit none
     ! for the line with the keyword trim everything before the = inclusively 
     ! and assign that value to the keyword
     integer::found
@@ -682,6 +739,7 @@ subroutine read_mat(unit)
 !!! val outouts the section of buffer that occurs after an "="
 !!!#################################################################################################
   function val(buffer)
+    implicit none
     character(*) :: buffer
     character(100) :: val
     val=trim(adjustl(buffer((scan(buffer,"=",back=.true.)+1):)))

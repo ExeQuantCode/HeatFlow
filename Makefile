@@ -1,5 +1,5 @@
 ####################################################################
-#  October 26, 2023                                                  #
+#   11 Jun 2024                                                    #
 ####################################################################
 #
 SHELL = /bin/sh
@@ -40,7 +40,7 @@ SRCS := constants.f90 \
 OBJS := $(addprefix $(SRC_DIR)/,$(SRCS))
 
 
-FFLAGS = -O3
+FFLAGS = -O3 
 MODULEFLAGS = -J
 FC = gfortran
 
@@ -65,3 +65,6 @@ $(programs) : $(OBJS) | $(BIN_DIR) $(BUILD_DIR)
 
 debug :  $(OBJS)
 	$(FC) -O3 -mcmodel=large -Wall -g -ffpe-trap=invalid,zero,overflow,underflow -fbacktrace -fcheck=all -fbounds-check  $(MODULEFLAGS) $(BUILD_DIR) $(OBJS) -o $(programs)
+
+OMP: $(programs)
+	./util/DShell/omp_exec.sh
