@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 ### Security
 
+##[TBD] - 2024-12-03
+### Added
+-Periodic boundary conditions
+
+### Changed
+-Error handeling
+
+
 ## [TBD] - 2024-03-21
 ### Added
 
