@@ -47,15 +47,19 @@ To install HeatFlow, the source must be obtained from the git repository. Use th
  cd HeatFlow
 ```
 
-Then, within the repository, run the following command:
+Then, within the repository, run the following commands:
 
 ```
+mkdir build
+cd build
+cmake [-DCMAKE_BUILD_TYPE=Release] ..
 make install
 ```
 
-This will build the library and install the executable in the following directory:
+This will build and install the executable in the following directory:
 ```
-bin/ThermalFlow.x
+${HOME}/.local/HeatFLow/bin/HeatFlow
 ```
 
 This executable can now be called to run the HeatFlow software package and simulate heat transport.
+If the `${HOME}/.local/HeatFLow/bin` is added to your `PATH` environment variable, then the program can be called as a terminal command.
