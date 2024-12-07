@@ -1,5 +1,6 @@
 [![License workflow](https://img.shields.io/badge/License-GPLv3-yellow.svg)](https://www.gnu.org/licenses/gpl-3.0.en.html "View GPLv3 license")
 [![Latest Release](https://img.shields.io/github/v/release/ExeQuantCode/HeatFlow?sort=semver)](https://github.com/ExeQuantCode/HeatFlow/releases "View on GitHub")
+[![CMAKE](https://img.shields.io/badge/cmake-3.27.7-red)](https://github.com/Kitware/CMake/releases/tag/v3.27.7 "View cmake")
 [![GCC compatibility](https://img.shields.io/badge/gcc-14.1.0-green)](https://gcc.gnu.org/gcc-14/ "View GCC")
 
 
@@ -34,8 +35,9 @@ Thank you for your understanding and continued support!
 ## Requirements
 
 - Fortran compiler supporting Fortran 2003 standard or later
+- fpm or CMake
 
-The library bas been developed and tested using the following Fortran compilers:
+The software bas been developed and tested using the following Fortran compilers:
 - gfortran -- gcc 13.2.0
 - gfortran -- gcc 14.1.0
 
@@ -47,7 +49,23 @@ To install HeatFlow, the source must be obtained from the git repository. Use th
  cd HeatFlow
 ```
 
-Then, within the repository, run the following commands:
+### fpm
+
+To install using fpm, run the following command in the repository root directory:
+
+```
+fpm build --profile=release
+```
+
+To execute the code, use
+
+```
+fpm run HeatFlow --profile release -- [ALL PROGRAM OPTIONS]
+```
+
+### cmake
+
+For cmake installation, start within the repository root directory, run the following commands:
 
 ```
 mkdir build
@@ -63,3 +81,14 @@ ${HOME}/.local/HeatFLow/bin/HeatFlow
 
 This executable can now be called to run the HeatFlow software package and simulate heat transport.
 If the `${HOME}/.local/HeatFLow/bin` is added to your `PATH` environment variable, then the program can be called as a terminal command.
+This can be done with the following command (works on a per-terminal basis, if you want to update it for all, include this in your source shell file):
+
+```
+export PATH="${PATH}:${HOME}/.local/HeatFLow/bin"
+```
+
+To execute the program, use the following command:
+
+```
+HeatFlow
+```
