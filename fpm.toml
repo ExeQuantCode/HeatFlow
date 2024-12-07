@@ -1,0 +1,23 @@
+name = "HeatFlow"
+version = "0.5.0"
+license = "GPLv3"
+author = "HeatFlow maintainers"
+maintainer = ""
+description = "A Fortran executable for modelling Cattaneo heat flow"
+
+[preprocess]
+[preprocess.cpp]
+suffixes = ["F90", "f90"]
+
+[library]
+source-dir="src"
+
+[fortran]
+implicit-typing = false
+implicit-external = false
+source-form = "free"
+
+[[executable]]
+name="HeatFlow"
+source-dir="src"
+main="main.f90"
