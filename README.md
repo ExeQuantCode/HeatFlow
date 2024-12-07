@@ -1,5 +1,5 @@
 [![License workflow](https://img.shields.io/badge/License-GPLv3-yellow.svg)](https://www.gnu.org/licenses/gpl-3.0.en.html "View GPLv3 license")
-[![Latest Release](https://img.shields.io/github/v/release/nedtaylor/RAFFLE?sort=semver)](https://github.com/ExeQuantCode/HeatFlow/releases "View on GitHub")
+[![Latest Release](https://img.shields.io/github/v/release/ExeQuantCode/HeatFlow?sort=semver)](https://github.com/ExeQuantCode/HeatFlow/releases "View on GitHub")
 [![GCC compatibility](https://img.shields.io/badge/gcc-14.1.0-green)](https://gcc.gnu.org/gcc-14/ "View GCC")
 
 
@@ -44,7 +44,7 @@ The library bas been developed and tested using the following Fortran compilers:
 To install HeatFlow, the source must be obtained from the git repository. Use the following commands to get started:
 ```
  git clone https://github.com/ExeQuantCode/HeatFlow.git
- cd raffle
+ cd HeatFlow
 ```
 
 Then, within the repository, run the following command:
