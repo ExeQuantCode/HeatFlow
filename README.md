@@ -11,6 +11,26 @@ HeatFlow is Fortran-based a software package for modelling dynamical heat transp
 The software is primarily designed to utilise the Cattaneo method.
 However, the Fourier method can be used instead.
 
+**IMPORTANT NOTICE: Repository Migration to GitHub**
+
+Dear users and contributors,
+
+This repository is soon to be migrated from the University of Exeter GitLab to GitHub to facilitate community interaction and support.
+You can find the latest version, updates, and contribute to the project on our new GitHub repository.
+
+**New GitHub Repository:** https://github.com/ExeQuantCode/HeatFlow
+
+## Why the Migration?
+
+It was decided that this project should be migrated to allow for better community support (i.e. allowing community users to raise issues). All information has been ported over where possible. Issues have not been migrated over, these can be found in the old repository. Releases prior to `HeatFlow_CattaneoPaper` have not been migrated over, but they can still be found as tags in this repository.
+
+## How to Contribute on GitHub?
+
+Thank you for your understanding and continued support!
+
+---
+
+
 ## Requirements
 
 - Fortran compiler supporting Fortran 2003 standard or later
