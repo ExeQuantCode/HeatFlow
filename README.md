@@ -19,7 +19,7 @@ Dear users and contributors,
 This repository has been to be migrated from the University of Exeter GitLab to GitHub to facilitate community interaction and support.
 The latest version, updates, and collaboration now take place on this GitHub repository.
 
-**New GitLab Repository (Archived):** https://git.exeter.ac.uk/hepplestone/heatflow-mk2
+**GitLab Repository (Archived):** https://git.exeter.ac.uk/hepplestone/heatflow-mk2
 
 ## Why the Migration?
 
