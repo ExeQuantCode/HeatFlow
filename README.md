@@ -16,14 +16,16 @@ However, the Fourier method can be used instead.
 
 Dear users and contributors,
 
-This repository is soon to be migrated from the University of Exeter GitLab to GitHub to facilitate community interaction and support.
-You can find the latest version, updates, and contribute to the project on our new GitHub repository.
+This repository has been to be migrated from the University of Exeter GitLab to GitHub to facilitate community interaction and support.
+The latest version, updates, and collaboration now take place on this GitHub repository.
 
-**New GitHub Repository:** https://github.com/ExeQuantCode/HeatFlow
+**New GitLab Repository (Archived):** https://git.exeter.ac.uk/hepplestone/heatflow-mk2
 
 ## Why the Migration?
 
-It was decided that this project should be migrated to allow for better community support (i.e. allowing community users to raise issues). All information has been ported over where possible. Issues have not been migrated over, these can be found in the old repository. Releases prior to `HeatFlow_CattaneoPaper` have not been migrated over, but they can still be found as tags in this repository.
+It was decided that this project should be migrated to allow for better community support (i.e. allowing community users to raise issues).
+All information has been ported over where possible.
+Releases prior to `HeatFlow_CattaneoPaper` have had their history modified to remove history of files over 50MB in size.
 
 ## How to Contribute on GitHub?
 
