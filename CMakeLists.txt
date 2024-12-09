@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.17.5...3.27.7)
 
 # define build environments
-set( CMAKE_INSTALL_PREFIX "$ENV{HOME}/.local/${PROJECT_NAME}/bin/"
+set(PROJECT_NAME "HeatFlow")
+
+set( CMAKE_INSTALL_PREFIX "$ENV{HOME}/.local/${PROJECT_NAME}"
   CACHE STRING "Select where to install the program." )
 set(CMAKE_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}
   CACHE STRING "Select where to build the program." )
 set(MODULE_DIR ${CMAKE_BUILD_DIR}/mod)
-
-set(PROJECT_NAME "HeatFlow")
 
 
 # set compiler
@@ -124,14 +124,10 @@ message(STATUS "project name: ${PROJECT_NAME}")
 # create the library
 add_executable(${PROJECT_NAME} ${PREPENDED_LIB_FILES} ${PREPENDED_SRC_FILES})
 set_target_properties(${PROJECT_NAME} PROPERTIES Fortran_MODULE_DIRECTORY ${MODULE_DIR})
-install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/${PROJECT_NAME}/bin)
+install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 
-# replace ".f90" with ".mod"
-string(REGEX REPLACE "\\.[^.]*$" ".mod" MODULE_FILES "${SRC_FILES}")
-
-# # installation
-# install(FILES ${MODULE_DIR}/${MODULE_FILES} DESTINATION ${PROJECT_NAME}/include)
-# install(TARGETS ${PROJECT_NAME} DESTINATION ${PROJECT_NAME}/lib)
+# # replace ".f90" with ".mod"
+# string(REGEX REPLACE "\\.[^.]*$" ".mod" MODULE_FILES "${SRC_FILES}")
 
 # set compile options based on different build configurations
 target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Release>:${OPTIMFLAGS}>")
