@@ -155,18 +155,23 @@ contains
        write(0,*) 'time step ',itime, "      x   ", sum(x)/size(x), E ,iter
        stop 1
     end if
-   !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    if (IVERB .gt. 4) then
+   !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   !------------------------------------------------------------------------------------------------
+   ! Update the temperature vector and properties if the temperature dependent properties are used.
+   !------------------------------------------------------------------------------------------------
+    if (IVERB .gt. 4) then !print out the average temperature and energy
       write(*,*) 
       write(*,*) 'time step ', itime, "      T   ", sum(Temp_p)/size(Temp_p), E ,iter
       write(*,*) 'time step ',itime, "      x   ", sum(x)/size(x), E ,iter
     end if
+    
     Temp_pp = Temp_p
     Temp_p = x
 
     if (TempDepProp .eq. 1) then
       CALL ChangeProp()
     end if
+   !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
   end subroutine simulate
 

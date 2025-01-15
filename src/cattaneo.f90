@@ -16,6 +16,9 @@ pure subroutine S_catS(s_cat)
     real(real12), dimension(NA), intent(inout) :: S_cat
     integer(int12) :: index, ix, iy, iz
 
+    !-----------------------------------------------------------------------------------------------
+    !The Cattaneo term is calculated for each grid point in the domain.
+    !-----------------------------------------------------------------------------------------------
     index = 0
     do iz=1,nz
         do iy = 1, ny
@@ -27,7 +30,7 @@ pure subroutine S_catS(s_cat)
             end do
         end do
     end do
-
+    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 end subroutine S_catS
 
 end module cattaneo

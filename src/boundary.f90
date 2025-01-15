@@ -28,7 +28,10 @@ contains
     !...and this can be both edges (second vector)
     !for example, the ix-axis has a left and right boundary,
     !these correspond to  Bound_Term(1,1) and Bound_Term(1,2)
-
+    
+    !-----------------------------------------------------------------------------------------------
+    !The boundary term is calculated for each grid point in the domain.
+    !-----------------------------------------------------------------------------------------------
     I = 0
     do iz = 1, nz
         do iy = 1, ny
@@ -72,7 +75,7 @@ contains
             end do
         end do
     end do
-
+    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   end subroutine boundary
 
   
