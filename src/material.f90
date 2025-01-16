@@ -21,6 +21,35 @@ module materials
   implicit none
 
 contains
+!!!#########################################################################
+!!!  Subroutine to get the material properties
+!!!  This subroutine takes the material type and returns the material properties.
+!!!  The material properties are:
+!!!  - kappa, the thermal conductivity of the material.
+!!!  - kappa3D, the thermal conductivity of the material in 3D.
+!!!  - h_conv, the convective heat transfer coefficient.
+!!!  - heat_capacity, the heat capacity of the material.
+!!!  - rho, the density of the material.
+!!!  - sound_speed, the speed of sound in the material.
+!!!  - tau, the relaxation time of the material.
+!!!  - em, the emissivity of the material.
+!!!  The material type is an integer that corresponds to a material in the input_materials array.
+!!!  If the material type is less than 100, the material properties are taken from the ...
+!!!   ...input_materials array.
+!!!  If the material type is greater than 100, the material properties are taken from a default case.
+!!!  If the material type is not found, an error message is printed and the program exits.
+!!!  The material properties are returned as arguments.
+!!!  Arguments:
+!!!  - imaterial_type, the material type.
+!!!  - kappa, the thermal conductivity of the material.
+!!!  - kappa3D, the thermal conductivity of the material in 3D.
+!!!  - h_conv, the convective heat transfer coefficient.
+!!!  - heat_capacity, the heat capacity of the material.
+!!!  - rho, the density of the material.
+!!!  - sound_speed, the speed of sound in the material.
+!!!  - tau, the relaxation time of the material.
+!!!  - em, the emissivity of the material.
+!!!#########################################################################
 
 subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau, em)
   
@@ -236,5 +265,6 @@ subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_
    end if
 
  end subroutine material
+ !!!#########################################################################
 
 end module materials

@@ -12,6 +12,14 @@ use globe_data, only: Temp_p,Temp_pp, lin_rhoc
 use constants, only: real12, int12, TINY
 implicit none
 contains
+
+!!!##############################################################################################
+!!! This subroutine calculates the Cattaneo term for the S vector.
+!!! The Cattaneo term is calculated for each grid point in the domain.
+!!! Arguments:
+!!! - S_cat, This is the Cattaneo term for the S vector.
+!!!##############################################################################################
+
 pure subroutine S_catS(s_cat)
     real(real12), dimension(NA), intent(inout) :: S_cat
     integer(int12) :: index, ix, iy, iz
@@ -32,5 +40,5 @@ pure subroutine S_catS(s_cat)
     end do
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 end subroutine S_catS
-
+!!!!##############################################################################################
 end module cattaneo

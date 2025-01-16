@@ -26,7 +26,11 @@ module initial
 
 
 contains
-
+   !!!##############################################################################################
+   !!! This subroutine reads the temperature field from a file if a full restart is requested, ...
+   !!! ... or if the user has specified a temperature field file. If neither of these conditions ...
+   !!! ... are met, the temperature field is set to the value specified in the input file.
+   !!!##############################################################################################
    subroutine initial_evolve()
       implicit none
       !------------------------------------------------------------------------------
@@ -45,9 +49,20 @@ contains
       end if
       !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    end subroutine initial_evolve
+   !!!##############################################################################################
 
-
-!!!
+   !!!##############################################################################################
+   !!! This subroutine reads the temperature field from a file. The file is expected to contain ...
+   !!! ... the printed out tempurature values of a previous run with a given number of fields ...
+   !!! ... on each line. If the file is not found an error is printed and the code exits. The ...
+   !!! ... file is expected to contain a total of NA values. If the file does not contain the ...
+   !!! ... expected number of values, the program will exit with an error message. If the file ...
+   !!! ... contains more values than expected, the program will exit with an error message. If ...
+   !!! ... the file does not exist, the program will exit with an error message.
+   !!! Arguments:
+   !!! - filepath, the path to the file containing the temperature field.
+   !!! - T, the temperature field.
+   !!!##############################################################################################
    subroutine read_temp_file(filepath, T)
       implicit none
       character(len=*), intent(in) :: filepath
@@ -123,6 +138,7 @@ contains
       close(unit)
 
    end subroutine read_temp_file
+   !!!##############################################################################################
 
 
 end module initial

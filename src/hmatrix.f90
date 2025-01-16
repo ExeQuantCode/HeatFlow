@@ -52,6 +52,12 @@ module hmatrixmod
 
 contains
 
+
+   !!!########################################################################
+   !!! This function calculates the value of the H matrix based on the relationship between...
+   !!! ... the indices i and j.  
+   !!!########################################################################
+
   function hmatrixfunc(i, j) result(H)
     implicit none
     integer(int12), intent(in) :: i, j
@@ -200,7 +206,11 @@ contains
    end if
    
   end function hmatrixfunc
+  !!!########################################################################
 
+  !!!########################################################################
+   !!! This function calculates the value of alpha based on the indices x, y, and z.
+   !!!########################################################################
   function calculate_alpha(x, y, z, i) result(alpha)
     integer(int12), intent(in) :: x, y, z, i
     real(real12) :: tau, alpha
@@ -214,8 +224,11 @@ contains
     else
       alpha = 0.0_real12
     end if 
-    
   end function calculate_alpha
+  !!!########################################################################
+  !!!##########################################################################################
+   !!! This function calculates the thermal conductivity for heat flow i.e for x_out to x_in.
+   !!!########################################################################################
 
   function calculate_conductivity(x_in, y_in, z_in, x_out, y_out, z_out) result(conductivity)
     integer(int12), intent(in) :: x_in, y_in, z_in, x_out, y_out, z_out
@@ -262,7 +275,14 @@ contains
        conductivity = kappa_ab 
     end if
   end function calculate_conductivity
+  !!!########################################################################
 
+  !!!##########################################################################################
+  !!! This subroutine calculates the thermal conductivity for heat flow i.e for x_out to x_in.
+  !!!
+  !!!                             OLD SUBROUTINE
+  !!!                            TO BE DELETED
+  !!!##########################################################################################
 
   subroutine calc_cond(x_in, y_in, z_in, x_out, y_out, z_out)
     integer(int12), intent(in) :: x_in, y_in, z_in, x_out, y_out, z_out
@@ -272,7 +292,9 @@ contains
 
     kappa_ab=0
     
-    ! if not an edge element
+   !---------------------------------------------------------------------------------
+   ! Calculate the conductivity of the grid points that arent boundary intercations.
+   !---------------------------------------------------------------------------------
     if ((x_in .ge. 1) .and. (x_in .le. nx) .and. (y_in .ge. 1) .and. &
          (y_in .le. ny) .and. (z_in .ge. 1) .and. (z_in .le. nz)) then
        kappa_in = grid(x_in,y_in,z_in)%kappa
@@ -307,23 +329,48 @@ contains
           kappa_ab = kappa_ab/(grid(x_out, y_out, z_out)%Length(3))**2
        end if
        write(*,*) 'cond is ', kappa_ab
-       conductivity = (kappa_ab) 
+       conductivity = (kappa_ab)
+      !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
     else
+      !---------------------------------------------------------------------
+      ! if an edge element call the boundry_diag_term subroutine
+      !---------------------------------------------------------------------
        call boundry_diag_term(x_in, y_in, z_in, x_out, y_out, z_out, kappa_ab)
        conductivity = kappa_ab 
+      !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     end if
+   
   end subroutine calc_cond
+  !!!########################################################################
+
+  !!!########################################################################
+  !!! This function calculates the modulus of a and b, and returns b if the modulus is 0.
+  !!!########################################################################
 
   function altmod(a,b) result(c)
     integer(int12) :: a, b, c
+    !--------------------------------------------------------------------
+    ! Calculate the modulus of a and b, and return b if the modulus is 0
+    !--------------------------------------------------------------------
     c=mod(a,b)
     if(c .eq. 0) c = b
+    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   end function altmod
+  !!!#######################################################################
+
+  !!!########################################################################
+  !!! This subroutine calculates the value of the diagonal term of the H matrix...
+  !!! ...based on the indices x_b, y_b, z_b, x, y, and z.
+  !!!########################################################################
+
 
   subroutine boundry_diag_term(x_b, y_b, z_b, x, y, z, kappa_ab)
     integer(int12), intent(in) :: x_b, y_b, z_b, x, y, z
     real(real12) :: kappa, kappa_ab
 
+    !------------------------------------------------------------
+    ! The boundary term is calculated of the boundary grid point.
+    !------------------------------------------------------------
     kappa = grid(x,y,z)%kappa
 
     
@@ -352,9 +399,9 @@ contains
        kappa_ab = kappa_ab/(grid(x, y, z)%Length(3))**2
 
     end if
-    
+    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   end subroutine boundry_diag_term
-
+  !!!########################################################################
   
 
 end module hmatrixmod
