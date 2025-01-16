@@ -81,7 +81,7 @@ module inputs
   real(real12) :: kappaBoundNx, kappaBoundNy, kappaBoundNz
   ! Bath temperatures
   real(real12) :: T_Bathx1, T_Bathx2, T_Bathy1, T_Bathy2, T_Bathz1, T_Bathz2, T_System, T_Bath
-  logical :: T_BathCG
+  real(real12) :: T_BathCG
   ! verbose, number of time steps, boundary condition, number of cells
   integer(int12) :: IVERB, ntime, iboundary, nx, ny, nz, icattaneo, isteady, NA, write_every
   ! what cells to write to txt file
@@ -230,7 +230,7 @@ contains
     T_Bathy2 = T_Bath
     T_Bathz1 = T_Bath
     T_Bathz2 = T_Bath
-    T_BathCG = .FALSE.
+    T_BathCG = 0
     power_in = 0
     Periodic = ''
     !kappaBound = [kx1:kNx,ky1:kNy,kz1:kNz]
@@ -305,7 +305,7 @@ contains
        CALL assignI(buffer,"TempDepProp",TempDepProp,readvar(39))
        CALL assignS(buffer,"Periodic",Periodic,readvar(40))
        CALL assignI(buffer,"heattime",heated_steps,readvar(41))
-       CALL assignL(buffer,"T_BathCG",T_BathCG,readvar(42))
+       CALL assignD(buffer,"T_BathCG",T_BathCG,readvar(42))
       
        !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -416,7 +416,7 @@ contains
     !------------------------------------------------------------------------------------
     ! warning about missing bath temps. reassine to T_Bath
     !------------------------------------------------------------------------------------
-    if ((readvar(42) .eq. 1) .and. (T_BathCG .eq. .True.)) then
+    if ((readvar(42) .eq. 1) .and. (T_BathCG .gt. 0)) then
       write(6,*)
       write(6,'(A43)') '###############################'
       write(6,'(A43)') '##########  WARNING  ##########'
@@ -445,7 +445,7 @@ contains
        T_Bathz2 = T_Bath
     end if WarBath
     if (readvar(42) .eq. 0) then
-      T_BathCG = .FALSE.
+      T_BathCG = 0
       readvar(42) = 1
     end if
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
