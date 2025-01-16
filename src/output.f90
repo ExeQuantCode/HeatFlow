@@ -73,7 +73,7 @@ contains
           end do
        end do
     end do
-    !---------------------------------------
+    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
     if (itime .eq. 1) then
@@ -113,9 +113,11 @@ contains
          end if
       endif
     end if
+    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
     !---------------------------------------
-
-
+    ! Test steady state 
+    !---------------------------------------
     ! write(*,*) 'Writing Temperature to file'
     !write(30,*) REAL(itime)*time_step, ((T_matrix(i)-T_Bath),i=1,e)
     if (Check_Steady_State) then
@@ -133,7 +135,8 @@ contains
           end if
        end if
     end if
-
+    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    
     !---------------------------------------
     ! final step print and closes
     !---------------------------------------
@@ -141,7 +144,7 @@ contains
        if (.not.Test_run) close(logunit)
        CALL final_print()
     end if
-    !---------------------------------------
+    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
   
   ! call PlotdeltaT(itime)

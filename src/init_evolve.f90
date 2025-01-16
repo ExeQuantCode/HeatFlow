@@ -29,6 +29,9 @@ contains
 
    subroutine initial_evolve()
       implicit none
+      !------------------------------------------------------------------------------
+      ! Set up the previous and previous previous temperature fields based on restart
+      !------------------------------------------------------------------------------
 
       if (FullRestart) then
          CALL read_temp_file('./restart/TempDis.dat',Temp_p)
@@ -40,7 +43,7 @@ contains
          Temp_p = T_System
          Temp_pp = T_System
       end if
-
+      !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    end subroutine initial_evolve
 
 
@@ -54,23 +57,23 @@ contains
       real(real12), dimension(6) :: line
       integer(int12) :: c, numvals
 
-      !----------------------------
+      !------------------------------------------------------
       ! check file exists
-      !----------------------------
+      !------------------------------------------------------
       inquire(file=filepath, exist=exists)
       if (.not. exists) then
          write(*,*) 'Error:',filepath,'does not exist'; stop
       end if
-      !----------------------------
+      !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-      !----------------------
+      !-----------------------------------------------------------------------
       ! Open file
-      !----------------------
+      !-----------------------------------------------------------------------
       open(newunit=unit, file=filepath, status='old', action='read', iostat=reason)
       if (reason .ne. 0) then
          write(*,*) "Error opening file."; stop
       end if
-      !----------------------
+      !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
       !-------------------------------------------------------------
       ! Read file, "fields" values per line
@@ -80,22 +83,24 @@ contains
          read(unit, *, iostat=reason) line
          !----------------------------
          ! error responses
+         !----------------------------
          if (reason .gt. 0) then
             write(*,*) "Error: read error."; stop
          end if
-         !----------------------------
+         !^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
          !----------------------------
          ! assinge values
+         !----------------------------
          numvals = min(fields, NA - c) ! find num values left in NA
          do i = 1, numvals
             c = c + 1
             T(c) = line(i)
          end do
-         !----------------------------
+         !^^^^^^^^^^^^^^^^^^^^^^^^^^^^
       end do
-      !-------------------------------------------------------------
+      !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
       !-------------------------------------
       ! check values are missing
@@ -104,7 +109,7 @@ contains
          write(*,*) "Error: File contains fewer values than expected (", &
             c, " out of ", NA, ")."; stop
       end if
-      !-------------------------------------
+      !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
       !--------------------------------------------------------------------
       ! Attempt to read one more value to ensure there are no extra values
@@ -113,7 +118,7 @@ contains
       if (reason .eq. 0) then
          print *, "Error: File contains more values than expected."; stop
       end if
-      !--------------------------------------------------------------------
+      !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
       close(unit)
 

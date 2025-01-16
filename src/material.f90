@@ -78,7 +78,7 @@ subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_
          call exit
       end if
    end if mat
-   !-------------------------------------------------
+   !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^-
 
       
    !-------------------------------------------------
@@ -100,6 +100,7 @@ subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_
          !!1001-2000 are for liquids,
          !!2001-3000 are for gases
          !!3001+ are for miscelanneous
+   !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 !!!Solids
 !!! 140 - silicon

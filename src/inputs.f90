@@ -302,6 +302,8 @@ contains
        CALL assignI(buffer,"TempDepProp",TempDepProp,readvar(39))
        CALL assignS(buffer,"Periodic",Periodic,readvar(40))
        CALL assignI(buffer,"heattime",heated_steps,readvar(41))
+      
+       !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     end do
     
@@ -472,7 +474,9 @@ contains
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-
+    !------------------------------------------------------------------------------------
+    ! verbos to check for errors
+    !------------------------------------------------------------------------------------
     if(IVERB .ge. 1) then
        write(6,'(A)')           ' vebose printing option'
        write(6,'(A)')           ' running calculation with :'
@@ -513,6 +517,7 @@ contains
        write(6,'(A35,A12)')     '   Periodic      = ', Periodic
 
     end if
+    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   end subroutine check_param
 !!!#################################################################################################  
 

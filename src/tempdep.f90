@@ -18,6 +18,12 @@
 !  ReadTempDepTable: Reads the temperature dependent properties ... 
 !         ... from the Material table file for a given grid point
 !###################################################################################################
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!                       THIS FEATURE IS A WORK IN PROGRESS. DO NOT USE.                    !!!!!
+!!!!!                                                                                          !!!!!
+!!!!!                                                                                          !!!!!     
+!!!!!                                                                                          !!!!!      
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 module TempDep
     use inputs, only: Grid, TempDepProp, Nz, Ny, Nx

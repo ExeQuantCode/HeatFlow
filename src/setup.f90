@@ -44,7 +44,7 @@ module setup
       heat = 0.0_real12
       inverse_time = 1.0_real12/time_step
       !---------------------------------------------------
-      ! ASign material properties to the grid construction
+      ! A Sign material properties to the grid construction
       ! can be expanded to include more properties at a 
       ! later date
       !---------------------------------------------------
@@ -66,15 +66,18 @@ module setup
             end do               
          end do
       end do
+      !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-
+      !---------------------------------------------------
+      ! Check if the sparse matrix matches the full matrix
+      !---------------------------------------------------
       if (Check_Sparse_Full) then
          print*, "CHECK SPARSE FULL"
          CALL build_Hmatrix()
       else
          CALL sparse_Hmatrix()
       end if
-
+      !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
    end subroutine set_global_variables
@@ -195,6 +198,7 @@ module setup
             stop
          end if
       end if
+      !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    end subroutine stability
 !!!#################################################################################################
 
@@ -204,6 +208,9 @@ module setup
    subroutine build_Hmatrix()
       integer(int12) :: i,j, BCount
       real(real12) :: H(NA,NA),HT(NA,NA), H0
+      !---------------------------------------------------
+      ! Set up the full H matrix
+      !---------------------------------------------------
       H=0.0_real12
       BCount = 0
       do j=1,na
@@ -221,6 +228,7 @@ module setup
       else
          write(*,*) "H and HT are not the same"
       end if
+      !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    end subroutine build_Hmatrix
 !!!#################################################################################################
 
@@ -233,6 +241,9 @@ subroutine SparseToReal(HT)
    integer(int12) :: i, j, k
    integer(int12), dimension(3) :: addit
 
+   !---------------------------------------------------
+   ! Set up the full H matrix
+   !---------------------------------------------------
    addit(1) = 1
    addit(2) = nx
    addit(3) = nx*ny
@@ -254,6 +265,7 @@ subroutine SparseToReal(HT)
       end do neighbour_loop
   end do parent_loop
    write(*, '(3F15.4)') HT
+   !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 end subroutine SparseToReal
 !!!#################################################################################################
 
