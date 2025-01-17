@@ -21,7 +21,7 @@ module setup
   use inputs, only: Periodicz ! 
   use hmatrixmod, only: hmatrixfunc
   use globe_data, only:  ra, Temp_cur, Temp_p, Temp_pp,inverse_time, heat, lin_rhoc, Q_P
-  use sparse, only: SRSin
+  use solver, only: SRSin
   use materials, only: material
   implicit none
   

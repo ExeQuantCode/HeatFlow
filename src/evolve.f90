@@ -24,7 +24,7 @@ module evolution
   use inputs, only: NA, icattaneo, isteady, nx, ny, nz, IVERB,T_System, time_step, grid, power_in
   use inputs, only: TempDepProp
   use sptype, only: I4B
-  use sparse, only: linbcg
+  use solver, only: linbcg
   use globe_data, only: Temp_p, Temp_pp, inverse_time, heat, lin_rhoc
   use heating, only: heater
   use boundary_vector, only: boundary

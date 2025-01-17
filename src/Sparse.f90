@@ -264,7 +264,7 @@ END MODULE sputil
 
 
 
-module Sparse
+module solver
 use sptype
 use sputil
 contains
@@ -465,4 +465,4 @@ contains
     x=b/x
   END SUBROUTINE asolve
 
-end module Sparse
+end module solver
