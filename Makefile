@@ -20,23 +20,23 @@ BIN_DIR := ./bin
 SRC_DIR := ./src
 BUILD_DIR = ./obj
 
-SRCS := constants.f90 \
-		constructions.f90 \
-		SPtype.f90 \
-		Globe_data.f90 \
-		Sparse.f90 \
-		inputs.f90 \
-		material.f90 \
-		hmatrix.f90 \
-		init_evolve.f90 \
-		setup.f90 \
-		boundary.f90 \
-		heating.f90 \
-		cattaneo.f90 \
-		tempdep.f90 \
-		evolve.f90 \
-        output.f90 \
-        main.f90
+SRCS := /heatflow/mod_constants.f90 \
+		/heatflow/mod_constructions.f90 \
+		/heatflow/mod_SPtype.f90 \
+		/heatflow/mod_global.f90 \
+		/heatflow/mod_Sparse.f90 \
+		/heatflow/mod_inputs.f90 \
+		/heatflow/mod_material.f90 \
+		/heatflow/mod_hmatrix.f90 \
+		/heatflow/mod_init_evolve.f90 \
+		/heatflow/mod_setup.f90 \
+		/heatflow/mod_boundary.f90 \
+		/heatflow/mod_heating.f90 \
+		/heatflow/mod_cattaneo.f90 \
+		/heatflow/mod_tempdep.f90 \
+		/heatflow/mod_evolve.f90 \
+        /heatflow/mod_output.f90 \
+        heatflow.f90
 OBJS := $(addprefix $(SRC_DIR)/,$(SRCS))
 
 
