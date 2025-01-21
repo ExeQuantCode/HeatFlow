@@ -20,4 +20,4 @@ source-form = "free"
 [[executable]]
 name="HeatFlow"
 source-dir="src"
-main="main.f90"
+main="heatflow.f90"
