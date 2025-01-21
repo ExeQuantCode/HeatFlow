@@ -20,7 +20,7 @@ contains
 !!! - S_cat, This is the Cattaneo term for the S vector.
 !!!##############################################################################################
 
-pure subroutine S_catS(s_cat)
+subroutine S_catS(s_cat)
     real(real12), dimension(NA), intent(inout) :: S_cat
     integer(int12) :: index, ix, iy, iz
 
