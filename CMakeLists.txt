@@ -146,6 +146,7 @@ message(STATUS "source files: ${PREPENDED_SRC_FILES}")
 message(STATUS "project name: ${PROJECT_NAME}")
 
 # create the library
+add_library(${PROJECT_NAME}_library ${PREPENDED_LIB_FILES})
 add_executable(${PROJECT_NAME} ${PREPENDED_LIB_FILES} ${PREPENDED_SRC_FILES})
 set_target_properties(${PROJECT_NAME} PROPERTIES Fortran_MODULE_DIRECTORY ${MODULE_DIR})
 install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
