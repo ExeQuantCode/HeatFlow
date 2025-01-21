@@ -1,4 +1,4 @@
-module test_mod_heating
+program test_mod_heating
     use constants
     use Heating
     implicit none
@@ -117,4 +117,4 @@ contains
         deallocate(Q_test, Qdens_test, Q_P, grid)
     end subroutine test_heater_no_heating
 
-end module test_mod_heating
+end program test_mod_heating
