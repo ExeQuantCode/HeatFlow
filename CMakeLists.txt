@@ -22,6 +22,7 @@ project(HeatFlow LANGUAGES C Fortran)
 
 # set options for building tests and examples
 option(BUILD_TESTS "Build the unit tests" On)
+
 # set coverage compiler flags
 if (CMAKE_BUILD_TYPE MATCHES "Coverage")
   list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
