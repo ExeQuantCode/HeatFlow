@@ -20,6 +20,24 @@ set(CMAKE_Fortran_STANDARD 2018)
 # set the project name
 project(HeatFlow LANGUAGES C Fortran)
 
+# set options for building tests and examples
+option(BUILD_TESTS "Build the unit tests" On)
+# set coverage compiler flags
+if (CMAKE_BUILD_TYPE MATCHES "Coverage")
+  list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+  set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+  if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+      include(CodeCoverage)
+      setup_target_for_coverage_gcovr_html(
+        NAME coverage
+        EXECUTABLE ctest
+        EXCLUDE "${CMAKE_SOURCE_DIR}/test/*")
+  endif()
+endif()
+
+# enable testing
+enable_testing()
+
 set( PROJECT_DESCRIPTION
   "Fortran heat flow" )
 set( PROJECT_URL "https://github.com/ExeQuantCode/HeatFlow" )
@@ -54,6 +72,11 @@ set(LIB_FILES
 set(SRC_FILES
     heatflow.f90
 )
+
+# include the build test directory
+if(BUILD_TESTS)
+  add_subdirectory(test)
+endif()
 
 foreach(lib ${LIB_FILES})
     list(APPEND PREPENDED_LIB_FILES ${CMAKE_CURRENT_LIST_DIR}/${LIB_DIR}/${lib})
