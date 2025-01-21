@@ -14,7 +14,8 @@ module boundary_vector
   use inputs, only: NA,nx,ny,nz, grid, kappaBoundx1, kappaBoundy1, kappaBoundz1
   use inputs, only: kappaBoundNx, kappaBoundNy, kappaBoundNz
   use inputs, only: Periodicx, Periodicy, Periodicz
-  use inputs, only: T_Bathx1, T_Bathx2, T_Bathy1, T_Bathy2, T_Bathz1, T_Bathz2
+  use inputs, only: T_Bathx1, T_Bathx2, T_Bathy1, T_Bathy2, T_Bathz1, T_Bathz2, T_BathCG
+  use globe_data, only: Temp_p
   implicit none
 contains
 
@@ -41,10 +42,12 @@ contains
     
                 if (.not. Periodicx) then
                     if (ix .eq. 1) then
+                        if (T_BathCG .gt. 0) T_Bathx1 = constantboundarytempgrad(I, T_Bathx1)
                         B(I) = B(I) + ((2 * kappaBoundx1 * kappa) / (kappaBoundx1 + kappa)) / &
                                (grid(ix, iy, iz)%Length(1)**2) * T_Bathx1
                     end if
                     if (ix .eq. nx) then
+                        if (T_BathCG .gt. 0) T_Bathx2 = constantboundarytempgrad(I, T_Bathx2)
                         B(I) = B(I) + ((2 * kappaBoundNx * kappa) / (kappaBoundNx + kappa)) / &
                                (grid(ix, iy, iz)%Length(1)**2) * T_Bathx2
                     end if
@@ -52,10 +55,12 @@ contains
     
                 if (.not. Periodicy) then
                     if (iy .eq. 1) then
+                        if (T_BathCG .gt. 0) T_Bathy1 = constantboundarytempgrad(I, T_Bathy1)
                         B(I) = B(I) + ((2 * kappaBoundy1 * kappa) / (kappaBoundy1 + kappa)) / &
                                (grid(ix, iy, iz)%Length(2)**2) * T_Bathy1
                     end if
                     if (iy .eq. ny) then
+                        if (T_BathCG .gt. 0) T_Bathy2 = constantboundarytempgrad(I, T_Bathy2)
                         B(I) = B(I) + ((2 * kappaBoundNy * kappa) / (kappaBoundNy + kappa)) / &
                                (grid(ix, iy, iz)%Length(2)**2) * T_Bathy2
                     end if
@@ -63,10 +68,12 @@ contains
     
                 if (.not. Periodicz) then
                     if (iz .eq. 1) then
+                        if (T_BathCG .gt. 0) T_Bathz1 = constantboundarytempgrad(I, T_Bathz1)
                         B(I) = B(I) + ((2 * kappaBoundz1 * kappa) / (kappaBoundz1 + kappa)) / &
                                (grid(ix, iy, iz)%Length(3)**2) * T_Bathz1
                     end if
                     if (iz .eq. nz) then
+                        if (T_BathCG .gt. 0) T_Bathz2 = constantboundarytempgrad(I, T_Bathz2)
                         B(I) = B(I) + ((2 * kappaBoundNz * kappa) / (kappaBoundNz + kappa)) / &
                                (grid(ix, iy, iz)%Length(3)**2) * T_Bathz2
                     end if
@@ -78,5 +85,18 @@ contains
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   end subroutine boundary
 
+  !!!###############################################################################################
+  !!! This function calculates the boundary temperature required to keep a constant gradient ...
+  !!! ... across the boundary.
+  !!!###############################################################################################
+  function constantboundarytempgrad(I, T_temp) result(T_temp)
+    integer(int12), intent(in) :: I
+    real(real12), intent(out) :: T_temp
+    implicit none
+    T_temp = Temp_p(I)/T_BathCG
+    
+
+  end function constantboundarytempgrad
+  !!!###############################################################################################
   
 end module boundary_vector

@@ -81,6 +81,7 @@ module inputs
   real(real12) :: kappaBoundNx, kappaBoundNy, kappaBoundNz
   ! Bath temperatures
   real(real12) :: T_Bathx1, T_Bathx2, T_Bathy1, T_Bathy2, T_Bathz1, T_Bathz2, T_System, T_Bath
+  real(real12) :: T_BathCG
   ! verbose, number of time steps, boundary condition, number of cells
   integer(int12) :: IVERB, ntime, iboundary, nx, ny, nz, icattaneo, isteady, NA, write_every
   ! what cells to write to txt file
@@ -89,6 +90,7 @@ module inputs
   logical :: Check_Sparse_Full, Check_Stability, Check_Steady_State
   logical :: WriteToTxt, LPercentage, InputTempDis
   logical ::  Test_Run = .FALSE., FullRestart = .FALSE.
+
   ! Name of simiulation run
   character(1024) :: RunName
   character(12)::Periodic
@@ -195,7 +197,7 @@ contains
   subroutine read_param(unit)
     implicit none
     integer:: unit, Reason
-    integer,dimension(41)::readvar
+    integer,dimension(42)::readvar
     character(1024)::buffer
 
     readvar(:)=0
@@ -228,6 +230,7 @@ contains
     T_Bathy2 = T_Bath
     T_Bathz1 = T_Bath
     T_Bathz2 = T_Bath
+    T_BathCG = 0
     power_in = 0
     Periodic = ''
     !kappaBound = [kx1:kNx,ky1:kNy,kz1:kNz]
@@ -302,6 +305,7 @@ contains
        CALL assignI(buffer,"TempDepProp",TempDepProp,readvar(39))
        CALL assignS(buffer,"Periodic",Periodic,readvar(40))
        CALL assignI(buffer,"heattime",heated_steps,readvar(41))
+       CALL assignD(buffer,"T_BathCG",T_BathCG,readvar(42))
       
        !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -412,6 +416,19 @@ contains
     !------------------------------------------------------------------------------------
     ! warning about missing bath temps. reassine to T_Bath
     !------------------------------------------------------------------------------------
+    if ((readvar(42) .eq. 1) .and. (T_BathCG .gt. 0)) then
+      write(6,*)
+      write(6,'(A43)') '###############################'
+      write(6,'(A43)') '##########  WARNING  ##########'
+      write(6,'(A43)') '###############################'
+      write(6,*)
+      write(6,'(A)')   ' ---            Warning in subroutine "check_param"             ---'
+      write(6,'(A)')   ' --- WARNING: T_BathCG set T_Bath/ T_Bath x,y,z will not be used          ---'
+      !set all T_Bath value checks to 1
+      readvar(20:25) = 1 
+      readvar(27) = 1
+
+    end if
     WarBath:if ( any(readvar(20:25).eq.0) ) then
        write(6,*)
        write(6,'(A43)') '###############################'
@@ -427,6 +444,10 @@ contains
        T_Bathz1 = T_Bath
        T_Bathz2 = T_Bath
     end if WarBath
+    if (readvar(42) .eq. 0) then
+      T_BathCG = 0
+      readvar(42) = 1
+    end if
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     !------------------------------------------------------------------------------------
@@ -515,6 +536,14 @@ contains
        write(6,'(A35,F12.5)')   '   kappaBoundNz  = ', kappaBoundNz
        write(6,'(A35,I6)')      '   TempDepProp   = ', TempDepProp
        write(6,'(A35,A12)')     '   Periodic      = ', Periodic
+       write(6,'(A35,L1)')      '   T_BathCG      = ', T_BathCG
+       write(6,'(A35,I6)')      '   start_ix      = ', start_ix
+      write(6,'(A35,I6)')      '   end_ix        = ', end_ix
+      write(6,'(A35,I6)')      '   start_iy      = ', start_iy
+      write(6,'(A35,I6)')      '   end_iy        = ', end_iy
+      write(6,'(A35,I6)')      '   start_iz      = ', start_iz
+      write(6,'(A35,I6)')      '   end_iz        = ', end_iz
+
 
     end if
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
