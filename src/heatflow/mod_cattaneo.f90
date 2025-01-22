@@ -8,7 +8,7 @@
 !!!#################################################################################################
 module cattaneo
 use inputs, only: NA, time_step, nx, ny, nz, grid
-use globe_data, only: Temp_p,Temp_pp, lin_rhoc
+use globe_data, only: Temp_p, Temp_pp, lin_rhoc
 use constants, only: real12, int12, TINY
 implicit none
 contains
