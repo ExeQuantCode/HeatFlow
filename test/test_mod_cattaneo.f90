@@ -66,6 +66,7 @@ program test_mod_cattaneo
         print *, "test_mod_cattaneo: S_catS PASSED"
     else
         print *, "test_mod_cattaneo: S_catS FAILED"
+        stop 1
     end if
 
 contains

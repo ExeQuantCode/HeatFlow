@@ -31,6 +31,7 @@ contains
         nx = 2; ny = 2; nz = 2
         NA = nx * ny * nz
         allocate(grid(nx,ny,nz))
+        grid(:,:,:)%imaterial_type = 140
         time_step = 0.1_real12
         
         ! Call function
@@ -43,6 +44,7 @@ contains
         else
             num_failed = num_failed + 1
             write(*,*) "  FAIL: Array allocation error"
+            stop 1
         end if
 
         ! Cleanup
@@ -69,6 +71,7 @@ contains
         else
             num_failed = num_failed + 1
             write(*,*) "  FAIL: Wrong matrix dimensions"
+            stop 1
         end if
     end subroutine
 
@@ -132,6 +135,7 @@ contains
         else
             num_failed = num_failed + 1
             write(*,*) "  FAIL: Matrix conversion failed"
+            stop 1
         end if
         
         deallocate(test_matrix)

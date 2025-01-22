@@ -13,6 +13,7 @@ contains
         result = altmod(7_int12, 3_int12)
         if (result /= 1) then
             print *, "FAIL: altmod(7,3) expected 1, got", result
+            stop 1
         else
             print *, "PASS: altmod(7,3) test"
         endif
@@ -21,6 +22,7 @@ contains
         result = altmod(6_int12, 3_int12)
         if (result /= 3) then
             print *, "FAIL: altmod(6,3) expected 3, got", result
+            stop 1
         else
             print *, "PASS: altmod(6,3) test"
         endif
@@ -44,6 +46,7 @@ contains
         ! Basic test - with isteady = 0 and icattaneo = 0
         if (abs(result - inverse_time*lin_rhoc(test_i)) > 1.0e-10_real12) then
             print *, "FAIL: calculate_alpha basic test"
+            stop 1
         else
             print *, "PASS: calculate_alpha basic test"
         endif
@@ -67,6 +70,7 @@ contains
         ! Basic test - should return non-zero conductivity for adjacent interior points
         if (result <= 0.0_real12) then
             print *, "FAIL: calculate_conductivity interior test"
+            stop 1
         else
             print *, "PASS: calculate_conductivity interior test"
         endif

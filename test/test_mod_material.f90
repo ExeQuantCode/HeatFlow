@@ -21,6 +21,7 @@ program test_mod_material
         write(*,*) "Test case 1 (Silicon): PASSED"
     else
         write(*,*) "Test case 1 (Silicon): FAILED"
+        stop 1
     endif
 
     ! Test case 2: Invalid material type

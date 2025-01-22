@@ -3,6 +3,11 @@ foreach(execid
     helloworld
     mod_heating
     mod_cattaneo
+    mod_boundary
+    mod_hmatrix
+    mod_material
+    mod_output
+    mod_setup
   )
   add_executable(test_${execid} test_${execid}.f90)
   # # Specify the include directories
