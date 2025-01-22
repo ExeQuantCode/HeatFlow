@@ -2,7 +2,7 @@ program test_mod_setup
     use constants, only: real12, int12, TINY
     use inputs, only: nx, ny, nz, NA, grid, time_step, kappaBoundx1, kappaBoundy1, kappaBoundz1
     use inputs, only: Check_Sparse_Full, Check_Stability, ntime, IVERB, Periodicx, Periodicy, Periodicz
-    use setup
+    use setup, only: set_global_variables, sparse_Hmatrix, stability, build_Hmatrix, SparseToReal
     use globe_data, only: ra, Temp_cur, Temp_p, Temp_pp, inverse_time, heat, lin_rhoc, Q_P
     implicit none
 

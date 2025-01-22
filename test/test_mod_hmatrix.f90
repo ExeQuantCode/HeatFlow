@@ -1,6 +1,6 @@
 module test_hmatrixmod
     use constants, only: real12, int12
-    use hmatrixmod
+    use hmatrixmod, only: altmod, calculate_alpha, calculate_conductivity
     implicit none
 
 contains

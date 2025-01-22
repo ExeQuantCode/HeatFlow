@@ -1,5 +1,5 @@
 program test_mod_cattaneo
-    use cattaneo
+    use cattaneo, only: S_catS
     use constants, only: real12, int12
     implicit none
 

@@ -1,6 +1,6 @@
 program test_mod_heating
-    use constants
-    use Heating
+    use constants, only: real12, int12
+    use Heating, only: heater
     implicit none
 
 contains
@@ -70,7 +70,7 @@ contains
     !--------------------------------------------------------------------
     subroutine test_heater_no_heating()
         use globe_data, only: Q_P
-        use constants
+        use constants, only: real12, int12
         use inputs, only: nx, ny, nz, NA, power_in, time_step, heated_steps, freq, T_Bath, grid
         implicit none
 

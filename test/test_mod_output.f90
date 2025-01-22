@@ -1,8 +1,9 @@
 program test_mod_output
-    use output
+    use output, only: last_log, data_write
     use constants, only: real12, int12
-    use inputs
-    use globe_data
+    use inputs, only: nx, ny, nz, NA, time_step, Test_Run, Check_Steady_State, &
+              write_every, WriteToTxt, ntime, freq, RunName, IVERB
+    use globe_data, only: Temp_p, Temp_pp, heat, heated_volume
     implicit none
 
     ! Test variables

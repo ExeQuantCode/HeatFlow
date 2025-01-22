@@ -1,8 +1,10 @@
 module test_boundary_vector
     use constants, only: real12, int12
-    use boundary_vector
-    use inputs
-    use globe_data
+    use boundary_vector, only: boundary, constantboundarytempgrad
+    use inputs, only: Periodicx, Periodicy, Periodicz, NA, nx, ny, nz, grid, Temp_p, &
+              kappaBoundx1, kappaBoundy1, kappaBoundz1, kappaBoundNx, kappaBoundNy, kappaBoundNz, &
+                       T_Bathx1, T_Bathx2, T_Bathy1, T_Bathy2, T_Bathz1, T_Bathz2, T_BathCG
+    use globe_data, only: Temp_p
     implicit none
 
 contains
