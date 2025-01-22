@@ -10,7 +10,7 @@
 !!! Author: Harry Mclean, Frank Davies, Steven Hepplestone
 !!!#################################################################################################
 module boundary_vector
-  use constants, only: real12, int12
+  use constants, only: real12, int12, TINY
   use inputs, only: NA,nx,ny,nz, grid, kappaBoundx1, kappaBoundy1, kappaBoundz1
   use inputs, only: kappaBoundNx, kappaBoundNy, kappaBoundNz
   use inputs, only: Periodicx, Periodicy, Periodicz
@@ -42,12 +42,12 @@ contains
     
                 if (.not. Periodicx) then
                     if (ix .eq. 1) then
-                        if (T_BathCG .gt. 0) T_Bathx1 = constantboundarytempgrad(I)
+                        if (T_BathCG .gt. (0.0_real12+TINY)) T_Bathx1 = constantboundarytempgrad(I)
                         B(I) = B(I) + ((2 * kappaBoundx1 * kappa) / (kappaBoundx1 + kappa)) / &
                                (grid(ix, iy, iz)%Length(1)**2) * T_Bathx1
                     end if
                     if (ix .eq. nx) then
-                        if (T_BathCG .gt. 0) T_Bathx2 = constantboundarytempgrad(I)
+                        if (T_BathCG .gt. (0.0_real12+TINY)) T_Bathx2 = constantboundarytempgrad(I)
                         B(I) = B(I) + ((2 * kappaBoundNx * kappa) / (kappaBoundNx + kappa)) / &
                                (grid(ix, iy, iz)%Length(1)**2) * T_Bathx2
                     end if
@@ -55,12 +55,12 @@ contains
     
                 if (.not. Periodicy) then
                     if (iy .eq. 1) then
-                        if (T_BathCG .gt. 0) T_Bathy1 = constantboundarytempgrad(I)
+                        if (T_BathCG .gt. (0.0_real12+TINY)) T_Bathy1 = constantboundarytempgrad(I)
                         B(I) = B(I) + ((2 * kappaBoundy1 * kappa) / (kappaBoundy1 + kappa)) / &
                                (grid(ix, iy, iz)%Length(2)**2) * T_Bathy1
                     end if
                     if (iy .eq. ny) then
-                        if (T_BathCG .gt. 0) T_Bathy2 = constantboundarytempgrad(I)
+                        if (T_BathCG .gt. (0.0_real12+TINY)) T_Bathy2 = constantboundarytempgrad(I)
                         B(I) = B(I) + ((2 * kappaBoundNy * kappa) / (kappaBoundNy + kappa)) / &
                                (grid(ix, iy, iz)%Length(2)**2) * T_Bathy2
                     end if
@@ -68,12 +68,12 @@ contains
     
                 if (.not. Periodicz) then
                     if (iz .eq. 1) then
-                        if (T_BathCG .gt. 0) T_Bathz1 = constantboundarytempgrad(I)
+                        if (T_BathCG .gt. (0.0_real12+TINY)) T_Bathz1 = constantboundarytempgrad(I)
                         B(I) = B(I) + ((2 * kappaBoundz1 * kappa) / (kappaBoundz1 + kappa)) / &
                                (grid(ix, iy, iz)%Length(3)**2) * T_Bathz1
                     end if
                     if (iz .eq. nz) then
-                        if (T_BathCG .gt. 0) T_Bathz2 = constantboundarytempgrad(I)
+                        if (T_BathCG .gt. (0.0_real12+TINY)) T_Bathz2 = constantboundarytempgrad(I)
                         B(I) = B(I) + ((2 * kappaBoundNz * kappa) / (kappaBoundNz + kappa)) / &
                                (grid(ix, iy, iz)%Length(3)**2) * T_Bathz2
                     end if
