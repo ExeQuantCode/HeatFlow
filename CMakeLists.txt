@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.17.5...3.27.7)
 
 # define build environments
 set(PROJECT_NAME "HeatFlow")
+set(PROJECT_LIBRARY_NAME "HeatFlow_library")
 
 set( CMAKE_INSTALL_PREFIX "$ENV{HOME}/.local/${PROJECT_NAME}"
   CACHE STRING "Select where to install the program." )
@@ -49,35 +50,30 @@ set( CMAKE_BUILD_TYPE "Release"
 
 # Define the sources
 set(SRC_DIR src)
-set(LIB_DIR ${SRC_DIR})
+set(LIB_DIR ${SRC_DIR}/heatflow)
 
 set(LIB_FILES
-    heatflow/mod_constants.f90
-    heatflow/mod_constructions.f90
-    heatflow/mod_SPtype.f90
-    heatflow/mod_global.f90
-    heatflow/mod_Sparse.f90
-    heatflow/mod_inputs.f90
-    heatflow/mod_material.f90
-    heatflow/mod_hmatrix.f90
-    heatflow/mod_init_evolve.f90
-    heatflow/mod_setup.f90
-    heatflow/mod_boundary.f90
-    heatflow/mod_heating.f90
-    heatflow/mod_cattaneo.f90
-    heatflow/mod_tempdep.f90
-    heatflow/mod_evolve.f90
-    heatflow/mod_output.f90
+    mod_constants.f90
+    mod_constructions.f90
+    mod_SPtype.f90
+    mod_global.f90
+    mod_Sparse.f90
+    mod_inputs.f90
+    mod_material.f90
+    mod_hmatrix.f90
+    mod_init_evolve.f90
+    mod_setup.f90
+    mod_boundary.f90
+    mod_heating.f90
+    mod_cattaneo.f90
+    mod_tempdep.f90
+    mod_evolve.f90
+    mod_output.f90
 )
 
 set(SRC_FILES
     heatflow.f90
 )
-
-# include the build test directory
-if(BUILD_TESTS)
-  add_subdirectory(test)
-endif()
 
 foreach(lib ${LIB_FILES})
     list(APPEND PREPENDED_LIB_FILES ${CMAKE_CURRENT_LIST_DIR}/${LIB_DIR}/${lib})
@@ -146,13 +142,27 @@ message(STATUS "source files: ${PREPENDED_SRC_FILES}")
 message(STATUS "project name: ${PROJECT_NAME}")
 
 # create the library
-add_library(${PROJECT_NAME}_library ${PREPENDED_LIB_FILES})
-add_executable(${PROJECT_NAME} ${PREPENDED_LIB_FILES} ${PREPENDED_SRC_FILES})
-set_target_properties(${PROJECT_NAME} PROPERTIES Fortran_MODULE_DIRECTORY ${MODULE_DIR})
-install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+add_library(${PROJECT_LIBRARY_NAME} STATIC ${PREPENDED_LIB_FILES})
+set_target_properties(${PROJECT_LIBRARY_NAME} PROPERTIES Fortran_MODULE_DIRECTORY ${MODULE_DIR})
+target_link_libraries(${PROJECT_LIBRARY_NAME} PUBLIC)
+target_compile_options(${PROJECT_LIBRARY_NAME} PUBLIC "$<$<CONFIG:Release>:${OPTIMFLAGS}>")
+target_compile_options(${PROJECT_LIBRARY_NAME} PUBLIC "$<$<CONFIG:Bigmem>:${MEMFLAGS}>")
+target_compile_options(${PROJECT_LIBRARY_NAME} PUBLIC "$<$<CONFIG:Parallel>:${OPTIMFLAGS}>")
+target_compile_options(${PROJECT_LIBRARY_NAME} PUBLIC "$<$<CONFIG:Parallel>:${MPFLAGS}>")
+target_compile_options(${PROJECT_LIBRARY_NAME} PUBLIC "$<$<CONFIG:Dev>:${DEVFLAGS}>")
+target_compile_options(${PROJECT_LIBRARY_NAME} PUBLIC "$<$<CONFIG:Debug>:${DEBUGFLAGS}>")
+target_compile_options(${PROJECT_LIBRARY_NAME} PUBLIC "$<$<CONFIG:Debug>:${WARNFLAGS}>")
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    target_compile_options(${PROJECT_LIBRARY_NAME} PUBLIC "$<$<CONFIG:Release>:${MEMFLAGS}>")
+    target_compile_options(${PROJECT_LIBRARY_NAME} PUBLIC "$<$<CONFIG:Parallel>:${MEMFLAGS}>")
+    target_compile_options(${PROJECT_LIBRARY_NAME} PUBLIC "$<$<CONFIG:Dev>:${MEMFLAGS}>")
+    target_compile_options(${PROJECT_LIBRARY_NAME} PUBLIC "$<$<CONFIG:Debug>:${MEMFLAGS}>")
+endif()
 
-# # replace ".f90" with ".mod"
-# string(REGEX REPLACE "\\.[^.]*$" ".mod" MODULE_FILES "${SRC_FILES}")
+add_executable(${PROJECT_NAME} ${PREPENDED_SRC_FILES})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_LIBRARY_NAME})
+install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+set_target_properties(${PROJECT_NAME} PROPERTIES Fortran_MODULE_DIRECTORY ${MODULE_DIR})
 
 # set compile options based on different build configurations
 target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Release>:${OPTIMFLAGS}>")
@@ -169,3 +179,15 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Debug>:${MEMFLAGS}>")
 endif()
 
+
+# include the build test directory
+if(BUILD_TESTS)
+  add_subdirectory(test)
+endif()
+
+if ( ( CMAKE_Fortran_COMPILER MATCHES ".*gfortran.*" OR CMAKE_Fortran_COMPILER MATCHES ".*gcc.*" ) AND 
+     ( CMAKE_BUILD_TYPE MATCHES "Coverage" ) )
+
+    append_coverage_compiler_flags()
+
+endif()
