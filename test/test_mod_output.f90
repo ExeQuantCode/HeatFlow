@@ -2,7 +2,8 @@ program test_mod_output
     use output, only: last_log, data_write
     use constants, only: real12, int12
     use inputs, only: nx, ny, nz, NA, time_step, Test_Run, Check_Steady_State, &
-              write_every, WriteToTxt, ntime, freq, RunName, IVERB
+              write_every, WriteToTxt, ntime, freq, RunName, IVERB, start_ix, end_ix, &
+                start_iy, end_iy, start_iz, end_iz
     use globe_data, only: Temp_p, Temp_pp, heat, heated_volume
     implicit none
 

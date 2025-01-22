@@ -32,6 +32,9 @@ contains
         implicit none
         real(real12) :: result
         integer(int12) :: test_x, test_y, test_z, test_i
+        real(real12) :: inverse_time = 1.0_real12
+        integer(int12) :: isteady, icattaneo
+        real(real12), allocatable :: lin_rhoc(:)
         
         ! Setup test conditions
         isteady = 0
@@ -40,7 +43,8 @@ contains
         test_y = 1
         test_z = 1
         test_i = 1
-
+        allocate(lin_rhoc(1))
+        lin_rhoc(1) = 1.0_real12
         result = calculate_alpha(test_x, test_y, test_z, test_i)
         
         ! Basic test - with isteady = 0 and icattaneo = 0
