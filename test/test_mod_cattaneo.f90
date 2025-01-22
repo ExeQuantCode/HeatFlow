@@ -1,19 +1,18 @@
 program test_mod_cattaneo
     use cattaneo, only: S_catS
+    use constructions, only: heatblock
     use constants, only: real12, int12
+    use inputs, only: NA, time_step, nx, ny, nz, grid
+    use globe_data, only: Temp_p,Temp_pp, lin_rhoc
     implicit none
 
     ! Local test grid dimensions
     integer(int12), parameter :: test_nx = 2, test_ny = 2, test_nz = 1
     integer(int12), parameter :: test_na = test_nx * test_ny * test_nz
 
-    ! Simple custom grid type for testing
-    type :: grid_type
-        real(real12) :: tau
-    end type grid_type
 
     ! Local arrays for test
-    type(grid_type), dimension(test_nx,test_ny,test_nz) :: grid_test
+    type(heatblock), dimension(test_nx,test_ny,test_nz) :: grid_test
     real(real12), dimension(test_na) :: Temp_p_test
     real(real12), dimension(test_na) :: Temp_pp_test
     real(real12), dimension(test_na) :: lin_rhoc_test
@@ -22,6 +21,8 @@ program test_mod_cattaneo
     integer(int12) :: ix, iy, iz, idx
     real(real12)   :: tolerance, expected, difference
     logical         :: pass
+
+
 
     ! Initialize test values
     tolerance = 1.0e-12_real12
@@ -39,11 +40,19 @@ program test_mod_cattaneo
     end do
     s_cat_test = 0.0_real12
 
-    ! Call S_catS with local data by overwriting global symbols
-    ! (This mimics usage but ensures the subroutine sees our test arrays.)
-    call override_globals_for_test(Temp_p_test, Temp_pp_test, lin_rhoc_test, grid_test, &
-                                                                 test_nx, test_ny, test_nz)
+    !Set global and inputs variables equal to test
+    nx = test_nx
+    ny = test_ny
+    nz = test_nz
+    NA = test_na
+    time_step = 0.5_real12
+    Temp_p = Temp_p_test
+    Temp_pp = Temp_pp_test
+    lin_rhoc = lin_rhoc_test
+    grid = grid_test
+    
     call S_catS(s_cat_test)
+
 
     ! Check results against a simple expected formula
     pass = .true.
@@ -57,6 +66,7 @@ program test_mod_cattaneo
                 difference = abs(s_cat_test(idx) - expected)
                 if (difference > tolerance) then
                     pass = .false.
+                    exit
                 end if
             end do
         end do
@@ -66,19 +76,14 @@ program test_mod_cattaneo
         write(*,*) "test_mod_cattaneo: S_catS PASSED"
     else
         write(*,*) "test_mod_cattaneo: S_catS FAILED"
+        write(*,*) "  Expected: ", expected
+        write(*,*) "  Actual:   ", s_cat_test(idx)
         stop 1
     end if
 
 contains
 
-    ! This stub "overrides" the module-level variables with our local test arrays.
-    ! In practice, you might set them directly or adjust your module for easier testing.
-    subroutine override_globals_for_test(tp, tpp, lrhoc, grd, nx_local, ny_local, nz_local)
-        real(real12), intent(in) :: tp(:), tpp(:), lrhoc(:)
-        type(grid_type), intent(in) :: grd(:,:,:)
-        integer(int12), intent(in) :: nx_local, ny_local, nz_local
-        ! Replace or point the module’s arrays and parameters to these test arrays.
-        ! This is just a placeholder approach to keep code self-contained.
-    end subroutine override_globals_for_test
+
+
 
 end program test_mod_cattaneo
