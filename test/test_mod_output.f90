@@ -48,6 +48,7 @@ program test_mod_output
         print *, "Test last_log: PASSED"
     else
         print *, "Test last_log: FAILED"
+        stop 1  
     endif
 
     ! Test data_write subroutine
@@ -59,10 +60,12 @@ program test_mod_output
         print *, "Test data_write outputs: PASSED" 
     else
         print *, "Test data_write outputs: FAILED"
+        stop 1
     endif
 
     ! Cleanup
     call system("rm -rf ./test_outputs/")
+    call system("rm -rf ./outputs/*")
     call system("rm -rf ./outputs/")
     deallocate(Temp_p)
     deallocate(Temp_pp)

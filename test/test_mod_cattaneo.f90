@@ -30,9 +30,9 @@ program test_mod_cattaneo
         do iy = 1, test_ny
             do ix = 1, test_nx
                 idx = idx + 1
-                Temp_p_test(idx)   = 100.0_real12 + idx
-                Temp_pp_test(idx)  = Temp_p_test(idx) + 10.0_real12
-                lin_rhoc_test(idx) = 1.0_real12 + 0.01_real12 * idx
+                Temp_p_test(idx)   = 100.0_real12 
+                Temp_pp_test(idx)  = Temp_p_test(idx)
+                lin_rhoc_test(idx) = 1.0_real12 
                 grid_test(ix,iy,iz)%tau = 0.5_real12
             end do
         end do

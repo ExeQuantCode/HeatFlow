@@ -8,6 +8,7 @@ foreach(execid
     mod_material
     mod_output
     mod_setup
+    mod_evolve
   )
   add_executable(test_${execid} test_${execid}.f90)
   # # Specify the include directories
