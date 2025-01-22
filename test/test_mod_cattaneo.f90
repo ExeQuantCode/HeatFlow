@@ -20,7 +20,7 @@ program test_mod_cattaneo
 
     integer(int12) :: ix, iy, iz, idx
     real(real12)   :: tolerance, expected, difference
-    logical         :: pass
+    logical        :: pass
 
 
 
