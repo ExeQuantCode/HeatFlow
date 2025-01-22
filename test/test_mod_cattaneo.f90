@@ -63,9 +63,9 @@ program test_mod_cattaneo
     end do
 
     if (pass) then
-        print *, "test_mod_cattaneo: S_catS PASSED"
+        write(*,*) "test_mod_cattaneo: S_catS PASSED"
     else
-        print *, "test_mod_cattaneo: S_catS FAILED"
+        write(*,*) "test_mod_cattaneo: S_catS FAILED"
         stop 1
     end if
 

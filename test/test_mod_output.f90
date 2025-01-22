@@ -45,9 +45,9 @@ program test_mod_output
     call last_log(test_logname, test_outdir)
     inquire(file=test_logname, exist=file_exists)
     if (.not. file_exists) then
-        print *, "Test last_log: PASSED"
+        write(*,*) "Test last_log: FAILED"
     else
-        print *, "Test last_log: FAILED"
+        write(*,*) "Test last_log: PASSED"
         stop 1  
     endif
 
@@ -57,9 +57,9 @@ program test_mod_output
     call data_write(test_itime)
     inquire(file="./outputs/TempDis.dat", exist=file_exists)
     if (file_exists) then
-        print *, "Test data_write outputs: PASSED" 
+        write(*,*) "Test data_write outputs: PASSED"
     else
-        print *, "Test data_write outputs: FAILED"
+        write(*,*) "Test data_write outputs: FAILED"
         stop 1
     endif
 
@@ -70,6 +70,6 @@ program test_mod_output
     deallocate(Temp_p)
     deallocate(Temp_pp)
 
-    print *, "All tests completed"
+    write(*,*) "PASS: test_mod_output"
 
 end program test_mod_output

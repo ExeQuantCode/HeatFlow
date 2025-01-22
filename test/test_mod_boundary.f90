@@ -58,12 +58,12 @@ contains
         ! Test boundary values
         expected = 300.0_real12 ! For corner point
         if (abs(B(1) - expected) > 1e-10) then
-            print *, "Test failed: Corner boundary value incorrect"
-            print *, "Expected: ", expected
-            print *, "Actual: ", B(1)
+            write(*,*) "Test failed: Corner boundary value incorrect"
+            write(*,*) "Expected: ", expected
+            write(*,*) "Actual: ", B(1)
             stop 1
         else
-            print *, "Test passed: Corner boundary value correct"
+            write(*,*) "Test passed: Corner boundary value correct"
         end if
 
         deallocate(B)
@@ -84,9 +84,9 @@ contains
         result = constantboundarytempgrad(1_int12)
         
         if (abs(result - 50.0_real12) > 1e-10) then
-            print *, "Test failed: Constant gradient calculation incorrect"
+            write(*,*) "Test failed: Constant gradient calculation incorrect"
         else
-            print *, "Test passed: Constant gradient calculation correct"
+            write(*,*) "Test passed: Constant gradient calculation correct"
         end if
         
         deallocate(Temp_p)

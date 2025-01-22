@@ -12,19 +12,19 @@ contains
         ! Test case 1: Normal modulo operation
         result = altmod(7_int12, 3_int12)
         if (result /= 1) then
-            print *, "FAIL: altmod(7,3) expected 1, got", result
+            write(*,*) "FAIL: altmod(7,3) expected 1, got", result
             stop 1
         else
-            print *, "PASS: altmod(7,3) test"
+            write(*,*) "PASS: altmod(7,3) test"
         endif
 
         ! Test case 2: When modulo is zero
         result = altmod(6_int12, 3_int12)
         if (result /= 3) then
-            print *, "FAIL: altmod(6,3) expected 3, got", result
+            write(*,*) "FAIL: altmod(6,3) expected 3, got", result
             stop 1
         else
-            print *, "PASS: altmod(6,3) test"
+            write(*,*) "PASS: altmod(6,3) test"
         endif
     end subroutine test_altmod
 
@@ -45,10 +45,10 @@ contains
         
         ! Basic test - with isteady = 0 and icattaneo = 0
         if (abs(result - inverse_time*lin_rhoc(test_i)) > 1.0e-10_real12) then
-            print *, "FAIL: calculate_alpha basic test"
+            write(*,*) "FAIL: calculate_alpha basic test"
             stop 1
         else
-            print *, "PASS: calculate_alpha basic test"
+            write(*,*) "PASS: calculate_alpha basic test"
         endif
     end subroutine test_calculate_alpha
 
@@ -69,25 +69,25 @@ contains
         
         ! Basic test - should return non-zero conductivity for adjacent interior points
         if (result <= 0.0_real12) then
-            print *, "FAIL: calculate_conductivity interior test"
+            write(*,*) "FAIL: calculate_conductivity interior test"
             stop 1
         else
-            print *, "PASS: calculate_conductivity interior test"
+            write(*,*) "PASS: calculate_conductivity interior test"
         endif
     end subroutine test_calculate_conductivity
 
     subroutine run_all_tests()
         implicit none
         
-        print *, "Starting hmatrixmod tests..."
-        print *, "-----------------------------"
+        write(*,*) "Starting hmatrixmod tests..."
+        write(*,*) "-----------------------------"
         
         call test_altmod()
         call test_calculate_alpha()
         call test_calculate_conductivity()
         
-        print *, "-----------------------------"
-        print *, "Finished hmatrixmod tests."
+        write(*,*) "-----------------------------"
+        write(*,*) "All tests passed!"
     end subroutine run_all_tests
 
 end module test_hmatrixmod
