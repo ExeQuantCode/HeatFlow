@@ -354,7 +354,7 @@ contains
        ! Error about missing kappa bound 
        !------------------------------------------------------------------------------------
        ErrKB:if (((any(readvar(9:11).eq.0)) .or. any(readvar(29:31).eq.0)) &
-            .and. (readvar(28) .gt. 0) )then
+            .and. (readvar(28) .eq. 0) )then
           write(6,*)
           write(6,'(A43)') '###############################'
           write(6,'(A43)') '##########   ERORR   ##########'
@@ -377,7 +377,7 @@ contains
           write(6,'(A43)') '###############################'
           write(6,*)
           write(6,'(A)')   ' ---            Warning in subroutine "check_param"            ---'
-          write(6,'(A)')   ' --- Warning:  KappaBound are not set       ---'
+          write(6,'(A)')   ' --- Warning:  KappaBound is not set       ---'
           readvar(28) = 1
           
        end if WarKBO
@@ -386,7 +386,7 @@ contains
        ! warning about missing kappa bound. reassine to Kappabound
        !------------------------------------------------------------------------------------
        WarKB:if (((any(readvar(9:11).eq.0)) .or. any(readvar(29:31).eq.0)) &
-            .and. (readvar(28) .gt. 1) )then
+            .and. (readvar(28) .eq. 1) )then
           write(6,*)
           write(6,'(A43)') '###############################'
           write(6,'(A43)') '##########  WARNING  ##########'
@@ -782,3 +782,4 @@ subroutine read_mat(unit)
 !!!#################################################################################################
 
 end module inputs
+

@@ -1,0 +1,29 @@
+1 !Host
+heat_capacity = 4200
+h_conv = 100
+kappa  = 0.541
+kappa3D = 148
+rho = 997
+sound_speed = 8430
+em = 0
+0
+
+1 !Host
+heat_capacity = 4200
+h_conv = 100
+kappa  = 0.541
+kappa3D = 148
+rho = 997
+sound_speed = 8430
+em = 0
+0
+
+101 !Host
+heat_capacity = 4200
+h_conv = 100
+kappa  = 0.541
+kappa3D = 148
+rho = 997
+sound_speed = 8430
+em = 0
+0

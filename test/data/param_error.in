@@ -1,0 +1,42 @@
+    IVERB = 6     !
+    _Check_Sparse_Full = .False. 
+    _Check_Stability = .False.
+    _Check_Steady_State = .False. 
+    _Percentage_Completion = .True. 
+    _Test_Run = .False. 
+    _InputTempDis = .False.
+    _FullRestart = .False.
+    _RunName = IntRun
+    _WriteToTxt = .True. !For large systems/Large number of time_steps False
+    ntime = 10 !10000000  !
+    write_every = 1
+    heattime = 2
+    time_step = 1  !
+    freq = 0.0     !
+    iboundary = 1     !
+    icattaneo = 0 !
+    isteady =  0  !
+    isteady =  0  !
+    T_System = 278 ! Doesnt matter if _FullRestart or _InputTempDis = True
+    T_BathCG = 10 !not used
+    T_Bathx1 = 283     !
+    T_Bathx2 = 278     !
+    T_Bathy1 = 278     !
+    T_Bathy2 = 278    !
+    T_Bathz2 = 278    !
+    power_in =  0  !
+    T_period = 0.01  !
+    kappaBoundx1 = 0.541 !17.9  !
+    kappaBoundy1 = 0.541 !17.9  !
+    kappaBoundz1 = 0.541 !0.0262 !400 !
+    kappaBoundNx = 0.541 !1000
+    kappaBoundNz = 0.541 !0.0262
+    Periodic = 0 !
+    start_ix = 1
+    end_ix = 25
+    end_iy = 25
+    start_iz = 1
+    end_iz = 1
+
+
+
