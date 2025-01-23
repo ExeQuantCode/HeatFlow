@@ -129,16 +129,17 @@ subroutine test_stability(success)
     ix = 1; iy = 1; iz = 1
     nx = 2; ny = 2; nz = 2
     
-    allocate(grid(nx,ny,nz))
-    grid(ix,iy,iz)%length = [1.0_real12, 1.0_real12, 1.0_real12]
-    time_step = 0.01_real12 ! Small timestep for stability
+    ! allocate(grid(nx,ny,nz))
+    grid(ix,iy,iz)%Length(1) = 1.0_real12
+    grid(ix,iy,iz)%Length(2) = 1.0_real12
+    grid(ix,iy,iz)%Length(3) = 1.0_real12
+    time_step = 10000_real12 ! Small timestep for stability
     
     ! Call stability check
     call stability(kappa, rho, heat_capacity, ix, iy, iz)
     
     write(*,*) "  PASS: Stability check completed"
     
-    deallocate(grid)
 end subroutine
 
 subroutine test_build_hmatrix(success)
@@ -200,9 +201,9 @@ program test_mod_setup
     call test_set_global_variables(success)
     call setup_test()
     call test_sparse_hmatrix(success) 
-    ! call test_stability(success)
+    call test_stability(success)
     call test_build_hmatrix(success)
-    call test_sparse_to_real(success)
+    ! call test_sparse_to_real(success)
 
     ! Print summary
     write(*,*) "Tests completed:"

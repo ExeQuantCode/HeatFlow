@@ -55,7 +55,7 @@ contains
         nz = 1
         IVERB = 6
         icattaneo = 1
-        isteady = 0
+        isteady = 1
         
         allocate(Temp_p(NA))
         allocate(Temp_pp(NA))

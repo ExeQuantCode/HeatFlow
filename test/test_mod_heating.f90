@@ -42,7 +42,8 @@ subroutine test_heater_constant_heating(hcase)
     heated_steps = 10
     freq = 5.0_real12
     T_Bath = 300.0_real12
-    itime = 1
+    itime = hcase
+    heated_steps = 1
     Temp_p = 300.0_real12
     
     ! Fill grid with dummy values

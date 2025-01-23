@@ -164,12 +164,12 @@ module setup
       !---------------------------------------------------
       ! Check stability condition
       !---------------------------------------------------
-      
+
       alpha = kappa/(rho*heat_capacity)
       var_stability =( time_step * alpha * &
       (1 / (grid(ix,iy,iz)%length(1)**2) + 1 / ( grid(ix,iy,iz)%length(2) ** 2 ) &
            + 1 / (grid(ix,iy,iz)%length(3) ** 2 ) ) )
-      
+           
       if (IVERB.ge.2) write(*,*) "Stability condition = ", var_stability
       if (var_stability .gt. 1.0/12.0) then
          write(*,*) "Stability condition not met"
