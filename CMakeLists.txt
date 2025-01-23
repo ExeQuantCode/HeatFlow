@@ -191,3 +191,42 @@ if ( ( CMAKE_Fortran_COMPILER MATCHES ".*gfortran.*" OR CMAKE_Fortran_COMPILER M
     append_coverage_compiler_flags()
 
 endif()
+
+if(BUILD_TESTS)
+    # Create a directory for test data
+    add_custom_command(
+        OUTPUT ${CMAKE_BUILD_DIR}/test/test_dir_created  # Temporary marker file to indicate the directory was created
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BUILD_DIR}/test/test
+        COMMENT "Creating test directory"
+    )
+
+    # Copy test data files
+    add_custom_command(
+        OUTPUT ${CMAKE_BUILD_DIR}/test/test_data_copied  # Temporary marker file to indicate the data was copied
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_LIST_DIR}/test/data ${CMAKE_BUILD_DIR}/test/test/data
+        DEPENDS ${CMAKE_CURRENT_LIST_DIR}/test/data ${CMAKE_BUILD_DIR}/test/test_dir_created  # Ensure the source data exists and the directory was created
+        COMMENT "Copying test data files"
+    )
+
+    # Create a custom target to ensure that the copy commands are executed
+    add_custom_target(copy_test_data ALL
+        DEPENDS ${CMAKE_BUILD_DIR}/test/test_data_copied  # Ensure it depends on the data copying command
+    )
+
+    # Add dependency to your main project target
+    add_dependencies(${PROJECT_NAME} copy_test_data)
+
+    # Ensure that ctest waits for copy_test_data
+    add_custom_command(TARGET copy_test_data POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E echo "Test data files copied successfully"
+    )
+
+    # Get all registered tests
+    get_property(all_tests GLOBAL PROPERTY TESTS)
+
+    # Loop through all tests and add the dependency
+    foreach(test_name IN LISTS all_tests)
+        add_dependencies(${test_name} copy_test_data)
+    endforeach()
+
+endif()

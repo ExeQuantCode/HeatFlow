@@ -71,7 +71,7 @@ contains
     x = altmod(i,nx)
     y = mod((i-altmod(i,nx))/nx,ny)+1
     z = (i-altmod(i,nx*ny))/(nx*ny)+1
-
+   
     alpha = calculate_alpha(x,y,z, i)
     ! apply periodic boundries on the self term by mapping over shoots back into cell 
     xp = x + 1; xm = x - 1
@@ -277,71 +277,7 @@ contains
   end function calculate_conductivity
   !!!########################################################################
 
-  !!!##########################################################################################
-  !!! This subroutine calculates the thermal conductivity for heat flow i.e for x_out to x_in.
-  !!!
-  !!!                             OLD SUBROUTINE
-  !!!                            TO BE DELETED
-  !!!##########################################################################################
 
-  subroutine calc_cond(x_in, y_in, z_in, x_out, y_out, z_out)
-    integer(int12), intent(in) :: x_in, y_in, z_in, x_out, y_out, z_out
-    real(real12) :: kappa_out, kappa_in, kappa_ab
-    real(real12) :: conductivity
-
-
-    kappa_ab=0
-    
-   !---------------------------------------------------------------------------------
-   ! Calculate the conductivity of the grid points that arent boundary intercations.
-   !---------------------------------------------------------------------------------
-    if ((x_in .ge. 1) .and. (x_in .le. nx) .and. (y_in .ge. 1) .and. &
-         (y_in .le. ny) .and. (z_in .ge. 1) .and. (z_in .le. nz)) then
-       kappa_in = grid(x_in,y_in,z_in)%kappa
-       kappa_out = grid(x_out,y_out,z_out)%kappa
-
-
-       if(x_in .ne. x_out) then
-       write(*,*) 'xxxxx'
-          kappa_ab = (grid(x_in, y_in, z_in)%Length(1) + &
-               grid(x_out, y_out, z_out)%Length(1))*kappa_in*kappa_out/&
-               (grid(x_in, y_in, z_in)%Length(1)*kappa_out + &
-               grid(x_out, y_out, z_out)%Length(1)*kappa_in)
-               
-          kappa_ab = kappa_ab/(grid(x_out, y_out, z_out)%Length(1))**2
-
-       else if (y_in .ne. y_out) then
-       write(*,*) 'yyyyy'
-          kappa_ab = (grid(x_in, y_in, z_in)%Length(2) + &
-              grid(x_out, y_out, z_out)%Length(2))*kappa_in*kappa_out/&
-              (grid(x_in, y_in, z_in)%Length(2)*kappa_out + &
-              grid(x_out, y_out, z_out)%Length(2)*kappa_in)
-        
-          kappa_ab = kappa_ab/(grid(x_out, y_out, z_out)%Length(2))**2
-
-       else if (z_in .ne. z_out) then
-       write(*,*) 'zzzzz'
-          kappa_ab = (grid(x_in, y_in, z_in)%Length(3) + &
-              grid(x_out, y_out, z_out)%Length(3))*kappa_in*kappa_out/&
-              (grid(x_in, y_in, z_in)%Length(3)*kappa_out + &
-              grid(x_out, y_out, z_out)%Length(3)*kappa_in)
-        
-          kappa_ab = kappa_ab/(grid(x_out, y_out, z_out)%Length(3))**2
-       end if
-       write(*,*) 'cond is ', kappa_ab
-       conductivity = (kappa_ab)
-      !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-    else
-      !---------------------------------------------------------------------
-      ! if an edge element call the boundry_diag_term subroutine
-      !---------------------------------------------------------------------
-       call boundry_diag_term(x_in, y_in, z_in, x_out, y_out, z_out, kappa_ab)
-       conductivity = kappa_ab 
-      !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    end if
-   
-  end subroutine calc_cond
-  !!!########################################################################
 
   !!!########################################################################
   !!! This function calculates the modulus of a and b, and returns b if the modulus is 0.

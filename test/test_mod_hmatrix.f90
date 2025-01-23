@@ -4,7 +4,7 @@ module test_hmatrixmod
     use inputs, only: isteady, icattaneo, kappaBoundx1, kappaBoundy1, kappaBoundz1
     use inputs, only: kappaBoundNx, kappaBoundNy, kappaBoundNz, Periodicx, Periodicy, Periodicz
     use globe_data, only: inverse_time, lin_rhoc
-    use hmatrixmod, only: altmod, calculate_alpha, calculate_conductivity
+    use hmatrixmod, only: altmod, calculate_alpha, calculate_conductivity, hmatrixfunc
     implicit none
 
 contains
@@ -89,6 +89,24 @@ contains
         endif
     end subroutine test_calculate_conductivity
 
+    subroutine test_hmatrixfunc(success)
+        implicit none
+        logical :: success
+        real(real12) :: H0
+        integer(int12) :: i, j
+        
+        i = 8
+        j = 8
+        call test_altmod(success)
+        call test_calculate_alpha(success)
+        call test_calculate_conductivity(success)
+        H0 = hmatrixfunc(i, j)
+        
+        print*, H0
+         
+
+    end subroutine test_hmatrixfunc
+
     subroutine run_all_tests(success)
         implicit none
         logical :: success
@@ -99,6 +117,7 @@ contains
         call test_altmod(success)
         call test_calculate_alpha(success)
         call test_calculate_conductivity(success)
+        ! call test_hmatrixfunc(success)
         
     end subroutine run_all_tests
 

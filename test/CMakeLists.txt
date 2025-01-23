@@ -9,6 +9,7 @@ foreach(execid
     mod_output
     mod_setup
     mod_evolve
+    mod_inputs
   )
   add_executable(test_${execid} test_${execid}.f90)
   # # Specify the include directories

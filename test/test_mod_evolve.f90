@@ -53,8 +53,8 @@ contains
         nx = 10
         ny = 10 
         nz = 1
-        IVERB = 0
-        icattaneo = 0
+        IVERB = 6
+        icattaneo = 1
         isteady = 0
         
         allocate(Temp_p(NA))
@@ -84,7 +84,8 @@ contains
         grid(:,:,:)%Length(1) = 1.0_real12
         grid(:,:,:)%Length(2) = 1.0_real12
         grid(:,:,:)%Length(3) = 1.0_real12
-        grid(:,:,:)%iheater = 0
+        grid(:,:,:)%iheater = 1
+        power_in = 1.0_real12
 
         T_Bathx1 = 300.0_real12
         T_Bathx2 = 300.0_real12
@@ -93,6 +94,8 @@ contains
         T_Bathz1 = 300.0_real12
         T_Bathz2 = 300.0_real12
         T_BathCG = 0.0_real12
+
+        TempDepProp = 1
 
         call sparse_Hmatrix()
     end subroutine setup_test

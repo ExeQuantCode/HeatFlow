@@ -1,0 +1,5 @@
+In mat.in material 1, kappa should be varied from 0.25 to 5 in steps of 25.
+
+Power in param.in should be [0,10,20,30] changing after obtaining results for a given k'.
+
+This should reproduce results in 'Analytical, SteadyState' spreedsheet. 

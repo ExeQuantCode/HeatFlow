@@ -53,12 +53,15 @@ contains
              !tau divided by time_step squared in setup.f90
              tau = grid(ix,iy,iz)%tau*(time_step**2.0_real12) 
              ! select heater case
+
              select case(grid(ix,iy,iz)%iheater)
+
              case(0)
                 !------------------------------
                 ! No heating
                 !------------------------------
                 Q(IA) = 0.0_real12
+
                 !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              case(1)
                 !------------------------------
@@ -110,13 +113,13 @@ contains
                 end if
                 !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              end select
-
              !------------------------------
              ! If emissitivity is not zero, then calculate the radiative heating
              !------------------------------
                Q(IA) = Q(IA) - grid(ix,iy,iz)%em * grid(ix,iy,iz)%length(1)*&
                        grid(ix,iy,iz)%length(2)*StefBoltz &
                        * ((Temp_p(IA)**4.0_real12) - (T_Bath**4.0_real12)) 
+
              !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
              !------------------------------

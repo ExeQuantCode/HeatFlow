@@ -16,13 +16,13 @@
     iboundary = 1     !
     icattaneo = 0 !
     isteady =  0  !
-    isteady =  0  !
     T_System = 278 ! Doesnt matter if _FullRestart or _InputTempDis = True
-    T_BathCG = 10 !not used
+    T_Bath = 0 !not used
     T_Bathx1 = 283     !
     T_Bathx2 = 278     !
     T_Bathy1 = 278     !
     T_Bathy2 = 278    !
+    T_Bathz1 = 278    !
     T_Bathz2 = 278    !
     power_in =  0  !
     T_period = 0.01  !
@@ -30,10 +30,13 @@
     kappaBoundy1 = 0.541 !17.9  !
     kappaBoundz1 = 0.541 !0.0262 !400 !
     kappaBoundNx = 0.541 !1000
+    kappaBoundNy = 0.541 !1000
     kappaBoundNz = 0.541 !0.0262
+    TempDepProp = 0
     Periodic = 0 !
     start_ix = 1
     end_ix = 25
+    start_iy = 1
     end_iy = 25
     start_iz = 1
     end_iz = 1
