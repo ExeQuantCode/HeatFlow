@@ -557,7 +557,7 @@ contains
     implicit none
     integer, intent(in) :: unit
     integer(int12) :: ix, iy, iz, reason, pos !, pos_old ! counters
-    character(2048) :: buffer, array,line
+    character(10000) :: buffer, array,line
     character(10), dimension(:), allocatable :: temp
     ! character(100)  :: part1, part2 ! buffer and array
     ! read mesh cell number
