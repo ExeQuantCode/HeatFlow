@@ -45,7 +45,7 @@
 module hmatrixmod
   use constants, only: real12, int12
   use inputs, only: nx, ny, nz, time_step, grid
-  use inputs, only: isteady, icattaneo, kappaBoundx1, kappaBoundy1, kappaBoundz1
+  use inputs, only: isteady, icattaneo, kappaBoundx1, kappaBoundy1, kappaBoundz1, BR
   use inputs, only: kappaBoundNx, kappaBoundNy, kappaBoundNz, Periodicx, Periodicy, Periodicz
   use globe_data, only: inverse_time, lin_rhoc
   implicit none
@@ -269,9 +269,13 @@ contains
         
           kappa_ab = kappa_ab/(grid(x_out, y_out, z_out)%Length(3))**2
        end if
+       if (kappa_in .ne. kappa_out) then
+            kappa_ab = kappa_ab*BR
+       end if
        conductivity = (kappa_ab) 
     else
        call boundry_diag_term(x_in, y_in, z_in, x_out, y_out, z_out, kappa_ab)
+
        conductivity = kappa_ab 
     end if
   end function calculate_conductivity
@@ -312,27 +316,35 @@ contains
     
     if (x_b .ne. x) then
       if (x_b .lt. 1) then
-       kappa_ab = (2*kappaBoundx1*kappa)/(kappaBoundx1+kappa)
+       kappa_ab = ((2*kappaBoundx1*kappa)/(kappaBoundx1+kappa))/((grid(x, y, z)%Length(1))**2)
+       if (kappa .ne. kappaBoundx1) kappa_ab = kappa_ab*BR
       else if (x_b .gt. nx) then
-        kappa_ab = (2*kappaBoundNx*kappa)/(kappaBoundNx+kappa)
+        kappa_ab = ((2*kappaBoundNx*kappa)/(kappaBoundNx+kappa))/((grid(x, y, z)%Length(1))**2)
+        if (kappa .ne. kappaBoundNx) kappa_ab = kappa_ab*BR
       end if 
-       kappa_ab = kappa_ab/(grid(x, y, z)%Length(1))**2
+       kappa_ab = kappa_ab
 
     else if (y_b .ne. y) then
       if (y_b .lt. 1) then
-        kappa_ab = ((2)*kappaBoundy1*kappa)/(kappaBoundy1+kappa)
+        kappa_ab = (((2)*kappaBoundy1*kappa)/(kappaBoundy1+kappa))/((grid(x, y, z)%Length(2))**2)
+        if (kappa .ne. kappaBoundy1) kappa_ab = kappa_ab*BR
+
       else if (y_b .gt. ny) then
-        kappa_ab = ((2)*kappaBoundNy*kappa)/(kappaBoundNy+kappa)
+        kappa_ab = (((2)*kappaBoundNy*kappa)/(kappaBoundNy+kappa))/((grid(x, y, z)%Length(2))**2)
+        if (kappa .ne. kappaBoundNy) kappa_ab = kappa_ab*BR
+
       end if
-       kappa_ab = kappa_ab/(grid(x, y, z)%Length(2))**2
+       kappa_ab = kappa_ab
 
     else if (z_b .ne. z) then
       if (z_b .lt. 1) then
-        kappa_ab = ((2)*kappaBoundz1*kappa)/(kappaBoundz1+kappa)
+        kappa_ab = (((2)*kappaBoundz1*kappa)/(kappaBoundz1+kappa))/((grid(x, y, z)%Length(3))**2)
+        if (kappa .ne. kappaBoundz1) kappa_ab = kappa_ab*BR
       else if (z_b .gt. nz) then
-        kappa_ab = ((2)*kappaBoundNz*kappa)/(kappaBoundNz+kappa)
+        kappa_ab = (((2)*kappaBoundNz*kappa)/(kappaBoundNz+kappa))/((grid(x, y, z)%Length(3))**2)
+        if (kappa .ne. kappaBoundNz) kappa_ab = kappa_ab*BR
       end if
-       kappa_ab = kappa_ab/(grid(x, y, z)%Length(3))**2
+       kappa_ab = kappa_ab
 
     end if
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
