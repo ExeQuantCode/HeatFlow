@@ -8,7 +8,7 @@
 !!!#################################################################################################
 module cattaneo
 use inputs, only: NA, time_step, nx, ny, nz, grid
-use globe_data, only: Temp_p,Temp_pp, lin_rhoc
+use globe_data, only: Temp_p, Temp_pp, lin_rhoc
 use constants, only: real12, int12, TINY
 implicit none
 contains
@@ -20,7 +20,7 @@ contains
 !!! - S_cat, This is the Cattaneo term for the S vector.
 !!!##############################################################################################
 
-pure subroutine S_catS(s_cat)
+subroutine S_catS(s_cat)
     real(real12), dimension(NA), intent(inout) :: S_cat
     integer(int12) :: index, ix, iy, iz
 

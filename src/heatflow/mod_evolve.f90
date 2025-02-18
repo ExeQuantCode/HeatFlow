@@ -146,6 +146,7 @@ contains
     iter=ncg
     err=E
 
+
     CALL linbcg(S,x,itol=int(itol,I4B),tol=tol, itmax=int(itmax,I4B), iter=iter, &
          err=E)
          

@@ -1,0 +1,41 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [version] - year-month-day
+### Added
+### Changed
+### Deprecated
+### Removed
+### Fixed
+### Security
+
+## [TBD] - 2024-03-21
+### Added
+
+ - Added ability to specifiy the range of cells that are written to output file.
+ - Added ability to specifiy kappa boundary at 1x,1y,1z and nx,ny,nz 
+ - Comments
+
+### Changed
+
+ - Changed the format of the system input geometry and heating and merged them together.
+
+### Removed
+ - Source parameter in mat.in 
+### Fixed
+
+ - General formating
+
+## [0.3.0] - 2024-03-05
+
+### Added
+
+ - Cattaneo
+ - 'Volz' heating
+
+### Fixed
+ 
+ - General code tidy

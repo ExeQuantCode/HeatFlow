@@ -104,7 +104,6 @@ module setup
       ra%val(:)=0
       ra%irow(:)=-2
       ra%jcol(:)=-1
-      
       addit = [1] ! The values to add to the row to get the column
       if (Periodicx) addit = [addit, (nx-1)]
       if (ny .gt. 1) addit = [addit, nx] ! Add the values to add to the row to get the column
@@ -120,14 +119,12 @@ module setup
 
       count = 0 ! The number of non-zero elements in the H matrix
       parent_loop: do j = 1, NA ! Loop over the columns of the H matrix
-         
          i=j ! The row of the H matrix
          count = count + 1 ! The number of non-zero elements in the H matrix
          H0 = hmatrixfunc(i,j) ! The value of the H matrix
          ra%val(count) = H0 ! The value of the H matrix
          ra%irow(count) = i ! The row of the H matrix
          ra%jcol(count) = j ! The column of the H matrix
-         !write(6,*) j,i, H0, count
          ! Loop over the values to add to the row to get the column
          neighbour_loop: do k = 1, size(addit,1)
              i = j + addit(k) ! The row of the H matrix
@@ -167,12 +164,12 @@ module setup
       !---------------------------------------------------
       ! Check stability condition
       !---------------------------------------------------
-      
+
       alpha = kappa/(rho*heat_capacity)
       var_stability =( time_step * alpha * &
       (1 / (grid(ix,iy,iz)%length(1)**2) + 1 / ( grid(ix,iy,iz)%length(2) ** 2 ) &
            + 1 / (grid(ix,iy,iz)%length(3) ** 2 ) ) )
-      
+           
       if (IVERB.ge.2) write(*,*) "Stability condition = ", var_stability
       if (var_stability .gt. 1.0/12.0) then
          write(*,*) "Stability condition not met"
