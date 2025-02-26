@@ -94,6 +94,25 @@ def read_log_file(log_path, sub_n):
         records.append((t, data))
     return records
 
+def read_static_temp_file(filename, shape):
+    """
+    Reads a static temperature file (e.g. TempDis.dat or TempDisTPD.dat).
+    It ignores any header lines that start with '(' and any blank lines.
+    Returns a 1D array of floats which can be reshaped to 'shape'
+    using Fortran order.
+    """
+    tokens = []
+    with open(filename, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("("):
+                continue
+            tokens.extend(line.split())
+    data = np.array(tokens, dtype=float)
+    if data.size != np.prod(shape):
+        print(f"Warning: Expected {np.prod(shape)} values but found {data.size}")
+    return data
+
 def effective_coordinates(start_idx, end_idx, d):
     """
     Returns a 1D array of physical coordinates (in mm) for cells from start_idx to end_idx.
@@ -107,7 +126,7 @@ def effective_coordinates(start_idx, end_idx, d):
 #############################
 def draw_heatmap(ax, temp_subset, plane, fixed_val,
                  x_coords, y_coords, z_coords, dx, dy, dz,
-                 fixed_as_index=False, time_step=1.0, record_time=0.0, record_idx=0):
+                 fixed_as_index=False, record_time=0.0, record_idx=0):
     """
     Draws a 2D heatmap on ax.
       - For plane 'xy': fixed in z.
@@ -115,11 +134,9 @@ def draw_heatmap(ax, temp_subset, plane, fixed_val,
       - For plane 'yz': fixed in x.
     If fixed_as_index is True, fixed_val is treated as an index.
     If an axis has only one cell, its extent is set from 0 to the cell length.
-    The plot title is appended with the simulation time (record_time * time_step)
-    and the record index.
+    The plot title is appended with the record time and record index.
     Returns the plotted 2D array, the extent used, and the title.
     """
-    # Determine extents.
     x_extent = [0, dx] if len(x_coords)==1 else [x_coords[0], x_coords[-1]]
     y_extent = [0, dy] if len(y_coords)==1 else [y_coords[0], y_coords[-1]]
     z_extent = [0, dz] if len(z_coords)==1 else [z_coords[0], z_coords[-1]]
@@ -163,9 +180,7 @@ def draw_heatmap(ax, temp_subset, plane, fixed_val,
     else:
         raise ValueError("Plane must be 'xy', 'xz', or 'yz'.")
     
-    # Append time info: actual time = record_time * time_step.
-    actual_time = record_time * time_step
-    title += f", at time {actual_time:.4g} (timestep {record_idx})"
+    title += f", at time {record_time:.4g} (timestep {record_idx})"
     
     ax.clear()
     im = ax.imshow(im_data.T, origin='lower', cmap='hot', extent=extent, aspect='auto')
@@ -177,14 +192,14 @@ def draw_heatmap(ax, temp_subset, plane, fixed_val,
 
 def draw_line(ax, temp_subset, dimension, fixed1, fixed2,
               x_coords, y_coords, z_coords, dx, dy, dz,
-              fixed_as_index=False, time_step=1.0, record_time=0.0, record_idx=0):
+              fixed_as_index=False, record_time=0.0, record_idx=0):
     """
     Draws a 1D line plot on ax.
       - For dimension 'x': vary x; fix y and z.
       - For 'y': vary y; fix x and z.
       - For 'z': vary z; fix x and y.
     If fixed_as_index is True, the fixed values are treated as indices.
-    The plot title is appended with the simulation time and record index.
+    The plot title is appended with the record time and record index.
     Returns the x-axis array, line data, and the title.
     """
     x_extent = [0, dx] if len(x_coords)==1 else [x_coords[0], x_coords[-1]]
@@ -245,9 +260,7 @@ def draw_line(ax, temp_subset, dimension, fixed1, fixed2,
     else:
         raise ValueError("Dimension must be 'x', 'y', or 'z'.")
     
-    # Append time information.
-    actual_time = record_time * time_step
-    title += f", at time {actual_time:.4g} (timestep {record_idx})"
+    title += f", at time {record_time:.4g} (timestep {record_idx})"
     
     ax.clear()
     ax.plot(x_axis, line_data, marker='o')
@@ -257,13 +270,6 @@ def draw_line(ax, temp_subset, dimension, fixed1, fixed2,
     ax.grid(True)
     return x_axis, line_data, title
 
-def get_case_insensitive(d, key, default=None):
-    key_lower = key.lower()
-    for k, v in d.items():
-        if k.lower() == key_lower:
-            return v
-    return default
-
 #############################
 # PyQt5 GUI Application
 #############################
@@ -272,12 +278,15 @@ class MainWindow(QtWidgets.QMainWindow):
         super().__init__()
         self.setWindowTitle("Simulation Output Analyzer")
         self.last_fig = None  # Will hold the matplotlib Figure
+        self.alt_display = False
+        self.arrow = ">"
 
         # Default directories.
-        default_input = os.path.join(os.getcwd(), "inputs")
+        self.par_dir = os.path.join(os.getcwd())
+        default_input =  self.par_dir+"/inputs"
         if not os.path.exists(default_input):
             default_input = os.getcwd()
-        default_output = os.path.join(os.getcwd(), "outputs")
+        default_output = self.par_dir+"/outputs"
         if not os.path.exists(default_output):
             default_output = os.getcwd()
         self.input_dir = default_input
@@ -308,6 +317,7 @@ class MainWindow(QtWidgets.QMainWindow):
         except KeyError as e:
             QtWidgets.QMessageBox.critical(self, "Parameter Error", f"Missing parameter {e} in param.in")
             sys.exit(1)
+
         self.eff_nx = self.end_ix - self.start_ix + 1
         self.eff_ny = self.end_iy - self.start_iy + 1
         self.eff_nz = self.end_iz - self.start_iz + 1
@@ -319,7 +329,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.RunName = self.params.get("RunName", "run1")
         self.freq = self.params.get("freq", 1.0)
-        self.time_step = get_case_insensitive(self.params, "time_step", 1.0)
+        self.time_step = self.params.get("time_step", 1.0)
+
+        # Data source selection: "Output Log", "TempDis.dat", "TempDisTPD.dat"
+        self.data_sources = ["Output Log", "TempDis.dat", "TempDisTPD.dat"]
 
         # Automatically determine the latest log file.
         self.latest_log = find_latest_log(self.output_dir, self.RunName, self.freq)
@@ -336,33 +349,54 @@ class MainWindow(QtWidgets.QMainWindow):
     def build_ui(self):
         central = QtWidgets.QWidget()
         main_layout = QtWidgets.QVBoxLayout()
+        controls_widget = QtWidgets.QWidget()
+        controls = QtWidgets.QVBoxLayout(controls_widget)
 
-        # Directory selection.
+
+        
+        # Data Source selection.
+        DS_widget = QtWidgets.QWidget()
+        ds_layout = QtWidgets.QHBoxLayout(DS_widget)
+        ds_label = QtWidgets.QLabel("Data Source:")
+        self.dataSourceCombo = QtWidgets.QComboBox()
+        self.dataSourceCombo.addItems(self.data_sources)
+        self.dataSourceCombo.currentTextChanged.connect(self.dataSource_changed)
+        ds_layout.addWidget(ds_label)
+        ds_layout.addWidget(self.dataSourceCombo)
+
+        self.DisplayToggle = QtWidgets.QPushButton(self.arrow,self)
+        self.DisplayToggle.clicked.connect(self.leftarrow)        
+        ds_layout.addWidget(self.dataSourceCombo)
+        ds_layout.addWidget(self.DisplayToggle)
+        DS_widget.setLayout(ds_layout)
+        DS_widget.setMinimumHeight(50)
+        controls.addWidget(DS_widget)
+
+
+        # Directory selection layout.
+        dir_widget = QtWidgets.QWidget()
         dir_layout = QtWidgets.QHBoxLayout()
-        in_label = QtWidgets.QLabel("Input Dir:")
-        self.inDirLineEdit = QtWidgets.QLineEdit(self.input_dir)
-        self.inBrowseButton = QtWidgets.QPushButton("Browse")
-        self.inBrowseButton.clicked.connect(self.browse_input_dir)
-        out_label = QtWidgets.QLabel("Output Dir:")
-        self.outDirLineEdit = QtWidgets.QLineEdit(self.output_dir)
-        self.outBrowseButton = QtWidgets.QPushButton("Browse")
-        self.outBrowseButton.clicked.connect(self.browse_output_dir)
-        dir_layout.addWidget(in_label)
-        dir_layout.addWidget(self.inDirLineEdit)
-        dir_layout.addWidget(self.inBrowseButton)
-        dir_layout.addWidget(out_label)
-        dir_layout.addWidget(self.outDirLineEdit)
-        dir_layout.addWidget(self.outBrowseButton)
-        main_layout.addLayout(dir_layout)
+        dir_label = QtWidgets.QLabel("Sim dir:")
+        self.DirLineEdit = QtWidgets.QLineEdit(self.par_dir)
+        self.BrowseButton = QtWidgets.QPushButton("Browse")
+        self.BrowseButton.clicked.connect(self.borwse_par_dir)
+        dir_layout.addWidget(dir_label)
+        dir_layout.addWidget(self.DirLineEdit)
+        dir_layout.addWidget(self.BrowseButton)
+        dir_widget.setLayout(dir_layout)
+        dir_widget.setMinimumHeight(60)
+        controls.addWidget(dir_widget)
 
-        # Output file selection drop-down.
+        # Output file selection drop-down (only used for Output Log source).
+        self.outputFileWidget = QtWidgets.QWidget()
         file_layout = QtWidgets.QHBoxLayout()
         file_label = QtWidgets.QLabel("Output file:")
         self.outputFileCombo = QtWidgets.QComboBox()
         self.update_output_files_list()
         file_layout.addWidget(file_label)
         file_layout.addWidget(self.outputFileCombo)
-        main_layout.addLayout(file_layout)
+        self.outputFileWidget.setLayout(file_layout)
+        controls.addWidget(self.outputFileWidget)
 
         # Mode selection.
         mode_layout = QtWidgets.QHBoxLayout()
@@ -372,7 +406,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.modeCombo.currentTextChanged.connect(self.mode_changed)
         mode_layout.addWidget(mode_label)
         mode_layout.addWidget(self.modeCombo)
-        main_layout.addLayout(mode_layout)
+        controls.addLayout(mode_layout)
 
         # Heatmap-specific.
         self.heatmap_widget = QtWidgets.QWidget()
@@ -382,6 +416,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.planeCombo.addItems(["xy", "xz", "yz"])
         fixed_label = QtWidgets.QLabel("Fixed (mm/index):")
         self.fixedLineEdit = QtWidgets.QLineEdit("0.0")
+        self.fixedLineEdit.returnPressed.connect(self.do_plot)
         self.fixedToggle = QtWidgets.QCheckBox("Index")
         hm_layout.addWidget(plane_label)
         hm_layout.addWidget(self.planeCombo)
@@ -389,7 +424,7 @@ class MainWindow(QtWidgets.QMainWindow):
         hm_layout.addWidget(self.fixedLineEdit)
         hm_layout.addWidget(self.fixedToggle)
         self.heatmap_widget.setLayout(hm_layout)
-        main_layout.addWidget(self.heatmap_widget)
+        controls.addWidget(self.heatmap_widget)
 
         # Line-specific.
         self.line_widget = QtWidgets.QWidget()
@@ -399,9 +434,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.dimensionCombo.addItems(["x", "y", "z"])
         fixed1_label = QtWidgets.QLabel("Fixed1 (mm/index):")
         self.fixed1LineEdit = QtWidgets.QLineEdit("0.0")
+        self.fixed1LineEdit.returnPressed.connect(self.do_plot)
         self.fixed1Toggle = QtWidgets.QCheckBox("Index")
         fixed2_label = QtWidgets.QLabel("Fixed2 (mm/index):")
         self.fixed2LineEdit = QtWidgets.QLineEdit("0.0")
+        self.fixed2LineEdit.returnPressed.connect(self.do_plot)
         self.fixed2Toggle = QtWidgets.QCheckBox("Index")
         line_layout.addWidget(dimension_label)
         line_layout.addWidget(self.dimensionCombo)
@@ -412,9 +449,10 @@ class MainWindow(QtWidgets.QMainWindow):
         line_layout.addWidget(self.fixed2LineEdit)
         line_layout.addWidget(self.fixed2Toggle)
         self.line_widget.setLayout(line_layout)
-        main_layout.addWidget(self.line_widget)
+        controls.addWidget(self.line_widget)
 
-        # Timestep: slider and line edit.
+        # Timestep: slider and line edit (only for Output Log source).
+        self.timestepWidget = QtWidgets.QWidget()
         ts_layout = QtWidgets.QHBoxLayout()
         ts_label = QtWidgets.QLabel("Timestep (record index):")
         self.timestepLineEdit = QtWidgets.QLineEdit(str(len(self.records)-1))
@@ -425,9 +463,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.timestepSlider.valueChanged.connect(self.slider_changed)
         self.timestepLineEdit.editingFinished.connect(self.lineedit_changed)
         ts_layout.addWidget(ts_label)
-        ts_layout.addWidget(self.timestepSlider)
-        ts_layout.addWidget(self.timestepLineEdit)
-        main_layout.addLayout(ts_layout)
+        ts_layout.addWidget(self.timestepSlider,stretch = 3)
+        ts_layout.addWidget(self.timestepLineEdit,stretch = 2)
+        self.timestepWidget.setLayout(ts_layout)
+        controls.addWidget(self.timestepWidget)
 
         # Buttons: Plot, Save Plot, Export Data.
         btn_layout = QtWidgets.QHBoxLayout()
@@ -440,30 +479,112 @@ class MainWindow(QtWidgets.QMainWindow):
         btn_layout.addWidget(self.plotButton)
         btn_layout.addWidget(self.saveButton)
         btn_layout.addWidget(self.exportButton)
-        main_layout.addLayout(btn_layout)
+        controls.addLayout(btn_layout)
+        
+        controls_widget.setMinimumWidth(200)
+        controls_widget.setMinimumHeight(230)
 
+
+        fig_widget = QtWidgets.QWidget()
+        fig = QtWidgets.QVBoxLayout(fig_widget)
+        
         # Info label.
         info = (f"Subset ranges: X: {self.x_coords[0]:.3f} to {self.x_coords[-1]:.3f} mm, "
                 f"Y: {self.y_coords[0]:.3f} to {self.y_coords[-1]:.3f} mm, "
                 f"Z: {self.z_coords[0]:.3f} to {self.z_coords[-1]:.3f} mm")
         self.infoLabel = QtWidgets.QLabel(info)
-        main_layout.addWidget(self.infoLabel)
+        fig.addWidget(self.infoLabel)
 
+            
         # Embedded matplotlib FigureCanvas.
-        self.figure = Figure(figsize=(5,4))
+        self.figure = Figure(figsize=(4,5))
         self.canvas = FigureCanvas(self.figure)
-        main_layout.addWidget(self.canvas)
+        self.canvas.setMinimumSize(200, 200)
+        fig.addWidget(self.canvas)
 
+        if self.alt_display:
+            # uncomment for splitter
+            splitter = QtWidgets.QSplitter()
+            splitter.setOrientation(QtCore.Qt.Horizontal)
+            splitter.addWidget(controls_widget)
+            splitter.addWidget(fig_widget)
+            splitter.setSizes([500, 100])
+            main_layout.addWidget(splitter)
+        else:
+            splitter = QtWidgets.QSplitter()
+            splitter.setOrientation(QtCore.Qt.Vertical)
+            splitter.addWidget(controls_widget)
+            splitter.addWidget(fig_widget)
+            splitter.setSizes([500, 100])
+            main_layout.addWidget(splitter)
+            # comment this line to use splitter
+            #main_layout.addWidget(controls_widget, stretch=1)
+            #main_layout.addWidget(fig_widget, stretch=3)
+
+        
         central.setLayout(main_layout)
         self.setCentralWidget(central)
 
         self.mode_changed(self.modeCombo.currentText())
+        self.dataSource_changed(self.dataSourceCombo.currentText())
+
+    def leftarrow(self):
+        self.alt_display = not self.alt_display
+    
+        # Rebuild the UI with the new layout settings
+        self.rebuild_ui()
+        lab = self.arrow
+        if lab == ">":
+            self.arrow = "v"
+            self.DisplayToggle.setText(self.arrow)
+            self.resize(1000, 600)
+        if lab == "v":
+            self.arrow = ">"
+            self.DisplayToggle.setText(self.arrow)
+            self.resize(1000, 700)
+
+    def clear_layout(self, layout):
+        if layout is not None:
+            while layout.count():
+                item = layout.takeAt(0)
+                if item.widget():
+                    item.widget().setParent(None)
+                elif item.layout():
+                    self.clear_layout(item.layout())
+                
+    def rebuild_ui(self):
+        # Clear the current layout of the central widget
+        central = self.centralWidget()
+        if central is not None:
+            old_layout = central.layout()
+            if old_layout is not None:
+                self.clear_layout(old_layout)
+                old_layout.deleteLater()
+            
+        # Rebuild the UI
+        self.build_ui()
+
+    def dataSource_changed(self, source):
+        """Adjust GUI elements based on selected data source."""
+        if source == "Output Log":
+            # Use timestep controls and output file drop-down.
+            self.timestepWidget.show()
+            self.outputFileWidget.show()
+        else:
+            # For static files, hide timestep controls and output file drop-down.
+            self.timestepWidget.hide()
+            self.outputFileWidget.hide()
+
+    def borwse_par_dir(self):
+        dirname = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Simulation Directory", self.par_dir)
+        self.browse_input_dir()
+        self.browse_output_dir()
 
     def browse_input_dir(self):
-        dirname = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Input Directory", self.input_dir)
+        dirname = self.par_dir+"/inputs"
         if dirname:
             self.input_dir = dirname
-            self.inDirLineEdit.setText(dirname)
+            #self.inDirLineEdit.setText(dirname)
             try:
                 self.params = read_param_file(os.path.join(self.input_dir, "param.in"))
                 self.full_nx, self.full_ny, self.full_nz, self.Lx, self.Ly, self.Lz = read_system_file(os.path.join(self.input_dir, "system.in"))
@@ -491,10 +612,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 QtWidgets.QMessageBox.critical(self, "Error", f"Error reloading input files: {e}")
 
     def browse_output_dir(self):
-        dirname = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Output Directory", self.output_dir)
+        dirname = self.par_dir+"/outputs"
         if dirname:
             self.output_dir = dirname
-            self.outDirLineEdit.setText(dirname)
+            #self.outDirLineEdit.setText(dirname)
             self.update_output_files_list()
 
     def update_output_files_list(self):
@@ -531,28 +652,40 @@ class MainWindow(QtWidgets.QMainWindow):
         self.timestepSlider.setValue(val)
 
     def do_plot(self):
-        selected_file = self.outputFileCombo.currentText().strip()
-        if selected_file:
-            log_file = selected_file
+        source = self.dataSourceCombo.currentText()
+        if source == "Output Log":
+            selected_file = self.outputFileCombo.currentText().strip()
+            log_file = selected_file if selected_file else self.latest_log
+            try:
+                self.records = read_log_file(log_file, self.sub_n)
+            except Exception as e:
+                QtWidgets.QMessageBox.critical(self, "Error", f"Error reading log file: {e}")
+                return
+            try:
+                ts = int(self.timestepLineEdit.text())
+            except ValueError:
+                ts = len(self.records)-1
+            if ts < 0 or ts >= len(self.records):
+                ts = len(self.records)-1
+                QtWidgets.QMessageBox.warning(self, "Timestep Warning",
+                                              f"Timestep index out of range. Using latest record (index {ts}).")
+            rec_time, data = self.records[ts]
+            temp_subset = data.reshape((self.eff_nx, self.eff_ny, self.eff_nz), order='F')
         else:
-            log_file = self.latest_log
-        try:
-            self.records = read_log_file(log_file, self.sub_n)
-        except Exception as e:
-            QtWidgets.QMessageBox.critical(self, "Error", f"Error reading log file: {e}")
-            return
-
-        try:
-            ts = int(self.timestepLineEdit.text())
-        except ValueError:
-            ts = len(self.records)-1
-        if ts < 0 or ts >= len(self.records):
-            ts = len(self.records)-1
-            QtWidgets.QMessageBox.warning(self, "Timestep Warning",
-                                          f"Timestep index out of range. Using latest record (index {ts}).")
-        rec_time, data = self.records[ts]
-        temp_subset = data.reshape((self.eff_nx, self.eff_ny, self.eff_nz), order='F')
-
+            # For static files, use the selected file from the data source combo.
+            static_file = os.path.join(self.output_dir, source)
+            try:
+                flat_data = read_static_temp_file(static_file, (self.full_nx, self.full_ny, self.full_nz))
+            except Exception as e:
+                QtWidgets.QMessageBox.critical(self, "Error", f"Error reading static file: {e}")
+                return
+            # For static files, we assume the file contains the full grid;
+            # we then extract the subset.
+            temp_full = flat_data.reshape((self.full_nx, self.full_ny, self.full_nz), order='F')
+            # Extract subset indices:
+            temp_subset = temp_full[:self.eff_nx, :self.eff_ny, :self.eff_nz]
+            rec_time = 0.0  # static file: no time
+            ts = 0
         self.figure.clf()
         ax = self.figure.add_subplot(111)
         mode = self.modeCombo.currentText()
@@ -567,7 +700,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 ax, temp_subset, plane, fixed_val,
                 self.x_coords, self.y_coords, self.z_coords,
                 self.dx, self.dy, self.dz, fixed_as_index=use_index,
-                time_step=self.time_step, record_time=rec_time, record_idx=ts)
+                record_time=rec_time, record_idx=ts)
         else:
             dimension = self.dimensionCombo.currentText()
             try:
@@ -580,7 +713,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 ax, temp_subset, dimension, fixed1_val, fixed2_val,
                 self.x_coords, self.y_coords, self.z_coords,
                 self.dx, self.dy, self.dz, fixed_as_index=use_index_flag,
-                time_step=self.time_step, record_time=rec_time, record_idx=ts)
+                record_time=rec_time, record_idx=ts)
         self.canvas.draw()
 
     def save_plot(self):
@@ -593,17 +726,27 @@ class MainWindow(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.information(self, "Save Plot", f"Plot saved to {fname}")
 
     def export_data(self):
-        mode = self.modeCombo.currentText()
-        try:
-            ts = int(self.timestepLineEdit.text())
-        except ValueError:
-            ts = len(self.records)-1
-        rec_time, data = self.records[ts]
-        temp_subset = data.reshape((self.eff_nx, self.eff_ny, self.eff_nz), order='F')
+        source = self.dataSourceCombo.currentText()
         meta_lines = [
-            f"# Log file: {self.outputFileCombo.currentText().strip() or self.latest_log}",
-            f"# Time step: {self.time_step}",
+            f"# Data Source: {source}",
+            f"# Time step (from param.in): {self.params.get('time_step', 1.0)}"
         ]
+        if source == "Output Log":
+            try:
+                ts = int(self.timestepLineEdit.text())
+            except ValueError:
+                ts = len(self.records)-1
+            rec_time, data = self.records[ts]
+            temp_subset = data.reshape((self.eff_nx, self.eff_ny, self.eff_nz), order='F')
+            meta_lines.append(f"# Record time: {rec_time}")
+            meta_lines.append(f"# Timestep index: {ts}")
+        else:
+            static_file = os.path.join(self.output_dir, source)
+            flat_data = read_static_temp_file(static_file, (self.full_nx, self.full_ny, self.full_nz))
+            temp_full = flat_data.reshape((self.full_nx, self.full_ny, self.full_nz), order='F')
+            temp_subset = temp_full[:self.eff_nx, :self.eff_ny, :self.eff_nz]
+            meta_lines.append("# Static file (single timestep)")
+        mode = self.modeCombo.currentText()
         if mode == "heatmap":
             plane = self.planeCombo.currentText()
             try:
@@ -617,25 +760,25 @@ class MainWindow(QtWidgets.QMainWindow):
                 grid_x, grid_y = np.meshgrid(self.x_coords, self.y_coords, indexing='ij')
                 out_data = np.column_stack((grid_x.flatten(), grid_y.flatten(), data_to_export.flatten()))
                 meta_lines.append(f"# Plane: xy, Fixed (z): {fixed_val} {'(index)' if use_index else '(mm)'}")
-                header = "\n".join(meta_lines) + f"\n# Heatmap (xy) at z index {idx} (z ≃ {self.z_coords[idx]:.3f} mm), at time {(rec_time*self.time_step):.4g} (timestep {ts})\n# Columns: X (mm), Y (mm), Temperature"
+                header = "\n".join(meta_lines) + f"\n# Heatmap (xy) at z index {idx} (z ≃ {self.z_coords[idx]:.3f} mm)\n# Columns: X (mm), Y (mm), Temperature"
             elif plane == 'xz':
                 idx = int(fixed_val) if use_index else int(np.abs(np.array(self.y_coords)-fixed_val).argmin())
                 data_to_export = temp_subset[:, idx, :]
                 grid_x, grid_y = np.meshgrid(self.x_coords, self.z_coords, indexing='ij')
                 out_data = np.column_stack((grid_x.flatten(), grid_y.flatten(), data_to_export.flatten()))
                 meta_lines.append(f"# Plane: xz, Fixed (y): {fixed_val} {'(index)' if use_index else '(mm)'}")
-                header = "\n".join(meta_lines) + f"\n# Heatmap (xz) at y index {idx} (y ≃ {self.y_coords[idx]:.3f} mm), at time {(rec_time*self.time_step):.4g} (timestep {ts})\n# Columns: X (mm), Z (mm), Temperature"
+                header = "\n".join(meta_lines) + f"\n# Heatmap (xz) at y index {idx} (y ≃ {self.y_coords[idx]:.3f} mm)\n# Columns: X (mm), Z (mm), Temperature"
             elif plane == 'yz':
                 idx = int(fixed_val) if use_index else int(np.abs(np.array(self.x_coords)-fixed_val).argmin())
                 data_to_export = temp_subset[idx, :, :]
                 grid_x, grid_y = np.meshgrid(self.y_coords, self.z_coords, indexing='ij')
                 out_data = np.column_stack((grid_x.flatten(), grid_y.flatten(), data_to_export.flatten()))
                 meta_lines.append(f"# Plane: yz, Fixed (x): {fixed_val} {'(index)' if use_index else '(mm)'}")
-                header = "\n".join(meta_lines) + f"\n# Heatmap (yz) at x index {idx} (x ≃ {self.x_coords[idx]:.3f} mm), at time {(rec_time*self.time_step):.4g} (timestep {ts})\n# Columns: Y (mm), Z (mm), Temperature"
+                header = "\n".join(meta_lines) + f"\n# Heatmap (yz) at x index {idx} (x ≃ {self.x_coords[idx]:.3f} mm)\n# Columns: Y (mm), Z (mm), Temperature"
             else:
                 QtWidgets.QMessageBox.warning(self, "Export Error", "Invalid plane selected.")
                 return
-        else:  # line mode
+        else:
             dimension = self.dimensionCombo.currentText()
             try:
                 fixed1_val = float(self.fixed1LineEdit.text())
@@ -654,7 +797,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 x_axis = self.x_coords
                 out_data = np.column_stack((x_axis, line_data))
                 meta_lines.append(f"# Dimension: x, Fixed1 (y): {fixed1_val} {'(index)' if use_index_flag else '(mm)'}, Fixed2 (z): {fixed2_val} {'(index)' if use_index_flag else '(mm)'}")
-                header = "\n".join(meta_lines) + f"\n# Line data for dimension x at y index {y_idx}, z index {z_idx}, at time {(rec_time*self.time_step):.4g} (timestep {ts})\n# Columns: X (mm), Temperature"
+                header = "\n".join(meta_lines) + f"\n# Line data for dimension x at y index {y_idx}, z index {z_idx}\n# Columns: X (mm), Temperature"
             elif dimension == 'y':
                 if use_index_flag:
                     x_idx = int(fixed1_val)
@@ -666,7 +809,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 x_axis = self.y_coords
                 out_data = np.column_stack((x_axis, line_data))
                 meta_lines.append(f"# Dimension: y, Fixed1 (x): {fixed1_val} {'(index)' if use_index_flag else '(mm)'}, Fixed2 (z): {fixed2_val} {'(index)' if use_index_flag else '(mm)'}")
-                header = "\n".join(meta_lines) + f"\n# Line data for dimension y at x index {x_idx}, z index {z_idx}, at time {(rec_time*self.time_step):.4g} (timestep {ts})\n# Columns: Y (mm), Temperature"
+                header = "\n".join(meta_lines) + f"\n# Line data for dimension y at x index {x_idx}, z index {z_idx}\n# Columns: Y (mm), Temperature"
             elif dimension == 'z':
                 if use_index_flag:
                     x_idx = int(fixed1_val)
@@ -678,7 +821,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 x_axis = self.z_coords
                 out_data = np.column_stack((x_axis, line_data))
                 meta_lines.append(f"# Dimension: z, Fixed1 (x): {fixed1_val} {'(index)' if use_index_flag else '(mm)'}, Fixed2 (y): {fixed2_val} {'(index)' if use_index_flag else '(mm)'}")
-                header = "\n".join(meta_lines) + f"\n# Line data for dimension z at x index {x_idx}, y index {y_idx}, at time {(rec_time*self.time_step):.4g} (timestep {ts})\n# Columns: Z (mm), Temperature"
+                header = "\n".join(meta_lines) + f"\n# Line data for dimension z at x index {x_idx}, y index {y_idx}\n# Columns: Z (mm), Temperature"
             else:
                 QtWidgets.QMessageBox.warning(self, "Export Error", "Invalid dimension selected.")
                 return
@@ -690,7 +833,6 @@ class MainWindow(QtWidgets.QMainWindow):
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     window = MainWindow()
-    window.resize(900, 700)
+    window.resize(1000, 700)
     window.show()
     sys.exit(app.exec_())
-
