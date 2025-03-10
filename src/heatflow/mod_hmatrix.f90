@@ -218,7 +218,7 @@ contains
     alpha = 0.0_real12
     tau = grid(x,y,z)%tau
     if (isteady .eq. 0) then
-      if (icattaneo .eq. 0) tau = 0.0_real12
+      if (icattaneo .lt. TINY) tau = 0.0_real12
       !tau is already divided by time_step**2
       alpha = (tau*lin_rhoc(i)) + (inverse_time*lin_rhoc(i)) 
     else
