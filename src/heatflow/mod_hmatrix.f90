@@ -43,7 +43,7 @@
 !!! in this case lexicographic order first counting x, then y, and finally z.
 !!!#################################################################################################
 module hmatrixmod
-  use constants, only: real12, int12
+  use constants, only: real12, int12, TINY
   use inputs, only: nx, ny, nz, time_step, grid
   use inputs, only: isteady, icattaneo, kappaBoundx1, kappaBoundy1, kappaBoundz1
   use inputs, only: kappaBoundNx, kappaBoundNy, kappaBoundNz, Periodicx, Periodicy, Periodicz
