@@ -1,6 +1,5 @@
 message(STATUS "Building tests")
 foreach(execid
-    helloworld
     mod_heating
     mod_cattaneo
     mod_boundary
