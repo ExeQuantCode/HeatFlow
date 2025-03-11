@@ -19,3 +19,4 @@ utl/DFortran/make_geom/Pillers.in
 utl/DFortran/make_geom/test_geometry.in
 utl/DPython/scripts/geom.in
 utl/DPython/scripts/Pillers.in
+build.sh
