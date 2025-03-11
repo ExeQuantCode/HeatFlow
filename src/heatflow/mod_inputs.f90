@@ -446,10 +446,22 @@ contains
        T_Bathz1 = T_Bath
        T_Bathz2 = T_Bath
     end if WarBath
+    
+    !Check if T_BathCG less than 0
+    if ((readvar(42) .eq. 1) .and. (T_BathCG .lt. 0.0_real12)) then
+      write(6,*)
+      write(6,'(A43)') '###############################'
+      write(6,'(A43)') '##########  WARNING  ##########'
+      write(6,'(A43)') '###############################'
+      write(6,*)
+      write(6,'(A)')   ' ---            Warning in subroutine "check_param"             ---'
+      write(6,'(A)')   ' --- WARNING: T_BathCG is negative, are you sure you?          ---'
+    end if
     if (readvar(42) .eq. 0) then
       T_BathCG = 0
       readvar(42) = 1
     end if
+  
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     !------------------------------------------------------------------------------------
