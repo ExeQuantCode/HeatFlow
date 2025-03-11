@@ -28,7 +28,7 @@ subroutine test_heater_constant_heating(hcase)
     
     integer(int12) :: itime
     real(real12), allocatable :: Q_test(:), Qdens_test(:)
-    integer :: i, hcase
+    integer :: i, j, k, hcase
     
     ! Set mock sizes (assuming small domain for demonstration)
     nx = 2; ny = 2; nz = 1
@@ -47,15 +47,15 @@ subroutine test_heater_constant_heating(hcase)
     Temp_p = 300.0_real12
     
     ! Fill grid with dummy values
-    do i = 1, NA
-         grid(i,1,1)%rho           = 1000.0_real12
-         grid(i,1,1)%volume        = 1.0_real12
-         grid(i,1,1)%heat_capacity = 1.0_real12
-         grid(i,1,1)%Length(1)     = 1.0_real12
-         grid(i,1,1)%Length(2)     = 1.0_real12
-         grid(i,1,1)%tau           = 0.0_real12
-         grid(i,1,1)%em            = 0.0_real12
-         grid(i,1,1)%iheater       = hcase     ! Constant heating case
+    do concurrent( i = 1:nx, j = 1:ny, k = 1:nz )
+         grid(i,j,k)%rho           = 1000.0_real12
+         grid(i,j,k)%volume        = 1.0_real12
+         grid(i,j,k)%heat_capacity = 1.0_real12
+         grid(i,j,k)%Length(1)     = 1.0_real12
+         grid(i,j,k)%Length(2)     = 1.0_real12
+         grid(i,j,k)%tau           = 0.0_real12
+         grid(i,j,k)%em            = 0.0_real12
+         grid(i,j,k)%iheater       = hcase     ! Constant heating case
     end do
     allocate(Q_test(NA), Qdens_test(NA))
     
@@ -82,7 +82,7 @@ subroutine test_heater_no_heating()
 
     integer(int12) :: itime
     real(real12), allocatable :: Q_test(:), Qdens_test(:)
-    integer :: i
+    integer :: i, j, k
 
     ! Set mock sizes
     nx = 2; ny = 2; nz = 1
@@ -100,15 +100,15 @@ subroutine test_heater_no_heating()
     Temp_p = 300.0_real12
 
     ! Fill grid with dummy values
-    do i = 1, NA
-         grid(i,1,1)%rho           = 500.0_real12
-         grid(i,1,1)%volume        = 2.0_real12
-         grid(i,1,1)%heat_capacity = 2.0_real12
-         grid(i,1,1)%Length(1)     = 1.0_real12
-         grid(i,1,1)%Length(2)     = 1.0_real12
-         grid(i,1,1)%tau           = 0.0_real12
-         grid(i,1,1)%em            = 0.0_real12
-         grid(i,1,1)%iheater       = 0       ! No heating
+    do concurrent( i = 1:nx, j = 1:ny, k = 1:nz )
+         grid(i,j,k)%rho           = 500.0_real12
+         grid(i,j,k)%volume        = 2.0_real12
+         grid(i,j,k)%heat_capacity = 2.0_real12
+         grid(i,j,k)%Length(1)     = 1.0_real12
+         grid(i,j,k)%Length(2)     = 1.0_real12
+         grid(i,j,k)%tau           = 0.0_real12
+         grid(i,j,k)%em            = 0.0_real12
+         grid(i,j,k)%iheater       = 0       ! No heating
     end do
     allocate(Q_test(NA), Qdens_test(NA))
 

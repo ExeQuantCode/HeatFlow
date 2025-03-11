@@ -43,9 +43,9 @@ contains
         ! Setup test conditions
         isteady = 0
         icattaneo = 0
-        test_x = 1
-        test_y = 1
-        test_z = 1
+        test_x = 3
+        test_y = 3
+        test_z = 3
         test_i = 1
         allocate(grid(test_x, test_y, test_z))
         allocate(lin_rhoc(1))
