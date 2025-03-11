@@ -64,7 +64,7 @@ $(programs) : $(OBJS) | $(BIN_DIR) $(BUILD_DIR)
 	$(FC) -O3 -fopenmp $(MODULEFLAGS) $(BUILD_DIR) $(OBJS) -o $@
 
 debug :  $(OBJS)
-	$(FC) -O3 -mcmodel=large -Wall -g -ffpe-trap=invalid,zero,overflow,underflow -fbacktrace -fcheck=all -fbounds-check  $(MODULEFLAGS) $(BUILD_DIR) $(OBJS) -o $(programs)
+	$(FC) -O0 -Wall -g -ffpe-trap=invalid,zero,overflow,underflow -fbacktrace -fcheck=all -fbounds-check  $(MODULEFLAGS) $(BUILD_DIR) $(OBJS) -o $(programs)
 
 OMP: $(programs)
 	./util/DShell/omp_exec.sh

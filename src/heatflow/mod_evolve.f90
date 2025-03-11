@@ -109,9 +109,9 @@ contains
     !---------------------------------------------
     ! Construct S vector 
     !---------------------------------------------
-    if (iSteady .lt. TINY) then
+    if ((iSteady) .lt. TINY) then
        S = - inverse_time * Temp_p * lin_rhoc - Qdens - B
-       if ((iCAttaneo-1) .lt. TINY) then
+       if ((iCAttaneo -1) .lt. TINY) then
           S = S + S_CAT
        end if
     else
