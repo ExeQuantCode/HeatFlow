@@ -42,14 +42,14 @@ contains
     
                 if (.not. Periodicx) then
                     if (ix .eq. 1) then
-                        if (T_BathCG .gt. (0.0_real12+TINY)) T_Bathx1 = constantboundarytempgrad(I)
+                        if (T_BathCG .gt. (TINY)) T_Bathx1 = constantboundarytempgrad(I)
                         kappaHarm = (2*kappa*kappaBoundx1/(kappa+kappaBoundx1)) / &
                         (grid(ix, iy, iz)%Length(1)**2)
                         if (kappa .ne. kappaBoundx1) kappaHarm = kappaHarm*BR
                         B(I) = B(I) + (kappaHarm) * T_Bathx1
                     end if
                     if (ix .eq. nx) then
-                        if (T_BathCG .gt. (0.0_real12+TINY)) T_Bathx2 = constantboundarytempgrad(I)
+                        if (T_BathCG .gt. (TINY)) T_Bathx2 = constantboundarytempgrad(I)
                         kappaHarm = (2*kappa*kappaBoundNx/(kappa+kappaBoundNx)) / &
                         (grid(ix, iy, iz)%Length(1)**2)
                         if (kappa .ne. kappaBoundNx) kappaHarm = kappaHarm*BR
@@ -59,7 +59,7 @@ contains
     
                 if (.not. Periodicy) then
                     if (iy .eq. 1) then
-                        if (T_BathCG .gt. (0.0_real12+TINY)) T_Bathy1 = constantboundarytempgrad(I)
+                        if (T_BathCG .gt. (TINY)) T_Bathy1 = constantboundarytempgrad(I)
                         kappaHarm = (2*kappa*kappaBoundy1/(kappa+kappaBoundy1)) / &
                         (grid(ix, iy, iz)%Length(2)**2)
                         if (kappa .ne. kappaBoundy1) kappaHarm = kappaHarm*BR
@@ -67,7 +67,7 @@ contains
 
                     end if
                     if (iy .eq. ny) then
-                        if (T_BathCG .gt. (0.0_real12+TINY)) T_Bathy2 = constantboundarytempgrad(I)
+                        if (T_BathCG .gt. (TINY)) T_Bathy2 = constantboundarytempgrad(I)
                         kappaHarm = (2*kappa*kappaBoundNy/(kappa+kappaBoundNy)) / &
                         (grid(ix, iy, iz)%Length(2)**2)
                         if (kappa .ne. kappaBoundNy) kappaHarm = kappaHarm*BR
@@ -77,14 +77,14 @@ contains
     
                 if (.not. Periodicz) then
                     if (iz .eq. 1) then
-                        if (T_BathCG .gt. (0.0_real12+TINY)) T_Bathz1 = constantboundarytempgrad(I)
+                        if (T_BathCG .gt. (TINY)) T_Bathz1 = constantboundarytempgrad(I)
                         kappaHarm = (2*kappa*kappaBoundz1/(kappa+kappaBoundz1)) / &
                         (grid(ix, iy, iz)%Length(3)**2)
                         if (kappa .ne. kappaBoundz1) kappaHarm = kappaHarm*BR
                         B(I) = B(I) + (kappaHarm) * T_Bathz1
                     end if
                     if (iz .eq. nz) then
-                        if (T_BathCG .gt. (0.0_real12+TINY)) T_Bathz2 = constantboundarytempgrad(I)
+                        if (T_BathCG .gt. (TINY)) T_Bathz2 = constantboundarytempgrad(I)
                         kappaHarm = (2*kappa*kappaBoundNz/(kappa+kappaBoundNz)) / &
                         (grid(ix, iy, iz)%Length(3)**2)
                         if (kappa .ne. kappaBoundNz) kappaHarm = kappaHarm*BR
