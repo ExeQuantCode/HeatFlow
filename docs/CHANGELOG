@@ -12,22 +12,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 ### Security
 
-## [TBD] - 2024-03-21
+## [0.5.0] - 2025-03-11
 ### Added
 
- - Added ability to specifiy the range of cells that are written to output file.
+ - fully implemented Tests to check the status of modules when building
+ - implementation of additional boundary resistance between differing cell materials
+ - implementation of Neumann boundary conditions
+
+### Changed
+ - the conditions of some if statements to increase robustness
+ - the format of the output file's name
+
+### Removed
+ - legacy test files
+ - some utility files pushed by mistake
+
+
+
+## [0.4.0] - 2024-03-21
+### Added
+
+ - Added ability to specify the range of cells that are written to output file.
  - Added ability to specifiy kappa boundary at 1x,1y,1z and nx,ny,nz 
  - Comments
 
 ### Changed
 
- - Changed the format of the system input geometry and heating and merged them together.
+ - Changed the format of the system input geometry and heating and merged them.
 
 ### Removed
  - Source parameter in mat.in 
 ### Fixed
 
- - General formating
+ - General formatting
 
 ## [0.3.0] - 2024-03-05
 
