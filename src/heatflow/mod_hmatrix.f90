@@ -43,7 +43,7 @@
 !!! in this case lexicographic order first counting x, then y, and finally z.
 !!!#################################################################################################
 module hmatrixmod
-  use constants, only: real12, int12
+  use constants, only: real12, int12, TINY
   use inputs, only: nx, ny, nz, time_step, grid
   use inputs, only: isteady, icattaneo, kappaBoundx1, kappaBoundy1, kappaBoundz1, BR
   use inputs, only: kappaBoundNx, kappaBoundNy, kappaBoundNz, Periodicx, Periodicy, Periodicz
@@ -217,8 +217,8 @@ contains
 
     alpha = 0.0_real12
     tau = grid(x,y,z)%tau
-    if (isteady .eq. 0) then
-      if (icattaneo .eq. 0) tau = 0.0_real12
+    if (isteady .lt. TINY) then
+      if (icattaneo .lt. TINY) tau = 0.0_real12
       !tau is already divided by time_step**2
       alpha = (tau*lin_rhoc(i)) + (inverse_time*lin_rhoc(i)) 
     else
