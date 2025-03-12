@@ -235,7 +235,7 @@ contains
     T_Bathz2 = T_Bath
     T_BathCG = 0
     power_in = 0
-    LSPOWER = .FALSE.
+    LSPOWER = .TRUE.
     Periodic = ''
     !kappaBound = [kx1:kNx,ky1:kNy,kz1:kNz]
     KappaBound = 0.0
@@ -439,7 +439,19 @@ contains
 
     if (readvar(43) .eq. 0) readvar(43) = 1 ! set readvar(BR) to 1
     
+    if (readvar(44) .eq. 1) then ! warning about changing LSPOWER
+      write(6,*)
+      write(6,'(A43)') '###############################'
+      write(6,'(A43)') '##########  WARNING  ##########'
+      write(6,'(A43)') '###############################'
+      write(6,*)
+      write(6,'(A)')   ' ---            Warning in subroutine "LSPOWER"             ---'
+      write(6,'(A)')   ' --- WARNING: LSPOWER is TRUE BY DEFAULT, are you sure you want to change ?---'
+
+    end if 
+    
     if (readvar(44) .eq. 0) readvar(44) = 1 ! set readvar(LSPOWER) to 1
+
     
     WarBath:if ( any(readvar(20:25).eq.0) ) then
        write(6,*)
