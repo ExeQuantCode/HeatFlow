@@ -14,7 +14,7 @@ module Heating
   use constants, only: real12, int12, pi, StefBoltz
   use globe_data, only: Temp_p, Temp_pp, Heat, heated_volume, Q_P
   use inputs, only: nx,ny,nz, grid, NA, power_in, time_step, heated_steps, T_System, freq, ntime, &
-       T_Bath
+                     T_Bath, LSPOWER
   use materials, only: material
   implicit none
 contains
@@ -155,8 +155,11 @@ contains
    
 
     ! Normalize all heat sources by the heated volume
-    if (heated_volume .gt. 0.0) Qdens(:) = Q(:) / heated_volume
-    
+    if (LSPOWER) then
+      if (heated_volume .gt. 0.0) Qdens(:) = Q(:) / heated_volume
+    else
+      Qdens(:) = Q(:)/volume
+    end if 
 
   end subroutine heater
 

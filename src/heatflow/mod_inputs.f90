@@ -22,6 +22,7 @@
 !!!     - time_step, the time step of the simulation
 !!!     - freq, the frequency of the heater in simulation
 !!!     - power_in, the power in of the heater in the simulation
+!!!     - LSPOWER, is power shared between heated cells
 !!!     - Periodicx, the boundry condition is periodic in specified directions 
 !!!     - Periodicy, the boundry condition is periodic in specified directions 
 !!!     - Periodicz, the boundry condition is periodic in specified directions 
@@ -32,6 +33,7 @@
 !!!     - kappaBoundNy, the boundary kappa in the y direction plane y=ny
 !!!     - kappaBoundNz, the boundary kappa in the z direction plane z=nz
 !!!     - KappaBound, the boundary kappa
+!!!     - BR, additional boundary resistance coefficeint
 !!!     - TempDepProp, the temperature dependent properties
 !!!     - T_Bathx1, the bath temperature in the x direction
 !!!     - T_Bathx2, the bath temperature in the x direction
@@ -41,6 +43,7 @@
 !!!     - T_Bathz2, the bath temperature in the z direction
 !!!     - T_System, the system temperature
 !!!     - T_Bath, the bath temperature
+!!!     - T_BathCG, the gradient of the bath temperature
 !!!     - IVERB, the verbose
 !!!     - ntime, the number of time steps
 !!!     - heated_steps, the number of steps for which heating is applied in heating case 2
@@ -78,7 +81,7 @@ module inputs
   ! time step, frequency, power in, boundary kappa
   logical :: Periodicx,Periodicy,Periodicz
   real(real12) :: time_step, freq, power_in, kappaBoundx1, kappaBoundy1, kappaBoundz1, KappaBound
-  real(real12) :: kappaBoundNx, kappaBoundNy, kappaBoundNz
+  real(real12) :: kappaBoundNx, kappaBoundNy, kappaBoundNz, BR
   ! Bath temperatures
   real(real12) :: T_Bathx1, T_Bathx2, T_Bathy1, T_Bathy2, T_Bathz1, T_Bathz2, T_System, T_Bath
   real(real12) :: T_BathCG
@@ -88,7 +91,7 @@ module inputs
   integer(int12) :: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz, TempDepProp, heated_steps
   ! flags
   logical :: Check_Sparse_Full, Check_Stability, Check_Steady_State
-  logical :: WriteToTxt, LPercentage, InputTempDis
+  logical :: WriteToTxt, LPercentage, InputTempDis, LSPOWER
   logical ::  Test_Run = .FALSE., FullRestart = .FALSE.
 
   ! Name of simiulation run
@@ -197,7 +200,7 @@ contains
   subroutine read_param(unit)
     implicit none
     integer:: unit, Reason
-    integer,dimension(42)::readvar
+    integer,dimension(44)::readvar
     character(1024)::buffer
 
     readvar(:)=0
@@ -232,6 +235,7 @@ contains
     T_Bathz2 = T_Bath
     T_BathCG = 0
     power_in = 0
+    LSPOWER = .FALSE.
     Periodic = ''
     !kappaBound = [kx1:kNx,ky1:kNy,kz1:kNz]
     KappaBound = 0.0
@@ -241,6 +245,7 @@ contains
     kappaBoundNx = 0.0
     kappaBoundNy = 0.0
     kappaBoundNz = 0.0
+    BR = 0.0
     TempDepProp = 0
     !t_output = !{all, every_n, single_n}
     !s_output = !{all, region_[x:X,y:Y,z:Z], downsample_n}
@@ -306,6 +311,8 @@ contains
        CALL assignS(buffer,"Periodic",Periodic,readvar(40))
        CALL assignI(buffer,"heattime",heated_steps,readvar(41))
        CALL assignD(buffer,"T_BathCG",T_BathCG,readvar(42))
+       CALL assignD(buffer,"BR",BR,readvar(43))
+       CALL assignL(buffer,"LSPOWER",LSPOWER,readvar(44))
       
        !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -429,6 +436,11 @@ contains
       readvar(27) = 1
 
     end if
+
+    if (readvar(43) .eq. 0) readvar(43) = 1 ! set readvar(BR) to 1
+    
+    if (readvar(44) .eq. 0) readvar(44) = 1 ! set readvar(LSPOWER) to 1
+    
     WarBath:if ( any(readvar(20:25).eq.0) ) then
        write(6,*)
        write(6,'(A43)') '###############################'
@@ -448,6 +460,7 @@ contains
       T_BathCG = 0
       readvar(42) = 1
     end if
+
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     !------------------------------------------------------------------------------------
@@ -527,6 +540,8 @@ contains
        write(6,'(A35,F12.5)')   '   T_Bathz1    = ', T_Bathz1
        write(6,'(A35,F12.5)')   '   T_Bathz2    = ', T_Bathz2
        write(6,'(A35,F12.5)')   '   power_in    = ', power_in
+       write(6,'(A35,L1)')     '   LSPOWER     = ', LSPOWER
+       write(6, '(A35,F12.5)') '   BR   = ', BR
        write(6,'(A35,F12.5)')   '   KappaBound    = ', KappaBound
        write(6,'(A35,F12.5)')   '   kappaBoundx1  = ', kappaBoundx1
        write(6,'(A35,F12.5)')   '   kappaBoundy1  = ', kappaBoundy1
