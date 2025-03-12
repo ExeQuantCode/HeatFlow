@@ -11,7 +11,7 @@
 !!! Author: Harry Mclean, Frank Davies, Steven Hepplestone
 !!!#################################################################################################
 module Heating
-  use constants, only: real12, int12, pi, StefBoltz
+  use constants, only: real12, int12, pi, StefBoltz, TINY
   use globe_data, only: Temp_p, Temp_pp, Heat, heated_volume, Q_P
   use inputs, only: nx,ny,nz, grid, NA, power_in, time_step, heated_steps, T_System, freq, ntime, &
                      T_Bath, LSPOWER
@@ -31,9 +31,10 @@ contains
     real(real12) :: time, POWER, time_pulse, x, x2
     real(real12) :: rho, volume, heat_capacity, area, tau
 
-    ! Initialize variables
+    ! Ensure Initialize variables
     IA = 0
-    Q = 0._real12
+    Q = 0.0_real12
+    Qdens = 0.0_real12
     POWER = power_in
     time = time_step * real(itime,real12)
     time_pulse = heated_steps  * time_step
@@ -114,9 +115,11 @@ contains
              !------------------------------
              ! If emissitivity is not zero, then calculate the radiative heating
              !------------------------------
+             if (grid(ix,iy,iz)%em .gt. TINY) then
                Q(IA) = Q(IA) - grid(ix,iy,iz)%em * grid(ix,iy,iz)%length(1)*&
                        grid(ix,iy,iz)%length(2)*StefBoltz &
-                       * ((Temp_p(IA)**4.0_real12) - (T_Bath**4.0_real12)) 
+                       * ((Temp_p(IA)**4.0_real12) - (T_Bath**4.0_real12))
+             end if
              !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
              !------------------------------
@@ -129,7 +132,7 @@ contains
              !------------------------------
              ! count heated volume
              !------------------------------
-             if (grid(ix,iy,iz)%iheater .gt. 0) then
+             if (LSPOWER .and. (grid(ix,iy,iz)%iheater .gt. 0)) then
                 heated_volume = heated_volume + volume
                 heated_num = heated_num + 1
              end if
@@ -138,7 +141,7 @@ contains
           end do
        end do
     end do
-    Q_P = Q
+   !  Q_P = Q
 
     !write(*,*) ""
     !write(*,*) "==============================="
@@ -158,7 +161,7 @@ contains
     if (LSPOWER) then
       if (heated_volume .gt. 0.0) Qdens(:) = Q(:) / heated_volume
     else
-      Qdens(:) = Q(:)/volume
+      Qdens(:) = Q(:) / volume
     end if 
 
   end subroutine heater
