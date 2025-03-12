@@ -84,7 +84,7 @@ module inputs
   real(real12) :: kappaBoundNx, kappaBoundNy, kappaBoundNz, BR
   ! Bath temperatures
   real(real12) :: T_Bathx1, T_Bathx2, T_Bathy1, T_Bathy2, T_Bathz1, T_Bathz2, T_System, T_Bath
-  real(real12) :: T_BathCG, BR
+  real(real12) :: T_BathCG
   ! verbose, number of time steps, boundary condition, number of cells
   integer(int12) :: IVERB, ntime, iboundary, nx, ny, nz, icattaneo, isteady, NA, write_every
   ! what cells to write to txt file
