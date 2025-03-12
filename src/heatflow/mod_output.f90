@@ -193,8 +193,8 @@ contains
    i = 0
    flag=.true.
    do while (flag)
-      write(logname, '(A,F0.2,A,I2.2)') trim(adjustl(outdir)) // 'output_' // &
-           trim(adjustl(RunName)) // '_freq_' , freq, '_', i
+      write(logname, '(A,A,I2.2)') trim(adjustl(outdir)) // 'output_' // &
+           trim(adjustl(RunName)),'_',  i
       inquire(file=logname, exist=flag)
       i = i+1
    end do

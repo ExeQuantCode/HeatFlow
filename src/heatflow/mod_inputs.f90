@@ -41,6 +41,7 @@
 !!!     - T_Bathz2, the bath temperature in the z direction
 !!!     - T_System, the system temperature
 !!!     - T_Bath, the bath temperature
+!!!     - T_BathCG, the constant gradient of the bath temperature
 !!!     - IVERB, the verbose
 !!!     - ntime, the number of time steps
 !!!     - heated_steps, the number of steps for which heating is applied in heating case 2
@@ -81,7 +82,7 @@ module inputs
   real(real12) :: kappaBoundNx, kappaBoundNy, kappaBoundNz
   ! Bath temperatures
   real(real12) :: T_Bathx1, T_Bathx2, T_Bathy1, T_Bathy2, T_Bathz1, T_Bathz2, T_System, T_Bath
-  real(real12) :: T_BathCG
+  real(real12) :: T_BathCG, BR
   ! verbose, number of time steps, boundary condition, number of cells
   integer(int12) :: IVERB, ntime, iboundary, nx, ny, nz, icattaneo, isteady, NA, write_every
   ! what cells to write to txt file
@@ -197,7 +198,7 @@ contains
   subroutine read_param(unit)
     implicit none
     integer:: unit, Reason
-    integer,dimension(42)::readvar
+    integer,dimension(43)::readvar
     character(1024)::buffer
 
     readvar(:)=0
@@ -231,6 +232,7 @@ contains
     T_Bathz1 = T_Bath
     T_Bathz2 = T_Bath
     T_BathCG = 0
+    BR = 1.0
     power_in = 0
     Periodic = ''
     !kappaBound = [kx1:kNx,ky1:kNy,kz1:kNz]
@@ -306,7 +308,7 @@ contains
        CALL assignS(buffer,"Periodic",Periodic,readvar(40))
        CALL assignI(buffer,"heattime",heated_steps,readvar(41))
        CALL assignD(buffer,"T_BathCG",T_BathCG,readvar(42))
-      
+       CALL assignD(buffer,"BR",BR,readvar(43))
        !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     end do
@@ -354,7 +356,7 @@ contains
        ! Error about missing kappa bound 
        !------------------------------------------------------------------------------------
        ErrKB:if (((any(readvar(9:11).eq.0)) .or. any(readvar(29:31).eq.0)) &
-            .and. (readvar(28) .gt. 0) )then
+            .and. (readvar(28) .eq. 0) )then
           write(6,*)
           write(6,'(A43)') '###############################'
           write(6,'(A43)') '##########   ERORR   ##########'
@@ -377,7 +379,7 @@ contains
           write(6,'(A43)') '###############################'
           write(6,*)
           write(6,'(A)')   ' ---            Warning in subroutine "check_param"            ---'
-          write(6,'(A)')   ' --- Warning:  KappaBound are not set       ---'
+          write(6,'(A)')   ' --- Warning:  KappaBound is not set       ---'
           readvar(28) = 1
           
        end if WarKBO
@@ -386,7 +388,7 @@ contains
        ! warning about missing kappa bound. reassine to Kappabound
        !------------------------------------------------------------------------------------
        WarKB:if (((any(readvar(9:11).eq.0)) .or. any(readvar(29:31).eq.0)) &
-            .and. (readvar(28) .gt. 1) )then
+            .and. (readvar(28) .eq. 1) )then
           write(6,*)
           write(6,'(A43)') '###############################'
           write(6,'(A43)') '##########  WARNING  ##########'
@@ -444,10 +446,22 @@ contains
        T_Bathz1 = T_Bath
        T_Bathz2 = T_Bath
     end if WarBath
+    
+    !Check if T_BathCG less than 0
+    if ((readvar(42) .eq. 1) .and. (T_BathCG .lt. 0.0_real12)) then
+      write(6,*)
+      write(6,'(A43)') '###############################'
+      write(6,'(A43)') '##########  WARNING  ##########'
+      write(6,'(A43)') '###############################'
+      write(6,*)
+      write(6,'(A)')   ' ---            Warning in subroutine "check_param"             ---'
+      write(6,'(A)')   ' --- WARNING: T_BathCG is negative, are you sure you?          ---'
+    end if
     if (readvar(42) .eq. 0) then
       T_BathCG = 0
       readvar(42) = 1
     end if
+  
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     !------------------------------------------------------------------------------------
@@ -537,6 +551,7 @@ contains
        write(6,'(A35,I6)')      '   TempDepProp   = ', TempDepProp
        write(6,'(A35,A12)')     '   Periodic      = ', Periodic
        write(6,'(A35,L1)')      '   T_BathCG      = ', T_BathCG
+       write(6,'(A35,F12.5)')   '   BR            = ', BR
        write(6,'(A35,I6)')      '   start_ix      = ', start_ix
       write(6,'(A35,I6)')      '   end_ix        = ', end_ix
       write(6,'(A35,I6)')      '   start_iy      = ', start_iy
@@ -557,7 +572,7 @@ contains
     implicit none
     integer, intent(in) :: unit
     integer(int12) :: ix, iy, iz, reason, pos !, pos_old ! counters
-    character(2048) :: buffer, array,line
+    character(10000) :: buffer, array,line
     character(10), dimension(:), allocatable :: temp
     ! character(100)  :: part1, part2 ! buffer and array
     ! read mesh cell number
@@ -782,3 +797,4 @@ subroutine read_mat(unit)
 !!!#################################################################################################
 
 end module inputs
+

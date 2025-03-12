@@ -95,7 +95,7 @@ contains
     !------------------------------------------
     ! Calculate Cattaneo correction
     !------------------------------------------
-    if ((iCAttaneo-1) .lt. TINY) then
+    if ( (iCAttaneo - 1) .lt. TINY) then
        CALL S_catS(S_CAT)
        if (IVERB .gt. 3) write(*,*) "S_CAT average", sum(S_CAT)/size(S_CAT)
        if (IVERB .gt. 4) write(*,*) "S_CAT", S_CAT
@@ -145,6 +145,7 @@ contains
     ncg = 0
     iter=ncg
     err=E
+
 
     CALL linbcg(S,x,itol=int(itol,I4B),tol=tol, itmax=int(itmax,I4B), iter=iter, &
          err=E)
