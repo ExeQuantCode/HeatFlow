@@ -246,7 +246,6 @@ contains
     kappaBoundNx = 0.0
     kappaBoundNy = 0.0
     kappaBoundNz = 0.0
-    BR = 0.0
     TempDepProp = 0
     !t_output = !{all, every_n, single_n}
     !s_output = !{all, region_[x:X,y:Y,z:Z], downsample_n}
