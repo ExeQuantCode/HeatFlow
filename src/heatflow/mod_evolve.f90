@@ -95,7 +95,7 @@ contains
     !------------------------------------------
     ! Calculate Cattaneo correction
     !------------------------------------------
-    if ( (iCAttaneo - 1) .lt. TINY) then
+    if ((iCAttaneo) .gt. TINY) then
        CALL S_catS(S_CAT)
        if (IVERB .gt. 3) write(*,*) "S_CAT average", sum(S_CAT)/size(S_CAT)
        if (IVERB .gt. 4) write(*,*) "S_CAT", S_CAT
@@ -111,7 +111,7 @@ contains
     !---------------------------------------------
     if ((iSteady) .lt. TINY) then
        S = - inverse_time * Temp_p * lin_rhoc - Qdens - B
-       if ((iCAttaneo -1) .lt. TINY) then
+       if ((iCAttaneo) .gt. TINY) then
           S = S + S_CAT
        end if
     else

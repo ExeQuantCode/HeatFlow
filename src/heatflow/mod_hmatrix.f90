@@ -220,7 +220,11 @@ contains
     if (isteady .lt. TINY) then
       if (icattaneo .lt. TINY) tau = 0.0_real12
       !tau is already divided by time_step**2
-      alpha = (tau*lin_rhoc(i)) + (inverse_time*lin_rhoc(i)) 
+      alpha = (tau*lin_rhoc(i)) + (inverse_time*lin_rhoc(i))
+      ! print*, 'cattaneo is ',icattaneo
+      ! print*, (icattaneo .lt. TINY)
+      ! print*, 'alpha is ', alpha
+      ! stop
     else
       alpha = 0.0_real12
     end if 

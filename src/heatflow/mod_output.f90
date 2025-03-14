@@ -61,6 +61,7 @@ contains
     outdir='./outputs/'
     file_extension = '.out'
     
+    logunit = 1234
     !---------------------------------------
     !  make a 3d array
     !---------------------------------------
@@ -90,7 +91,7 @@ contains
           ! find most recent log file and open it
           !---------------------------------------
           CALL last_log(logname,outdir)
-          open(newunit=logunit,file=logname)
+          open(unit=logunit,file=logname)
           write(logunit,*) real((itime-1)*(time_step)), &
                (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
           !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -146,7 +147,6 @@ contains
     end if
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-  
   ! call PlotdeltaT(itime)
 
  end subroutine data_write
@@ -193,8 +193,8 @@ contains
    i = 0
    flag=.true.
    do while (flag)
-      write(logname, '(A,A,I2.2)') trim(adjustl(outdir)) // 'output_' // &
-           trim(adjustl(RunName)),'_',  i
+      write(logname, '(A,I2.2)') trim(adjustl(outdir)) // 'output_' // &
+           trim(adjustl(RunName)) // '_', i
       inquire(file=logname, exist=flag)
       i = i+1
    end do
