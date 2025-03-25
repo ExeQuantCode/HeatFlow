@@ -11,11 +11,10 @@
 !!! Author: Harry Mclean, Frank Davies, Steven Hepplestone
 !!!#################################################################################################
 module Heating
-  use constants, only: real12, int12, pi, StefBoltz
+  use constants, only: real12, int12, pi, StefBoltz, TINY
   use globe_data, only: Temp_p, Temp_pp, Heat, heated_volume, Q_P
   use inputs, only: nx,ny,nz, grid, NA, power_in, time_step, heated_steps, T_System, freq, ntime, &
        T_Bath
-  use materials, only: material
   implicit none
 contains
 
@@ -33,7 +32,7 @@ contains
 
     ! Initialize variables
     IA = 0
-    Q = 0._real12
+    Q = 0.0_real12
     POWER = power_in
     time = time_step * real(itime,real12)
     time_pulse = heated_steps  * time_step
@@ -116,10 +115,11 @@ contains
              !------------------------------
              ! If emissitivity is not zero, then calculate the radiative heating
              !------------------------------
+             if (grid(ix,iy,iz)%em .gt. 0.0_real12+TINY) then
                Q(IA) = Q(IA) - grid(ix,iy,iz)%em * grid(ix,iy,iz)%length(1)*&
-                       grid(ix,iy,iz)%length(2)*StefBoltz &
-                       * ((Temp_p(IA)**4.0_real12) - (T_Bath**4.0_real12)) 
-
+                        grid(ix,iy,iz)%length(2)*StefBoltz &
+                        * ((Temp_p(IA)**4.0_real12) - (T_Bath**4.0_real12)) 
+             end if
              !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
              !------------------------------
