@@ -51,13 +51,14 @@ contains
 !!!  - em, the emissivity of the material.
 !!!#########################################################################
 
-subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau, em)
+subroutine material(imaterial_type,kappa,heat_capacity,rho,tau, em)
   
    integer(int12), intent(in) ::imaterial_type
    integer(int12) :: i, tmp
-   real(real12), intent(inout) :: kappa3D, kappa, h_conv, heat_capacity, sound_speed, rho, tau
+   real(real12), intent(inout) :: kappa, heat_capacity, rho, tau
    real(real12), intent(inout) :: em
    logical :: found
+   real(real12) :: kappa3D, h_conv, sound_speed !Not currently used
 
 !!!=============================================
 !!! notes ::
@@ -90,11 +91,11 @@ subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_
          if (tmp .eq. imaterial_type) then
             found = .true.
             heat_capacity = input_materials(i)%heat_capacity
-            h_conv        = input_materials(i)%h_conv
+            !h_conv        = input_materials(i)%h_conv
             kappa         = input_materials(i)%kappa
-            kappa3D       = input_materials(i)%kappa3D
+            !kappa3D       = input_materials(i)%kappa3D
             rho           = input_materials(i)%rho
-            sound_speed   = input_materials(i)%sound_speed
+            !sound_speed   = input_materials(i)%sound_speed
             tau           = input_materials(i)%tau
             em   = input_materials(i)%em
 
