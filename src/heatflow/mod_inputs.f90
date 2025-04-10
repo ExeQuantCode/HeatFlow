@@ -42,6 +42,8 @@
 !!!     - T_System, the system temperature
 !!!     - T_Bath, the bath temperature
 !!!     - T_BathCG, the constant gradient of the bath temperature
+!!!     - CG_dir, a string with the directions for constant gradient (format: any combination of +x, -x, y, -y, z, -z)
+!!!     - T_BathCC, if true scales the constant gradient with DeltaT from avg of all heated cells to T_Bath
 !!!     - IVERB, the verbose
 !!!     - ntime, the number of time steps
 !!!     - heated_steps, the number of steps for which heating is applied in heating case 2
@@ -77,7 +79,7 @@ module inputs
 
   integer :: unit, newunit
   ! time step, frequency, power in, boundary kappa
-  logical :: Periodicx,Periodicy,Periodicz
+  logical :: Periodicx,Periodicy,Periodicz, T_BathCC
   real(real12) :: time_step, freq, power_in, kappaBoundx1, kappaBoundy1, kappaBoundz1, KappaBound
   real(real12) :: kappaBoundNx, kappaBoundNy, kappaBoundNz
   ! Bath temperatures
@@ -99,6 +101,10 @@ module inputs
   type(heatblock), dimension(:,:,:), allocatable :: grid 
   type(material), dimension(:), allocatable :: input_materials ! The materials
   real(real12) :: Lx, Ly, Lz ! Volume dimensions (lenghts)
+
+  ! Boundary directions
+  character(64) :: CG_dir
+  logical :: CG_x_p, CG_x_m, CG_y_p, CG_y_m, CG_z_p, CG_z_m
 
 
 
@@ -198,7 +204,7 @@ contains
   subroutine read_param(unit)
     implicit none
     integer:: unit, Reason
-    integer,dimension(43)::readvar
+    integer,dimension(45)::readvar
     character(1024)::buffer
 
     readvar(:)=0
@@ -232,7 +238,15 @@ contains
     T_Bathz1 = T_Bath
     T_Bathz2 = T_Bath
     T_BathCG = 0
+    T_BathCC = .FALSE.
     BR = 1.0
+    CG_dir = ' '
+    CG_x_p = .FALSE.
+    CG_x_m = .FALSE.
+    CG_y_p = .FALSE.
+    CG_y_m = .FALSE.
+    CG_z_p = .FALSE.
+    CG_z_m = .FALSE.
     power_in = 0
     Periodic = ''
     !kappaBound = [kx1:kNx,ky1:kNy,kz1:kNz]
@@ -309,6 +323,8 @@ contains
        CALL assignI(buffer,"heattime",heated_steps,readvar(41))
        CALL assignD(buffer,"T_BathCG",T_BathCG,readvar(42))
        CALL assignD(buffer,"BR",BR,readvar(43))
+       CALL assignL(buffer,"T_BathCC",T_BathCC,readvar(44))
+       CALL assignS(buffer,"CG_dir",CG_dir,readvar(45))
        !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     end do
@@ -324,6 +340,20 @@ contains
     if ((index(Periodic, 'y') .gt. 0 ).or.(index(Periodic, 'Y') .gt. 0)) Periodicy = .true.
     if ((index(Periodic, 'z') .gt. 0 ).or.(index(Periodic, 'Z') .gt. 0)) Periodicz = .true.
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    !--------------------------------------------------
+    ! parse the CG directions
+    !--------------------------------------------------
+    ! not yet fixed for case sensitivity
+    ! should also be able to provide just x or y or z for both directions
+    if (index(CG_dir, '-x') .gt. 0) CG_x_m = .true.
+    if (index(CG_dir, '+x') .gt. 0) CG_x_p = .true.
+    if (index(CG_dir, '-y') .gt. 0) CG_y_m = .true.
+    if (index(CG_dir, '+y') .gt. 0) CG_y_p = .true.
+    if (index(CG_dir, '-z') .gt. 0) CG_z_m = .true.
+    if (index(CG_dir, '+z') .gt. 0) CG_z_p = .true.
+    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 
     CALL check_param(readvar,size(readvar,1))
 
@@ -550,14 +580,15 @@ contains
        write(6,'(A35,F12.5)')   '   kappaBoundNz  = ', kappaBoundNz
        write(6,'(A35,I6)')      '   TempDepProp   = ', TempDepProp
        write(6,'(A35,A12)')     '   Periodic      = ', Periodic
-       write(6,'(A35,L1)')      '   T_BathCG      = ', T_BathCG
+       write(6,'(A35,F12.5)')   '   T_BathCG      = ', T_BathCG
+       write(6,'(A35,L1)')      '   T_BathCC      = ', T_BathCC
        write(6,'(A35,F12.5)')   '   BR            = ', BR
        write(6,'(A35,I6)')      '   start_ix      = ', start_ix
-      write(6,'(A35,I6)')      '   end_ix        = ', end_ix
-      write(6,'(A35,I6)')      '   start_iy      = ', start_iy
-      write(6,'(A35,I6)')      '   end_iy        = ', end_iy
-      write(6,'(A35,I6)')      '   start_iz      = ', start_iz
-      write(6,'(A35,I6)')      '   end_iz        = ', end_iz
+       write(6,'(A35,I6)')      '   end_ix        = ', end_ix
+       write(6,'(A35,I6)')      '   start_iy      = ', start_iy
+       write(6,'(A35,I6)')      '   end_iy        = ', end_iy
+       write(6,'(A35,I6)')      '   start_iz      = ', start_iz
+       write(6,'(A35,I6)')      '   end_iz        = ', end_iz
 
 
     end if

@@ -47,6 +47,7 @@ module hmatrixmod
   use inputs, only: nx, ny, nz, time_step, grid
   use inputs, only: isteady, icattaneo, kappaBoundx1, kappaBoundy1, kappaBoundz1, BR
   use inputs, only: kappaBoundNx, kappaBoundNy, kappaBoundNz, Periodicx, Periodicy, Periodicz
+  use inputs, only: CG_x_m, CG_x_p, CG_y_m, CG_y_p, CG_z_m, CG_z_p
   use globe_data, only: inverse_time, lin_rhoc
   implicit none
 
@@ -89,6 +90,45 @@ contains
        if ( zp .gt. nz ) zp = 1
        if ( zm .lt.  1 ) zm = nz
     end if
+
+
+    !if ( CG_x_p ) then
+    !  if ( xm .lt. 1 ) A = 0.0_real12
+    !  else
+    !     A = calculate_conductivity(xm, y, z, x, y, z)
+    !  end if
+    !end if  
+    !if ( CG_x_m ) then
+    !   if ( xp .gt. nx ) B = 0.0_real12
+    !   else
+    !      B = calculate_conductivity(xp, y, z, x, y, z)
+    !   end if
+    !end if
+    !  if ( CG_y_p ) then
+    !     if ( ym .lt. 1 ) D = 0.0_real12
+    !     else
+    !        D = calculate_conductivity(x, ym, z, x, y, z)
+    !     end if
+    !  end if
+    !  if ( CG_y_m ) then
+    !     if ( yp .gt. ny ) E = 0.0_real12
+    !     else
+    !        E = calculate_conductivity(x, yp, z, x, y, z)
+    !     end if
+    !  end if
+    !  if ( CG_z_p ) then
+    !     if ( zm .lt. 1 ) F = 0.0_real12
+    !     else
+    !        F = calculate_conductivity(x, y, zm, x, y, z)
+    !     end if
+    !  end if
+    !  if ( CG_z_m ) then
+    !     if ( zp .gt. nz ) G = 0.0_real12
+    !     else
+    !        G = calculate_conductivity(x, y, zp, x, y, z)
+    !     end if
+    !  end if
+
 
     A = calculate_conductivity(xm, y, z, x, y, z)
     B = calculate_conductivity(xp, y, z, x, y, z)
@@ -217,8 +257,8 @@ contains
 
     alpha = 0.0_real12
     tau = grid(x,y,z)%tau
-    if (isteady .lt. TINY) then
-      if (icattaneo .lt. TINY) tau = 0.0_real12
+    if (isteady .eq. 0) then
+      if (icattaneo .eq. 0) tau = 0.0_real12
       !tau is already divided by time_step**2
       alpha = (tau*lin_rhoc(i)) + (inverse_time*lin_rhoc(i)) 
     else

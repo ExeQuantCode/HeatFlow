@@ -152,7 +152,7 @@ def draw_heatmap(ax, temp_subset, plane, fixed_val,
         im_data = temp_subset[:, :, idx]
         xlabel, ylabel = 'X (mm)', 'Y (mm)'
         title = f"XY Heatmap at z index {idx} (z ≃ {z_coords[idx]:.3f} mm)"
-        extent = [x_extent[0], x_extent[-1], y_extent[0], y_extent[-1]]
+        extent = [x_extent[0], x_extent[1], y_extent[0], y_extent[1]]
     elif plane == 'xz':
         if fixed_as_index:
             idx = int(fixed_val)
@@ -164,7 +164,7 @@ def draw_heatmap(ax, temp_subset, plane, fixed_val,
         im_data = temp_subset[:, idx, :]
         xlabel, ylabel = 'X (mm)', 'Z (mm)'
         title = f"XZ Heatmap at y index {idx} (y ≃ {y_coords[idx]:.3f} mm)"
-        extent = [x_extent[0], x_extent[-1], z_extent[0], z_extent[-1]]
+        extent = [x_extent[0], x_extent[1], z_extent[0], z_extent[1]]
     elif plane == 'yz':
         if fixed_as_index:
             idx = int(fixed_val)
@@ -176,7 +176,7 @@ def draw_heatmap(ax, temp_subset, plane, fixed_val,
         im_data = temp_subset[idx, :, :]
         xlabel, ylabel = 'Y (mm)', 'Z (mm)'
         title = f"YZ Heatmap at x index {idx} (x ≃ {x_coords[idx]:.3f} mm)"
-        extent = [y_extent[0], y_extent[-1], z_extent[0], z_extent[-1]]
+        extent = [y_extent[0], y_extent[1], z_extent[0], z_extent[1]]
     else:
         raise ValueError("Plane must be 'xy', 'xz', or 'yz'.")
     
@@ -220,7 +220,7 @@ def draw_line(ax, temp_subset, dimension, fixed1, fixed2,
             y_idx = int(np.abs(np.array(y_coords) - fixed1).argmin())
             z_idx = int(np.abs(np.array(z_coords) - fixed2).argmin())
         line_data = temp_subset[:, y_idx, z_idx]
-        x_axis = x_coords if len(x_coords) > 1 else np.linspace(x_extent[0], x_extent[-1], 2)
+        x_axis = x_coords if len(x_coords) > 1 else np.linspace(x_extent[0], x_extent[1], 2)
         xlabel = 'X (mm)'
         title = f"Temperature vs X at y index {y_idx}, z index {z_idx}"
     elif dimension == 'y':
@@ -237,7 +237,7 @@ def draw_line(ax, temp_subset, dimension, fixed1, fixed2,
             x_idx = int(np.abs(np.array(x_coords) - fixed1).argmin())
             z_idx = int(np.abs(np.array(z_coords) - fixed2).argmin())
         line_data = temp_subset[x_idx, :, z_idx]
-        x_axis = y_coords if len(y_coords) > 1 else np.linspace(y_extent[0], y_extent[-1], 2)
+        x_axis = y_coords if len(y_coords) > 1 else np.linspace(y_extent[0], y_extent[1], 2)
         xlabel = 'Y (mm)'
         title = f"Temperature vs Y at x index {x_idx}, z index {z_idx}"
     elif dimension == 'z':
@@ -254,7 +254,7 @@ def draw_line(ax, temp_subset, dimension, fixed1, fixed2,
             x_idx = int(np.abs(np.array(x_coords) - fixed1).argmin())
             y_idx = int(np.abs(np.array(y_coords) - fixed2).argmin())
         line_data = temp_subset[x_idx, y_idx, :]
-        x_axis = z_coords if len(z_coords) > 1 else np.linspace(z_extent[0], z_extent[-1], 2)
+        x_axis = z_coords if len(z_coords) > 1 else np.linspace(z_extent[0], z_extent[1], 2)
         xlabel = 'Z (mm)'
         title = f"Temperature vs Z at x index {x_idx}, y index {y_idx}"
     else:
@@ -328,6 +328,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.z_coords = effective_coordinates(self.start_iz, self.end_iz, self.dz)
 
         self.RunName = self.params.get("RunName", "run1")
+        #self.freq = self.params.get("freq", 1.0)
         self.time_step = self.params.get("time_step", 1.0)
 
         # Data source selection: "Output Log", "TempDis.dat", "TempDisTPD.dat"
@@ -351,6 +352,8 @@ class MainWindow(QtWidgets.QMainWindow):
         controls_widget = QtWidgets.QWidget()
         controls = QtWidgets.QVBoxLayout(controls_widget)
 
+
+        
         # Data Source selection.
         DS_widget = QtWidgets.QWidget()
         ds_layout = QtWidgets.QHBoxLayout(DS_widget)
@@ -368,6 +371,7 @@ class MainWindow(QtWidgets.QMainWindow):
         DS_widget.setLayout(ds_layout)
         DS_widget.setMinimumHeight(50)
         controls.addWidget(DS_widget)
+
 
         # Directory selection layout.
         dir_widget = QtWidgets.QWidget()
@@ -459,8 +463,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.timestepSlider.valueChanged.connect(self.slider_changed)
         self.timestepLineEdit.editingFinished.connect(self.lineedit_changed)
         ts_layout.addWidget(ts_label)
-        ts_layout.addWidget(self.timestepSlider, stretch=3)
-        ts_layout.addWidget(self.timestepLineEdit, stretch=2)
+        ts_layout.addWidget(self.timestepSlider,stretch = 3)
+        ts_layout.addWidget(self.timestepLineEdit,stretch = 2)
         self.timestepWidget.setLayout(ts_layout)
         controls.addWidget(self.timestepWidget)
 
@@ -480,6 +484,7 @@ class MainWindow(QtWidgets.QMainWindow):
         controls_widget.setMinimumWidth(200)
         controls_widget.setMinimumHeight(230)
 
+
         fig_widget = QtWidgets.QWidget()
         fig = QtWidgets.QVBoxLayout(fig_widget)
         
@@ -489,6 +494,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 f"Z: {self.z_coords[0]:.3f} to {self.z_coords[-1]:.3f} mm")
         self.infoLabel = QtWidgets.QLabel(info)
         fig.addWidget(self.infoLabel)
+
             
         # Embedded matplotlib FigureCanvas.
         self.figure = Figure(figsize=(4,5))
@@ -497,6 +503,7 @@ class MainWindow(QtWidgets.QMainWindow):
         fig.addWidget(self.canvas)
 
         if self.alt_display:
+            # uncomment for splitter
             splitter = QtWidgets.QSplitter()
             splitter.setOrientation(QtCore.Qt.Horizontal)
             splitter.addWidget(controls_widget)
@@ -510,7 +517,11 @@ class MainWindow(QtWidgets.QMainWindow):
             splitter.addWidget(fig_widget)
             splitter.setSizes([500, 100])
             main_layout.addWidget(splitter)
+            # comment this line to use splitter
+            #main_layout.addWidget(controls_widget, stretch=1)
+            #main_layout.addWidget(fig_widget, stretch=3)
 
+        
         central.setLayout(main_layout)
         self.setCentralWidget(central)
 
@@ -519,6 +530,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def leftarrow(self):
         self.alt_display = not self.alt_display
+    
+        # Rebuild the UI with the new layout settings
         self.rebuild_ui()
         lab = self.arrow
         if lab == ">":
@@ -540,19 +553,25 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.clear_layout(item.layout())
                 
     def rebuild_ui(self):
+        # Clear the current layout of the central widget
         central = self.centralWidget()
         if central is not None:
             old_layout = central.layout()
             if old_layout is not None:
                 self.clear_layout(old_layout)
                 old_layout.deleteLater()
+            
+        # Rebuild the UI
         self.build_ui()
 
     def dataSource_changed(self, source):
+        """Adjust GUI elements based on selected data source."""
         if source == "Output Log":
+            # Use timestep controls and output file drop-down.
             self.timestepWidget.show()
             self.outputFileWidget.show()
         else:
+            # For static files, hide timestep controls and output file drop-down.
             self.timestepWidget.hide()
             self.outputFileWidget.hide()
 
@@ -565,6 +584,7 @@ class MainWindow(QtWidgets.QMainWindow):
         dirname = self.par_dir+"/inputs"
         if dirname:
             self.input_dir = dirname
+            #self.inDirLineEdit.setText(dirname)
             try:
                 self.params = read_param_file(os.path.join(self.input_dir, "param.in"))
                 self.full_nx, self.full_ny, self.full_nz, self.Lx, self.Ly, self.Lz = read_system_file(os.path.join(self.input_dir, "system.in"))
@@ -595,6 +615,7 @@ class MainWindow(QtWidgets.QMainWindow):
         dirname = self.par_dir+"/outputs"
         if dirname:
             self.output_dir = dirname
+            #self.outDirLineEdit.setText(dirname)
             self.update_output_files_list()
 
     def update_output_files_list(self):
@@ -630,30 +651,6 @@ class MainWindow(QtWidgets.QMainWindow):
             val = len(self.records)-1
         self.timestepSlider.setValue(val)
 
-    def on_hover(self, event):
-        # Only update if in a heatmap and mouse is within an axis.
-        if event.inaxes is None or self.modeCombo.currentText() != "heatmap":
-            return
-        
-        # Get mouse position in data coordinates.
-        x, y = event.xdata, event.ydata
-        if x is None or y is None:
-            return
-        
-        # Use the stored coordinate arrays from the current heatmap based on the selected plane.
-        x_arr = np.array(self.current_x_coords)
-        y_arr = np.array(self.current_y_coords)
-        ix = (np.abs(x_arr - x)).argmin()
-        iy = (np.abs(y_arr - y)).argmin()
-        temp_val = self.current_imdata[ix, iy]
-        
-        # Format the numbers to more significant figures (five decimals in this example).
-        tooltip_text = f"x: {self.current_x_coords[ix]:.5f}, y: {self.current_y_coords[iy]:.5f}, T: {temp_val:.5f}"
-        
-        # Update the annotation text. The annotation is anchored (in axes coordinates) in the top left corner.
-        self.annot.set_text(tooltip_text)
-        self.canvas.draw_idle()
-
     def do_plot(self):
         source = self.dataSourceCombo.currentText()
         if source == "Output Log":
@@ -683,7 +680,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 return
             temp_full = flat_data.reshape((self.full_nx, self.full_ny, self.full_nz), order='F')
             temp_subset = temp_full[:self.eff_nx, :self.eff_ny, :self.eff_nz]
-            rec_time = 0.0
+            rec_time = 0.0  
             ts = 0
 
         self.figure.clf()
@@ -696,13 +693,14 @@ class MainWindow(QtWidgets.QMainWindow):
             except ValueError:
                 fixed_val = 0.0
             use_index = self.fixedToggle.isChecked()
+            # Draw the heatmap; draw_heatmap returns the raw data (im_data) before the transpose used for plotting.
             self.current_data, self.current_extent, self.current_title = draw_heatmap(
                 ax, temp_subset, plane, fixed_val,
                 self.x_coords, self.y_coords, self.z_coords,
                 self.dx, self.dy, self.dz, fixed_as_index=use_index,
                 record_time=rec_time, record_idx=ts)
             
-            # Store coordinate arrays and underlying data for tooltip use based on the selected plane.
+            # Store coordinate arrays and image data for tooltip use based on the selected plane.
             self.current_plane = plane
             if plane == "xy":
                 self.current_imdata = self.current_data  # Shape: (len(x_coords), len(y_coords))
@@ -717,18 +715,16 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.current_x_coords = self.y_coords
                 self.current_y_coords = self.z_coords
 
-            # Create an annotation that is permanently placed in the top left corner of the plot.
-            self.annot = ax.annotate("",
-                                      xy=(0.01, 0.99),
-                                      xycoords="axes fraction",
-                                      horizontalalignment="left",
-                                      verticalalignment="top",
-                                      bbox=dict(boxstyle="round", fc="w", alpha=0.7))
-            self.annot.set_visible(True)
+            # Create an annotation for the tooltip and connect the mouse motion event.
+            self.annot = ax.annotate("", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
+                                     bbox=dict(boxstyle="round", fc="w"),
+                                     arrowprops=dict(arrowstyle="->"))
+            self.annot.set_visible(False)
             if hasattr(self, "hover_connection") and self.hover_connection is not None:
                 self.canvas.mpl_disconnect(self.hover_connection)
             self.hover_connection = self.canvas.mpl_connect("motion_notify_event", self.on_hover)
         else:
+            # For line plots, remove the tooltip functionality if connected.
             if hasattr(self, "hover_connection") and self.hover_connection is not None:
                 self.canvas.mpl_disconnect(self.hover_connection)
                 self.hover_connection = None
@@ -739,7 +735,41 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.x_coords, self.y_coords, self.z_coords,
                 self.dx, self.dy, self.dz, fixed_as_index=self.fixed1Toggle.isChecked() or self.fixed2Toggle.isChecked(),
                 record_time=rec_time, record_idx=ts)
+
         self.canvas.draw()
+
+    def on_hover(self, event):
+        # Check that we have an axis and are in heatmap mode
+        if event.inaxes is None or self.modeCombo.currentText() != "heatmap":
+            if hasattr(self, 'annot'):
+                self.annot.set_visible(False)
+                self.canvas.draw_idle()
+            return
+        
+        # Get the mouse position in data coordinates
+        x, y = event.xdata, event.ydata
+        if x is None or y is None:
+            self.annot.set_visible(False)
+            self.canvas.draw_idle()
+            return
+        
+        # Use the current coordinate arrays stored when plotting the heatmap.
+        # self.current_x_coords and self.current_y_coords are set based on the selected plane.
+        x_arr = np.array(self.current_x_coords)
+        y_arr = np.array(self.current_y_coords)
+        ix = (np.abs(x_arr - x)).argmin()
+        iy = (np.abs(y_arr - y)).argmin()
+        
+        # Retrieve the temperature from the current heatmap data stored in self.current_imdata
+        temp_val = self.current_imdata[ix, iy]
+        tooltip_text = f"x: {self.current_x_coords[ix]:.2f}, y: {self.current_y_coords[iy]:.2f}, T: {temp_val:.2f}"
+        
+        # Update the annotation position and text
+        self.annot.xy = (self.current_x_coords[ix], self.current_y_coords[iy])
+        self.annot.set_text(tooltip_text)
+        self.annot.get_bbox_patch().set_alpha(0.7)
+        self.annot.set_visible(True)
+        self.canvas.draw_idle()
 
     def save_plot(self):
         if self.figure is None:

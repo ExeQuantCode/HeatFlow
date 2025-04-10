@@ -12,7 +12,7 @@
 !!!#################################################################################################
 module Heating
   use constants, only: real12, int12, pi, StefBoltz
-  use globe_data, only: Temp_p, Temp_pp, Heat, heated_volume, Q_P
+  use globe_data, only: Temp_p, Temp_pp, Heat, heated_volume, Q_P, heated_temp
   use inputs, only: nx,ny,nz, grid, NA, power_in, time_step, heated_steps, T_System, freq, ntime, &
        T_Bath
   use materials, only: material
@@ -29,15 +29,17 @@ contains
     real(real12), dimension(NA), intent(out) :: Q, Qdens
     integer(int12) :: ix, iy, iz, IA ,heated_num
     real(real12) :: time, POWER, time_pulse, x, x2
-    real(real12) :: rho, volume, heat_capacity, area, tau
+    real(real12) :: rho, volume, heat_capacity, area, tau, sum_temp
 
     ! Initialize variables
     IA = 0
     Q = 0._real12
+    sum_temp = 0.0_real12
+    heated_temp = 0.0_real12
     POWER = power_in
     time = time_step * real(itime,real12)
     time_pulse = heated_steps  * time_step
-    heated_volume=0.0
+    heated_volume=0.0_real12
     heated_num=0
     
     ! Iterate over all cells in the grid
@@ -134,6 +136,7 @@ contains
              !------------------------------
              if (grid(ix,iy,iz)%iheater .gt. 0) then
                 heated_volume = heated_volume + volume
+                sum_temp = sum_temp + Q(IA) * 1/(rho * heat_capacity)
                 heated_num = heated_num + 1
              end if
              !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -158,8 +161,10 @@ contains
    
 
     ! Normalize all heat sources by the heated volume
-    if (heated_volume .gt. 0.0) Qdens(:) = Q(:) / heated_volume
-    
+    if (heated_volume .gt. 0.0) then
+      Qdens(:) = Q(:) / heated_volume
+      heated_temp = sum_temp / heated_volume
+    end if
 
   end subroutine heater
 
