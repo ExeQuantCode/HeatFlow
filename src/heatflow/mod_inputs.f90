@@ -42,7 +42,7 @@
 !!!     - T_System, the system temperature
 !!!     - T_Bath, the bath temperature
 !!!     - T_BathCG, the constant gradient of the bath temperature
-!!!     - CG_dir, a string with the directions for constant gradient (format: any combination of +x, -x, y, -y, z, -z)
+!!!     - CG_dir, a string with the directions for constant gradient (format: any combination of +x, -x, +y, -y, +z, -z)
 !!!     - T_BathCC, if true scales the constant gradient with DeltaT from avg of all heated cells to T_Bath
 !!!     - IVERB, the verbose
 !!!     - ntime, the number of time steps
