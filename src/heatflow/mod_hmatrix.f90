@@ -276,7 +276,7 @@ contains
     real(real12) :: conductivity
 
 
-    kappa_ab=0
+    kappa_ab=0.0_real12
     
     ! if not an edge element
     if ((x_in .ge. 1) .and. (x_in .le. nx) .and. (y_in .ge. 1) .and. &
@@ -291,7 +291,7 @@ contains
                (grid(x_in, y_in, z_in)%Length(1)*kappa_out + &
                grid(x_out, y_out, z_out)%Length(1)*kappa_in)
                
-          kappa_ab = kappa_ab/(grid(x_out, y_out, z_out)%Length(1))**2
+          kappa_ab = kappa_ab/(grid(x_out, y_out, z_out)%Length(1))**2_real12
 
        else if (y_in .ne. y_out) then
           kappa_ab = (grid(x_in, y_in, z_in)%Length(2) + &
@@ -299,7 +299,7 @@ contains
               (grid(x_in, y_in, z_in)%Length(2)*kappa_out + &
               grid(x_out, y_out, z_out)%Length(2)*kappa_in)
         
-          kappa_ab = kappa_ab/(grid(x_out, y_out, z_out)%Length(2))**2
+          kappa_ab = kappa_ab/(grid(x_out, y_out, z_out)%Length(2))**2_real12
 
        else if (z_in .ne. z_out) then
           kappa_ab = (grid(x_in, y_in, z_in)%Length(3) + &
@@ -307,7 +307,7 @@ contains
               (grid(x_in, y_in, z_in)%Length(3)*kappa_out + &
               grid(x_out, y_out, z_out)%Length(3)*kappa_in)
         
-          kappa_ab = kappa_ab/(grid(x_out, y_out, z_out)%Length(3))**2
+          kappa_ab = kappa_ab/(grid(x_out, y_out, z_out)%Length(3))**2_real12
        end if
        if (kappa_in .ne. kappa_out) then
             kappa_ab = kappa_ab*BR
@@ -356,21 +356,21 @@ contains
     
     if (x_b .ne. x) then
       if (x_b .lt. 1) then
-       kappa_ab = ((2*kappaBoundx1*kappa)/(kappaBoundx1+kappa))/((grid(x, y, z)%Length(1))**2)
+       kappa_ab = ((2_real12*kappaBoundx1*kappa)/(kappaBoundx1+kappa))/((grid(x, y, z)%Length(1))**2_real12)
        if (kappa .ne. kappaBoundx1) kappa_ab = kappa_ab*BR
       else if (x_b .gt. nx) then
-        kappa_ab = ((2*kappaBoundNx*kappa)/(kappaBoundNx+kappa))/((grid(x, y, z)%Length(1))**2)
+        kappa_ab = ((2_real12*kappaBoundNx*kappa)/(kappaBoundNx+kappa))/((grid(x, y, z)%Length(1))**2_real12)
         if (kappa .ne. kappaBoundNx) kappa_ab = kappa_ab*BR
       end if 
        kappa_ab = kappa_ab
 
     else if (y_b .ne. y) then
       if (y_b .lt. 1) then
-        kappa_ab = (((2)*kappaBoundy1*kappa)/(kappaBoundy1+kappa))/((grid(x, y, z)%Length(2))**2)
+        kappa_ab = (((2_real12)*kappaBoundy1*kappa)/(kappaBoundy1+kappa))/((grid(x, y, z)%Length(2))**2_real12)
         if (kappa .ne. kappaBoundy1) kappa_ab = kappa_ab*BR
 
       else if (y_b .gt. ny) then
-        kappa_ab = (((2)*kappaBoundNy*kappa)/(kappaBoundNy+kappa))/((grid(x, y, z)%Length(2))**2)
+        kappa_ab = (((2_real12)*kappaBoundNy*kappa)/(kappaBoundNy+kappa))/((grid(x, y, z)%Length(2))**2_real12)
         if (kappa .ne. kappaBoundNy) kappa_ab = kappa_ab*BR
 
       end if
@@ -378,10 +378,10 @@ contains
 
     else if (z_b .ne. z) then
       if (z_b .lt. 1) then
-        kappa_ab = (((2)*kappaBoundz1*kappa)/(kappaBoundz1+kappa))/((grid(x, y, z)%Length(3))**2)
+        kappa_ab = (((2_real12)*kappaBoundz1*kappa)/(kappaBoundz1+kappa))/((grid(x, y, z)%Length(3))**2_real12)
         if (kappa .ne. kappaBoundz1) kappa_ab = kappa_ab*BR
       else if (z_b .gt. nz) then
-        kappa_ab = (((2)*kappaBoundNz*kappa)/(kappaBoundNz+kappa))/((grid(x, y, z)%Length(3))**2)
+        kappa_ab = (((2_real12)*kappaBoundNz*kappa)/(kappaBoundNz+kappa))/((grid(x, y, z)%Length(3))**2_real12)
         if (kappa .ne. kappaBoundNz) kappa_ab = kappa_ab*BR
       end if
        kappa_ab = kappa_ab

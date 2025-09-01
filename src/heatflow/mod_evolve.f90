@@ -150,6 +150,7 @@ contains
     CALL linbcg(S,x,itol=int(itol,I4B),tol=tol, itmax=int(itmax,I4B), iter=iter, &
          err=E)
          
+    
     if (any(isnan(x(:)))) then
        write(0,*) "fatal error: NAN in x tempurature vector"
        write(0,*) 'time step ', itime, "      T   ", sum(Temp_p)/size(Temp_p), E ,iter

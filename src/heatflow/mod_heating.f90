@@ -11,10 +11,10 @@
 !!! Author: Harry Mclean, Frank Davies, Steven Hepplestone
 !!!#################################################################################################
 module Heating
-  use constants, only: real12, int12, pi, StefBoltz
+  use constants, only: real12, int12, pi, StefBoltz, TINY
   use globe_data, only: Temp_p, Temp_pp, Heat, heated_volume, Q_P, heated_temp
   use inputs, only: nx,ny,nz, grid, NA, power_in, time_step, heated_steps, T_System, freq, ntime, &
-       T_Bath
+       T_Bath, icattaneo
   use materials, only: material
   implicit none
 contains
@@ -33,7 +33,7 @@ contains
 
     ! Initialize variables
     IA = 0
-    Q = 0._real12
+    Q(:) = 0.0_real12
     sum_temp = 0.0_real12
     heated_temp = 0.0_real12
     POWER = power_in
@@ -70,7 +70,12 @@ contains
                 ! Constant heating
                 !------------------------------
                 Q(IA) = POWER
-                
+                if (icattaneo .eq. 1) then
+                if (itime .le. 1) then
+                   !print*, itime
+                   Q(IA) = Q(IA) + ((POWER/time_step)*tau)
+                end if
+                end if 
                 !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              case(2)
                 !------------------------------
@@ -80,6 +85,19 @@ contains
                    Q(IA) = POWER
                 else
                    Q(IA) = 0.0_real12
+                end if
+		
+               if (icattaneo .eq. 1) then
+                if (itime-1 .eq. 0) then
+                   print*, itime
+                   Q(IA) = Q(IA) + ((POWER/time_step)*tau)
+                end if
+
+                if (itime - (heated_steps+1) .eq. 0) then
+                   print*, itime
+                   Q(IA) = Q(IA) - ((POWER/time_step)*tau)
+                end if
+                
                 end if
                 !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              case(3)
@@ -111,19 +129,44 @@ contains
                 if (itime == 1) then
                    Q(IA) = POWER
                 else
-                   Q(IA) = 0.0
+                   Q(IA) = 0.0_real12
                 end if
                 !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-             end select
+
+             case(10)
+                !------------------------------
+                 ! Heater on for a time period
+                !------------------------------
+               Q(IA) = POWER
+		
+               Q(IA) = Q(IA) + ((POWER/time_step)*tau)
+
+
+             case(11)
+                !------------------------------
+                 ! Heater on for a time period
+                !------------------------------
+               Q(IA) = POWER
+             
+             case(12)
+                !------------------------------
+                ! Heater on for a time period
+                !------------------------------
+                Q(IA) = POWER
+	
+                Q(IA) = Q(IA) - ((POWER/time_step)*tau)
+     
+            end select
              !------------------------------
              ! If emissitivity is not zero, then calculate the radiative heating
              !------------------------------
-               Q(IA) = Q(IA) - grid(ix,iy,iz)%em * grid(ix,iy,iz)%length(1)*&
-                       grid(ix,iy,iz)%length(2)*StefBoltz &
-                       * ((Temp_p(IA)**4.0_real12) - (T_Bath**4.0_real12)) 
-
+             if (.FALSE.) then
+             	Q(IA) = Q(IA) - grid(ix,iy,iz)%em * grid(ix,iy,iz)%length(1)*&
+                	       grid(ix,iy,iz)%length(2)*StefBoltz &
+               	        * ((Temp_p(IA)**4.0_real12) - (T_Bath**4.0_real12)) 
+	     end if
              !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
+ 
              !------------------------------
              ! Additional PowerTerm FD
              !------------------------------
@@ -140,6 +183,8 @@ contains
                 heated_num = heated_num + 1
              end if
              !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+             
             
           end do
        end do
@@ -161,7 +206,7 @@ contains
    
 
     ! Normalize all heat sources by the heated volume
-    if (heated_volume .gt. 0.0) then
+    if (heated_volume .gt. 0.0_real12) then
       Qdens(:) = Q(:) / heated_volume
       heated_temp = sum_temp / heated_volume
     end if

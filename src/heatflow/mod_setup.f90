@@ -101,7 +101,7 @@ module setup
       ra%len = len ! The number of non-zero elements in the H matrix
       ! Allocate the arrays to hold the H matrix in sparse row storage
       allocate(ra%val(len), ra%irow(len), ra%jcol(len))
-      ra%val(:)=0
+      ra%val(:)=0_real12
       ra%irow(:)=-2
       ra%jcol(:)=-1
       addit = [1] ! The values to add to the row to get the column
@@ -167,11 +167,11 @@ module setup
 
       alpha = kappa/(rho*heat_capacity)
       var_stability =( time_step * alpha * &
-      (1 / (grid(ix,iy,iz)%length(1)**2) + 1 / ( grid(ix,iy,iz)%length(2) ** 2 ) &
-           + 1 / (grid(ix,iy,iz)%length(3) ** 2 ) ) )
+      (1_real12 / (grid(ix,iy,iz)%length(1)**2_real12) + 1_real12 / ( grid(ix,iy,iz)%length(2) ** 2_real12 ) &
+           + 1_real12 / (grid(ix,iy,iz)%length(3) ** 2_real12 ) ) )
            
       if (IVERB.ge.2) write(*,*) "Stability condition = ", var_stability
-      if (var_stability .gt. 1.0/12.0) then
+      if (var_stability .gt. 1.0_real12/12.0_real12) then
          write(*,*) "Stability condition not met"
          write(*,*) "Stability condition = ", var_stability
 
@@ -187,8 +187,8 @@ module setup
       if ((ix .eq. 1) .or.(iy .eq. 1) .or. (iz .eq. 1)) then
          alpha = kappaBoundx1 / ( rho * heat_capacity)
          var_stability =( time_step * alpha * &
-              (1 / (grid(ix,iy,iz)%length(1)**2) + 1 / ( grid(ix,iy,iz)%length(2) ** 2 ) &
-              + 1 / (grid(ix,iy,iz)%length(3) ** 2 ) ) )
+              (1_real12 / (grid(ix,iy,iz)%length(1)**2_real12) + 1_real12 / ( grid(ix,iy,iz)%length(2) ** 2_real12 ) &
+              + 1_real12 / (grid(ix,iy,iz)%length(3) ** 2_real12 ) ) )
          if (var_stability .gt. 1.0/12.0) then
             write(*,*) "Stability condition at boundary not met = ", var_stability
             write(*,*) " Boundary kappas = ", kappaBoundx1, kappaBoundy1, kappaBoundz1
