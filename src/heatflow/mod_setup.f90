@@ -21,8 +21,10 @@ module setup
   use inputs, only: Periodicz ! 
   use hmatrixmod, only: hmatrixfunc
   use globe_data, only:  ra, Temp_cur, Temp_p, Temp_pp,inverse_time, heat, lin_rhoc, Q_P
+  use globe_data, only: acsr, ja, ia
   use solver, only: SRSin
   use materials, only: material
+  use sparse_solver, only: coo2csr
   implicit none
   
    contains
@@ -77,6 +79,9 @@ module setup
          CALL build_Hmatrix()
       else
          CALL sparse_Hmatrix()
+         ! Allocate the arrays to hold the H matrix in CSR format
+         allocate(acsr(ra%len), ja(ra%len), ia(ra%n+1))
+         CALL coo2csr(ra%n, ra%len, ra%val, ra%irow, ra%jcol, acsr, ja, ia)               
       end if
       !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

@@ -27,7 +27,7 @@
 
 module TempDep
     use inputs, only: Grid, TempDepProp, Nz, Ny, Nx
-    use setup, only: sparse_Hmatrix
+    ! use setup, only: sparse_Hmatrix
     use globe_data, only:  Temp_p, lin_rhoc
     use constants, only: real12, int12
     
@@ -35,34 +35,34 @@ module TempDep
     
     contains
 
-    subroutine ChangeProp()
-        character(len=100) :: filename
-        integer(int12) :: ix,iy,iz, index
-        logical :: res
-        index = 1
-        !Loop over all the grid points
-        do iz = 1, Nz
-            do iy = 1, Ny
-                do ix = 1, Nx
-                    ! Construct the filename for the Material table asscoiated with the grid point
-                    filename = trim('./inputs/MatTable' // & 
-                         trim(adjustl(char(Grid(ix, iy, iz)%imaterial_type))))
-                    inquire(file=filename, exist=res)
-                    if (res) then
-                        ! Read the temperature dependent properties from the file
-                        ! CALL ReadTempDepTable(filename, ix, iy, iz, index)
-                    else
-                        ! File does not exist, continue to the next grid point
-                        continue
-                    end if
-                    ! Read the temperature dependent properties from the file
-                    index = index + 1
-                end do
-            end do
-        end do
-        ! Construct the sparse matrix
-        CALL sparse_Hmatrix()
-    end subroutine ChangeProp
+    ! subroutine ChangeProp()
+    !     character(len=100) :: filename
+    !     integer(int12) :: ix,iy,iz, index
+    !     logical :: res
+    !     index = 1
+    !     !Loop over all the grid points
+    !     do iz = 1, Nz
+    !         do iy = 1, Ny
+    !             do ix = 1, Nx
+    !                 ! Construct the filename for the Material table asscoiated with the grid point
+    !                 filename = trim('./inputs/MatTable' // & 
+    !                      trim(adjustl(char(Grid(ix, iy, iz)%imaterial_type))))
+    !                 inquire(file=filename, exist=res)
+    !                 if (res) then
+    !                     ! Read the temperature dependent properties from the file
+    !                     ! CALL ReadTempDepTable(filename, ix, iy, iz, index)
+    !                 else
+    !                     ! File does not exist, continue to the next grid point
+    !                     continue
+    !                 end if
+    !                 ! Read the temperature dependent properties from the file
+    !                 index = index + 1
+    !             end do
+    !         end do
+    !     end do
+    !     ! Construct the sparse matrix
+    !     CALL sparse_Hmatrix()
+    ! end subroutine ChangeProp
 
     ! subroutine ReadTempDepTable(filename, ix, iy, iz, index)
     !     character(len=*), intent(in) :: filename

@@ -26,10 +26,12 @@ module evolution
   use sptype, only: I4B
   use solver, only: linbcg
   use globe_data, only: Temp_p, Temp_pp, inverse_time, heat, lin_rhoc
+  use globe_data, only: acsr, ja, ia
   use heating, only: heater
   use boundary_vector, only: boundary
   use cattaneo, only: S_catS
-  use tempdep, only: ChangeProp
+!   use tempdep, only: ChangeProp 
+  use sparse_solver, only: bicgstab
   implicit none
 
   private
@@ -45,8 +47,9 @@ contains
   subroutine simulate(itime)
     integer(int12), intent(in) :: itime
     real(real12), dimension(NA) :: S, x, Q, Qdens, S_CAT, B
-    integer(int12) :: ncg, itol, itmax !, iss
-    integer(I4B) :: iter
+    real(real12), dimension(:), allocatable :: x0
+    integer:: ncg, itol, itmax !, iss
+    integer :: iter
     real(real12) :: e, err, tol
     
     !----------------------
@@ -147,9 +150,11 @@ contains
     err=E
 
 
-    CALL linbcg(S,x,itol=int(itol,I4B),tol=tol, itmax=int(itmax,I4B), iter=iter, &
-         err=E)
+   CALL bicgstab(acsr, ia, ja, S, itmax, x, x0, iter)
+   !  CALL linbcg(S,x,itol=int(itol,I4B),tol=tol, itmax=int(itmax,I4B), iter=iter, &
+   !       err=E)
          
+   x=x0
     if (any(isnan(x(:)))) then
        write(0,*) "fatal error: NAN in x tempurature vector"
        write(0,*) 'time step ', itime, "      T   ", sum(Temp_p)/size(Temp_p), E ,iter
@@ -169,9 +174,9 @@ contains
     Temp_pp = Temp_p
     Temp_p = x
 
-    if (TempDepProp .eq. 1) then
-      CALL ChangeProp()
-    end if
+   !  if (TempDepProp .eq. 1) then
+   !    CALL ChangeProp()
+   !  end if
    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
   end subroutine simulate
