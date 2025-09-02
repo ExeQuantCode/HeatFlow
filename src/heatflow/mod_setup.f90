@@ -63,7 +63,6 @@ module setup
             grid(ix,iy,iz)%em = em
             grid(ix,iy,iz)%vel(:) = vel(:)
             lin_rhoc(index) = rho*heat_capacity
-            print*, grid(ix,iy,iz)%vel(:)
             if (Check_Stability) CALL stability(kappa, rho, heat_capacity, ix, iy, iz)
             end do               
          end do

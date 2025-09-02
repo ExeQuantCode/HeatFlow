@@ -148,7 +148,8 @@ contains
       if (x .eq. 1) then
         H=0.0_real12
       else
-         H = A  ! X left neighbor (left cell interaction)
+         H = A ! X left neighbor (left cell interaction)
+         H = H + calculate_convective_conductivity(xm, y, z, x, y, z)
       end if
     end if 
 
@@ -157,6 +158,7 @@ contains
         H=0.0_real12
       else
         H = B  ! X right neighbor (right cell interaction)
+        H = H + calculate_convective_conductivity(xp, y, z, x, y, z)
       end if
     end if
 
@@ -165,6 +167,7 @@ contains
         H=0.0_real12
       else
         H = D  ! Y down neighbor (down cell interaction)
+        H = H + calculate_convective_conductivity(x, ym, z, x, y, z)
       end if 
     end if 
     if ((i-j) .eq. -nx) then
@@ -172,6 +175,7 @@ contains
         H=0.0_real12
       else
         H = E  ! Y up neighbor (up cell interaction)
+        H = H + calculate_convective_conductivity(x, yp, z, x, y, z)
       end if 
     end if 
 
@@ -181,6 +185,7 @@ contains
      else
         !write(*,*) 'F   this is forward (in) z',F
          H = F  ! Z in neighbor (forward cell interaction) !!!Frank had this as G during testing
+         H = H + calculate_convective_conductivity(x, y, zm, x, y, z)
       end if
     end if 
 
@@ -190,6 +195,7 @@ contains
      else  
         !write(*,*) 'G   this is backward (out) z?',G
         H = G  ! Z out neighbor (backward cell interaction) !!!Frank Had this as F during testing
+        H = H + calculate_convective_conductivity(x, y, zp, x, y, z)
       end if
    end if
    
@@ -391,5 +397,118 @@ contains
   end subroutine boundry_diag_term
   !!!########################################################################
   
+  !!!########################################################################
+  !!! subroutine to calculate the convective conductivity between two points
+  !!!########################################################################
+   function calculate_convective_conductivity(x_in, y_in, z_in, x_out, y_out, z_out) result(vel_conv)
+      integer(int12), intent(in) :: x_in, y_in, z_in, x_out, y_out, z_out
+      real(real12) :: vel_conv
+      real(real12) :: rho, CV
+      real(real12), dimension(3) :: vel_in, vel_out 
+   
+      vel_conv = 0.0_real12
+      
+      ! if not an edge element
+      if ((x_in .ge. 1) .and. (x_in .le. nx) .and. (y_in .ge. 1) .and. &
+          (y_in .le. ny) .and. (z_in .ge. 1) .and. (z_in .le. nz)) then
+
+         rho = grid(x_out,y_out,z_out)%rho
+         CV = grid(x_out,y_out,z_out)%heat_capacity
+         vel_in = grid(x_in,y_in,z_in)%vel
+         vel_out = grid(x_out,y_out,z_out)%vel
+   
+         if (x_in .ne. x_out) then
+            if (vel_in(1) .ne. vel_out(1)) then
+               vel_conv = 0.0_real12
+            else
+               vel_conv = vel_in(1)*rho*CV*(1.0_real12/(2.0_real12*grid(x_out,y_out,z_out)%Length(1)))
+               if (x_in .lt. x_out) then
+                  vel_conv = -vel_conv
+               end if
+            end if
+   
+         else if (y_in .ne. y_out) then
+            if (vel_in(2) .ne. vel_out(2)) then
+               vel_conv = 0.0_real12
+            else
+               vel_conv = vel_in(2)*rho*CV*(1.0_real12/(2.0_real12*grid(x_out,y_out,z_out)%Length(2)))
+               if (y_in .lt. y_out) then
+                  vel_conv = -vel_conv
+               end if
+            end if
+   
+         else if (z_in .ne. z_out) then
+            if (vel_in(3) .ne. vel_out(3)) then
+               vel_conv = 0.0_real12
+            else
+               vel_conv = vel_in(3)*rho*CV*(1.0_real12/(2.0_real12*grid(x_out,y_out,z_out)%Length(3)))
+               if (z_in .lt. z_out) then
+                  vel_conv = -vel_conv
+               end if
+            end if
+         end if
+   
+      else
+         vel_conv = 0.0_real12
+      end if
+      vel_conv = vel_conv
+   end function calculate_convective_conductivity
+
+   !!!########################################################################
+
+   !!!########################################################################
+   !!! This subroutine calculates the value of the convective term of the H matrix...
+   !!! ...at the boundary.
+   !!!########################################################################
+   subroutine boundry_diag_term_vel(x_b, y_b, z_b, x, y, z, vel_conv)
+      integer(int12), intent(in) :: x_b, y_b, z_b, x, y, z
+      real(real12), intent(out) :: vel_conv
+      real(real12) :: rho, CV
+      real(real12), dimension(3) :: vel_in, vel_out 
+  
+      !------------------------------------------------------------
+      ! The boundary term is calculated of the boundary grid point.
+      !------------------------------------------------------------
+  
+      
+      rho = grid(x,y,z)%rho
+      CV = grid(x,y,z)%heat_capacity
+      vel_in = grid(x_b,y_b,z_b)%vel
+      vel_out = grid(x,y,z)%vel
+
+      if (x_b .eq. 1) then
+         if (vel_in(1) .ne. vel_out(1)) then
+            vel_conv = 0.0_real12
+         else
+            vel_conv = vel_in(1)*rho*CV*(1.0_real12/(2.0_real12*grid(x,y,z)%Length(1)))
+            if (x_b .lt. x) then
+               vel_conv = -vel_conv
+            end if
+         end if
+
+      else if (y_b .ne. y) then
+         if (vel_in(2) .ne. vel_out(2)) then
+            vel_conv = 0.0_real12
+         else
+            vel_conv = vel_in(2)*rho*CV*(1.0_real12/(2.0_real12*grid(x,y,z)%Length(2)))
+            if (y_b .lt. y) then
+               vel_conv = -vel_conv
+            end if
+         end if
+
+      else if (z_b .ne. z) then
+         if (vel_in(3) .ne. vel_out(3)) then
+            vel_conv = 0.0_real12
+         else
+            vel_conv = vel_in(3)*rho*CV*(1.0_real12/(2.0_real12*grid(x,y,z)%Length(3)))
+            if (z_b .lt. z) then
+               vel_conv = -vel_conv
+            end if
+         end if
+      end if
+      !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    end subroutine boundry_diag_term_vel
+      !!!########################################################################
+
 
 end module hmatrixmod
