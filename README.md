@@ -77,15 +77,15 @@ make install
 
 This will build and install the executable in the following directory:
 ```
-${HOME}/.local/HeatFLow/bin/HeatFlow
+${HOME}/.local/HeatFlow/bin/HeatFlow
 ```
 
 This executable can now be called to run the HeatFlow software package and simulate heat transport.
-If the `${HOME}/.local/HeatFLow/bin` is added to your `PATH` environment variable, then the program can be called as a terminal command.
+If the `${HOME}/.local/HeatFlow/bin` is added to your `PATH` environment variable, then the program can be called as a terminal command.
 This can be done with the following command (works on a per-terminal basis, if you want to update it for all, include this in your source shell file):
 
 ```
-export PATH="${PATH}:${HOME}/.local/HeatFLow/bin"
+export PATH="${PATH}:${HOME}/.local/HeatFlow/bin"
 ```
 
 To execute the program, use the following command:
