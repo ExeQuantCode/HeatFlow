@@ -657,7 +657,7 @@ subroutine read_mat(unit)
     type(material), dimension(100) :: dum_mat
     character(1024) :: buffer
     integer :: reason, j
-    integer, dimension(9) :: readvarmat
+    integer, dimension(6) :: readvarmat
     integer :: i, index
 
     i=0
@@ -697,14 +697,11 @@ subroutine read_mat(unit)
 
     
        CALL assignD(buffer,"heat_capacity",dum_mat(i)%heat_capacity,readvarmat(1))! assign heatCapacity
-       CALL assignD(buffer,"h_conv"       ,dum_mat(i)%h_conv       ,readvarmat(2))! assign h_conv
-       CALL assignD(buffer,"kappa"        ,dum_mat(i)%kappa        ,readvarmat(3))! assign kappa
-       CALL assignD(buffer,"kappa3D"      ,dum_mat(i)%kappa3D      ,readvarmat(4))! assign kappa3D
-       CALL assignD(buffer,"rho"          ,dum_mat(i)%rho          ,readvarmat(5))! assign rho
-       CALL assignD(buffer,"sound_speed"  ,dum_mat(i)%sound_speed  ,readvarmat(6))! assign sound_speed
-       CALL assignD(buffer,"tau"          ,dum_mat(i)%tau          ,readvarmat(7))! assign tau
-       CALL assignD(buffer,"em"           ,dum_mat(i)%em           ,readvarmat(8))! assign e
-       CALL assignV(buffer,"vel"          ,dum_mat(i)%vel          ,readvarmat(9)) ! assign velocity
+       CALL assignD(buffer,"kappa"        ,dum_mat(i)%kappa        ,readvarmat(2))! assign kappa
+       CALL assignD(buffer,"rho"          ,dum_mat(i)%rho          ,readvarmat(3))! assign rho
+       CALL assignD(buffer,"tau"          ,dum_mat(i)%tau          ,readvarmat(4))! assign tau
+       CALL assignD(buffer,"em"           ,dum_mat(i)%em           ,readvarmat(5))! assign e
+       CALL assignV(buffer,"vel"          ,dum_mat(i)%vel          ,readvarmat(6)) ! assign velocity
     end do read
     
     ! Check for duplicate indices

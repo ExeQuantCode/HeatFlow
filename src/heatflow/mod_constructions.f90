@@ -34,11 +34,11 @@ module constructions
   type material
      integer(int12) :: index !identifier for the material
      real(real12) :: heat_capacity !heat capacity of the material
-     real(real12) :: h_conv !convective heat transfer coefficient
+    !  real(real12) :: h_conv !convective heat transfer coefficient
      real(real12) :: kappa !thermal conductivity
-     real(real12) :: kappa3D !three-dimensional thermal conductivity
+    !  real(real12) :: kappa3D !three-dimensional thermal conductivity
      real(real12) :: rho !density of the material
-     real(real12) :: sound_speed   !speed of sound in the material
+    !  real(real12) :: sound_speed   !speed of sound in the material
      real(real12) :: tau !relaxation time
      real(real12), dimension(3) :: vel !velocity of the material
      real(real12) :: em !emisstivity
