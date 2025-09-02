@@ -657,7 +657,7 @@ subroutine read_mat(unit)
     type(material), dimension(100) :: dum_mat
     character(1024) :: buffer
     integer :: reason, j
-    integer, dimension(8) :: readvarmat
+    integer, dimension(9) :: readvarmat
     integer :: i, index
 
     i=0
@@ -703,7 +703,8 @@ subroutine read_mat(unit)
        CALL assignD(buffer,"rho"          ,dum_mat(i)%rho          ,readvarmat(5))! assign rho
        CALL assignD(buffer,"sound_speed"  ,dum_mat(i)%sound_speed  ,readvarmat(6))! assign sound_speed
        CALL assignD(buffer,"tau"          ,dum_mat(i)%tau          ,readvarmat(7))! assign tau
-       CALL assignD(buffer,"em"            ,dum_mat(i)%em            ,readvarmat(8))! assign e
+       CALL assignD(buffer,"em"           ,dum_mat(i)%em           ,readvarmat(8))! assign e
+       CALL assignV(buffer,"vel"          ,dum_mat(i)%vel          ,readvarmat(9)) ! assign velocity
     end do read
     
     ! Check for duplicate indices
@@ -826,6 +827,24 @@ subroutine read_mat(unit)
     return
   end function val
 !!!#################################################################################################
+
+!!!#################################################################################################
+!!! assign velocity
+!!!#################################################################################################
+  subroutine assignV(buffer, keyword, variable, found)
+    implicit none
+    integer::found
+    character(1024)::buffer1,buffer2
+    character(*)::buffer,keyword
+    real(real12), dimension(3)::variable
+    buffer1=buffer(:scan(buffer,"=")-1)
+    if(scan("=",buffer).ne.0) buffer2=val(buffer)
+    if(trim(adjustl(buffer1)).eq.trim(adjustl(keyword))&
+         .and.trim(adjustl(buffer2)).ne.'') then
+       found=found+1
+       read(buffer2,*) variable(1), variable(2), variable(3)
+    end if
+  end subroutine assignV
 
 end module inputs
 

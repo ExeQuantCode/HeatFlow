@@ -26,6 +26,7 @@ module constructions
      integer(int12) :: imaterial_type !what type of material it is in the mat.in
      real(real12) :: volume !volume of the block
      real(real12), dimension(3) :: Length !length of the block in 3 dimensions
+     real(real12), dimension(3) :: vel !center of the block in 3 dimensions
      integer(int12) :: iheater !whether the block is a heater
       real(real12) :: kappa, rho, heat_capacity, tau, em !physical properties of the material
   end type heatblock
@@ -39,6 +40,7 @@ module constructions
      real(real12) :: rho !density of the material
      real(real12) :: sound_speed   !speed of sound in the material
      real(real12) :: tau !relaxation time
+     real(real12), dimension(3) :: vel !velocity of the material
      real(real12) :: em !emisstivity
      logical :: source !whether the material is a source of heat ??
   end type material
