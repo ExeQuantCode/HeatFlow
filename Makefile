@@ -39,7 +39,8 @@ OBJS := $(addprefix $(BUILD_DIR)/,$(notdir $(SRCS:.f90=.o)))
 MKLROOT ?= /opt/intel/oneapi/mkl/latest
 MKL_LIB_DIR = $(MKLROOT)/lib/intel64
 MKL_INCLUDE_DIR = $(MKLROOT)/include
-MKL_FLAGS = -L$(MKL_LIB_DIR) -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl
+#MKL_FLAGS = -L$(MKL_LIB_DIR) -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl
+MKL_FLAGS = -L$(MKL_LIB_DIR) -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl
 
 FFLAGS = -O3 -I$(MKL_INCLUDE_DIR)
 MODULEFLAGS = -J$(BUILD_DIR)
