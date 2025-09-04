@@ -46,7 +46,7 @@ module output
   use inputs, only: nx,ny,nz, time_step, grid, NA, Check_Steady_State, ntime, WriteToTxt
   use inputs, only: Test_Run, freq, RunName, FullRestart, IVERB, write_every
   use inputs, only: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz
-  use globe_data, only: Temp_p,Temp_pp, heat, heated_volume
+  use globe_data, only: Temp_p,Temp_pp, heat, heated_volume, logname
   implicit none
   
 contains
@@ -54,9 +54,11 @@ contains
     implicit none
     integer(int12), intent(in) :: itime
     real(real12), dimension(nx,ny,nz) :: CT, Temp_cur
-    integer(int12) :: ix, iy, iz, indexA, logunit
-    character(len=1024) :: file_prefix, file_extension, outdir, logname
+    integer(int12) :: ix, iy, iz, indexA
+    character(len=1024) :: file_prefix, file_extension, outdir
+    integer :: logunit
     
+    logunit = 20
     file_prefix = 'Temperture_'
     outdir='./outputs/'
     file_extension = '.out'
@@ -90,9 +92,12 @@ contains
           ! find most recent log file and open it
           !---------------------------------------
           CALL last_log(logname,outdir)
-          open(newunit=logunit,file=logname)
+          open(logunit,file=logname)
+         !  print*, logunit
+         !  print*, logname
           write(logunit,*) real((itime-1)*(time_step)), &
                (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
+          close(logunit)
           !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
        end if
     end if
@@ -108,8 +113,12 @@ contains
       if (WriteToTxt) then
          if (mod(itime, write_every) .eq. 0) then
             write(*, *) 'Writing Temperature difference to file'
+            ! print*, logunit
+            ! print*, logname
+            open(logunit,file=logname, status='old', position='append')
             write(logunit,*) real((itime-1)*(time_step)), &
                (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
+            close(logunit)
          end if
       endif
     end if

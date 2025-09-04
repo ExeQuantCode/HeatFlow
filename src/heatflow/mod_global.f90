@@ -16,6 +16,7 @@ module globe_data
   real(real12), dimension(:), allocatable :: acsr
   integer, dimension(:), allocatable :: ja
   integer, dimension(:), allocatable :: ia
+  character(len=1024) :: logname ! Log file name
    
 end module globe_data
  
