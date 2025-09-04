@@ -81,7 +81,8 @@ module setup
          CALL sparse_Hmatrix()
          ! Allocate the arrays to hold the H matrix in CSR format
          allocate(acsr(ra%len), ja(ra%len), ia(ra%n+1))
-         CALL coo2csr(ra%n, ra%len, ra%val, ra%irow, ra%jcol, acsr, ja, ia)               
+         CALL coo2csr(ra%n, ra%len, ra%val, ra%irow, ra%jcol, acsr, ja, ia)
+         ! print*, ra%val               
       end if
       !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

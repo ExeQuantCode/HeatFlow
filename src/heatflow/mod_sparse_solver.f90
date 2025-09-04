@@ -56,8 +56,8 @@ contains
     integer (kind=8), dimension(nnz), intent(in) :: ir
     integer (kind=8), dimension(nnz), intent(in) :: jc   
     real(8), dimension(nnz), intent(out) :: acsr
-    integer (kind=8), dimension(nnz), intent(out) :: ja
-    integer (kind=8), dimension(nrow+1), intent(out) :: ia
+    integer, dimension(nnz), intent(out) :: ja
+    integer, dimension(nrow+1), intent(out) :: ia
 
     ! Local variables.
     integer (kind=8) :: i, iad, j, k, k0
@@ -151,16 +151,17 @@ contains
     call mkl_dcsrgemv("N",n,acsr,ia,ja,x,temp1)
     
     r = b - temp1
-  
+
     call random_number(rst)
     
     p = r
+
     delta = dot_product(rst,r)
-    
+
     write(*,'(a,1x,f15.3)') "Starting delta: ", delta
     
     delta0 = delta
-    
+
     do i = 1, maxiter
        
        if ( norm2(r) /= norm2(r) ) then
@@ -187,7 +188,7 @@ contains
        delta = dot_product(rst,r)
        beta = (delta/delta_old)*(alpha/omega)
        p = r + beta*(p - omega*temp1)
-       
+
        if(norm2(r) .lt. cc) then
           iter = i
           return
@@ -247,7 +248,9 @@ contains
     mnum = 1
     
     if (.not.(allocated(x))) allocate(x(n))
-    
+
+
+
     allocate(iparm(64))		!set up pardiso control parameter
     
     do i=1,64

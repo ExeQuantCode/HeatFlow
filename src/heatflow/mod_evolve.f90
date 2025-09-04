@@ -31,7 +31,7 @@ module evolution
   use boundary_vector, only: boundary
   use cattaneo, only: S_catS
 !   use tempdep, only: ChangeProp 
-  use sparse_solver, only: bicgstab
+  use sparse_solver, only: bicgstab, solve_pardiso
   implicit none
 
   private
@@ -46,8 +46,8 @@ contains
 !!!#################################################################################################
   subroutine simulate(itime)
     integer(int12), intent(in) :: itime
-    real(real12), dimension(NA) :: S, x, Q, Qdens, S_CAT, B
-    real(real12), dimension(:), allocatable :: x0
+    real(real12), dimension(NA) :: S, Q, Qdens, S_CAT, B
+    real(real12), dimension(:), allocatable :: x
     integer:: ncg, itol, itmax !, iss
     integer :: iter
     real(real12) :: e, err, tol
@@ -140,21 +140,23 @@ contains
    ! iter:  Output - gives the number of the final iteration.
    ! err:   Output - records the error of the final iteration.
    ! iss:   Input - sets the Sparse Storage type (1=SRS, 2=SDS).
-    x=Temp_p+(Temp_p-Temp_pp) 
-    if (any(x-Temp_p .lt. TINY)) x=x+TINY !avoid nan solver issue
+   !  x=Temp_p+(Temp_p-Temp_pp)
+   !  if (any(x-Temp_p .lt. TINY)) x=x+TINY !avoid nan solver issue
     itol=1
     tol=1.e-32_real12
     itmax=50000
     ncg = 0
-    iter=ncg
+    iter= 0
     err=E
 
 
-   CALL bicgstab(acsr, ia, ja, S, itmax, x, x0, iter)
+   !  CALL bicgstab(acsr, ia, ja, S, itmax, x, x0, iter)
+
+   CALL solve_pardiso(acsr, S, ia, ja, x)
    !  CALL linbcg(S,x,itol=int(itol,I4B),tol=tol, itmax=int(itmax,I4B), iter=iter, &
-   !       err=E)
+         ! err=E)
          
-   x=x0
+   ! 
     if (any(isnan(x(:)))) then
        write(0,*) "fatal error: NAN in x tempurature vector"
        write(0,*) 'time step ', itime, "      T   ", sum(Temp_p)/size(Temp_p), E ,iter
