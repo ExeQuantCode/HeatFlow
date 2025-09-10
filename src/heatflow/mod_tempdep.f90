@@ -27,7 +27,10 @@
 
 module TempDep
     use inputs, only: Grid, TempDepProp, Nz, Ny, Nx, NA, time_step, grid
+
     ! use setup, only: sparse_Hmatrix
+    use sparse_solver, only: coo2csr
+    use sptype, only :: sprs2_dp
     use globe_data, only:  Temp_p, lin_rhoc, Temp_pp
     use constants, only: real12, int12
     use hmatrixmod, only: hmatrixfunc
@@ -35,15 +38,57 @@ module TempDep
     implicit none
     
     contains
+    
+    subroutine read_HC(Tfile, CVfile, n)
+        implicit none
+        ! Arguments
+        integer, intent(out) :: n
+        real(real12), allocatable, intent(out) :: Tfile(:), CVfile(:)
 
-    subroutine G_A(TP)
+        ! Locals
+        integer :: i, ios, unit
+        character(len=256) :: line
+        character(len=*), parameter :: filename = "HC_data.txt"
+
+        ! Open the file
+        open(newunit=unit, file=filename, status='old', action='read', iostat=ios)
+        if (ios /= 0) then
+            print *, "Error: could not open file ", filename
+            stop
+        end if
+
+        ! First pass: count number of lines
+        n = 0
+        do
+            read(unit,'(A)', iostat=ios) line
+            if (ios /= 0) exit
+            if (len_trim(line) > 0) n = n + 1
+        end do
+
+        ! Allocate arrays
+        allocate(Tfile(n), CVfile(n))
+
+        ! Rewind and read data
+        rewind(unit)
+        do i = 1, n
+            read(unit,*, iostat=ios) Tfile(i), CVfile(i)
+            if (ios /= 0) then
+                print *, "Error reading line ", i
+                stop
+            end if
+        end do
+
+        close(unit)
+
+    end subroutine read_HC
+    
+    subroutine G_A()
         implicit none
         integer(int12) :: index, ix, iy, iz
-        real(real12), dimension(NA), intent(in) :: TP
-        real(real12), dimension(:) :: T, CV 
-            !G = G*(2/dt)
-            ! A = A/dt
-
+        real(real12), dimension(NA) :: G, A
+        !G = G*(2/dt)
+        ! A = A/dt
+        
         
 
     end subroutine
@@ -90,7 +135,7 @@ module TempDep
     end do
     end function
 
-    function Omega_func() result(Omega)
+    function Omega_func(G,A) result(Omega)
     implicit none
     integer(int12) :: i, j, k, indx
     real(real12), dimension(Nx,Ny,Nz), intent(in) :: G,A
@@ -117,18 +162,20 @@ module TempDep
         integer(int12) :: i, j, len, count, k ! i and j are the row and column of the H matrix
         ! Holds the values to add to the row to get the column
         integer(int12), allocatable, dimension(:) :: addit 
+        type(sprs2_dp), allocatable :: gammaMH
+
         ! The number of non-zero elements in the H matrix to look for
         len = 7*nx*ny*nz - 2*(nx*ny + ny*nz + nz*nx)
         if (Periodicx) len = len + 2*ny*nz
         if (Periodicy) len = len + 2*nz*nx
         if (Periodicz) len = len + 2*nx*ny
-        ra%n = NA ! The number of rows in the H matrix
-        ra%len = len ! The number of non-zero elements in the H matrix
+        gammaMH%n = NA ! The number of rows in the H matrix
+        gammaMH%len = len ! The number of non-zero elements in the H matrix
         ! Allocate the arrays to hold the H matrix in sparse row storage
-        allocate(ra%val(len), ra%irow(len), ra%jcol(len))
-        ra%val(:)=0
-        ra%irow(:)=-2
-        ra%jcol(:)=-1
+        allocate(gammaMH%val(len), gammaMH%irow(len), gammaMH%jcol(len))
+        gammaMH%val(:)=0
+        gammaMH%irow(:)=-2
+        gammaMH%jcol(:)=-1
         addit = [1] ! The values to add to the row to get the column
         if (Periodicx) addit = [addit, (nx-1)]
         if (ny .gt. 1) addit = [addit, nx] ! Add the values to add to the row to get the column
@@ -141,9 +188,9 @@ module TempDep
             i=j ! The row of the H matrix
             count = count + 1 ! The number of non-zero elements in the H matrix
             H0 = hmatrixfunc(i,j) ! The value of the H matrix
-            ra%val(count) = (gamma(count)-H0) ! The value of the H matrix
-            ra%irow(count) = i ! The row of the H matrix
-            ra%jcol(count) = j ! The column of the H matrix
+            gammaMH%val(count) = (gamma(count)-H0) ! The value of the H matrix
+            gammaMH%irow(count) = i ! The row of the H matrix
+            gammaMH%jcol(count) = j ! The column of the H matrix
             ! Loop over the values to add to the row to get the column
             neighbour_loop: do k = 1, size(addit,1)
                 i = j + addit(k) ! The row of the H matrix
@@ -155,37 +202,97 @@ module TempDep
                     !...to add to the row to get the column
                     if (abs(H0).lt.TINY) cycle neighbour_loop 
                         count = count + 1 ! The number of non-zero elements in the H matrix
-                        ra%val(count) = H0 ! The value of the H matrix
-                        ra%irow(count) = i ! The row of the H matrix
-                        ra%jcol(count) = j ! The column of the H matrix
+                        gammaMH%val(count) = H0 ! The value of the H matrix
+                        gammaMH%irow(count) = i ! The row of the H matrix
+                        gammaMH%jcol(count) = j ! The column of the H matrix
                         count = count + 1 ! The number of non-zero elements in the H matrix
                         H0=hmatrixfunc(j,i) ! The value of the H matrix
-                        ra%val(count) = H0 ! The value of the H matrix
-                        ra%irow(count) = j ! The row of the H matrix
-                        ra%jcol(count) = i ! The column of the H matrix
+                        gammaMH%val(count) = H0 ! The value of the H matrix
+                        gammaMH%irow(count) = j ! The row of the H matrix
+                        gammaMH%jcol(count) = i ! The column of the H matrix
                         !write(6,*) j,i, H0, count
             end do neighbour_loop
         end do parent_loop
     end function
 
-    function nl_F_Cat(T,phi, A, G, B, H) result(f_val)
+    function nl_F_Cat(T,B) result(f_val)
+    use mkl_spblas
     implicit none
-    real(real12), dimension(NA) :: TS, phi, omega, gamma, f_val
-    integer(int12) :: i,j,k, indx
-    
-    TS(:) = T(:)*T(:)
-    !phi.dot(TS) + (gamma-H).dot(T) + omega - B
-    indx = 1
-    do indx = 1, NA
-        f_val(indx) = phi(indx)*(TS(indx)) + (gamma(indx)-H(i,j,k))*T(indx) + omega(indx) - B(indx)
+    real(real12), intent(in)  :: T(:)
+    real(real12), intent(in)  :: B(:)
+    real(real12), dimension(NA) :: TS, phi, omega, gamma, f_val, G, A
+    integer(int12) :: i, j, k, indx, stat
+    type(sprs2_dp) :: gammaMH
+    real(real12), dimension(:), allocatable :: acsr
+    integer, dimension(:), allocatable :: ja
+    integer, dimension(:), allocatable :: ia
+
+    ! MKL sparse objects
+    type(sparse_matrix_t) :: A_handle
+    type(matrix_descr)    :: descr
+    real(real12), allocatable :: yvec(:)
+    integer, allocatable :: row_start(:), row_end(:)
+    integer(int12) :: nrows, ncols, nnz
+
+    ! --- compute required quantities (you already did similar)
+    CALL G_A(Temp_p)               ! ensure this actually sets G and A
+    gamma = Gamma_func(G,A)
+    omega = Omega_func(G,A)        ! fixed typo: was 'omage' in your file
+    phi   = Phi_func(G)
+
+    gammaMH = gamma_M_H(gamma)     ! returns COO in your sprs2_dp type
+
+    ! Allocate arrays for CSR form
+    nnz   = gammaMH%len
+    nrows = gammaMH%n
+    ncols = gammaMH%n
+    allocate(acsr(nnz), ja(nnz), ia(nrows+1))
+
+    ! Convert your COO -> CSR (you already do this)
+    CALL coo2csr(gammaMH%n, gammaMH%len, gammaMH%val, gammaMH%irow, gammaMH%jcol, acsr, ja, ia)
+
+    ! Convert ia (rowptr length n+1) to MKL-compatible row_start/row_end:
+    allocate(row_start(nrows), row_end(nrows))
+    do i = 1, nrows
+        row_start(i) = ia(i)                 ! first index of row i (1-based)
+        row_end(i)   = ia(i+1) - 1           ! last index of row i (1-based)
     end do
 
-    
-    end function
+    ! Create MKL CSR handle (double precision)
+    stat = mkl_sparse_d_create_csr(A_handle, SPARSE_INDEX_BASE_ONE, nrows, ncols, &
+                                    row_start, row_end, ja, acsr)
+    if (stat /= SPARSE_STATUS_SUCCESS) then
+        write(*,*) 'mkl_sparse_d_create_csr failed, stat=', stat
+        stop 1
+    end if
+
+    descr%type = SPARSE_MATRIX_TYPE_GENERAL
+
+    ! Perform yvec = A * T  (yvec length = nrows)
+    allocate(yvec(nrows))
+    yvec = 0.0_real12
+
+    stat = mkl_sparse_d_mv(SPARSE_OPERATION_NON_TRANSPOSE, 1.0_real12, A_handle, descr, T, 0.0_real12, yvec)
+    if (stat /= SPARSE_STATUS_SUCCESS) then
+        write(*,*) 'mkl_sparse_d_mv failed, stat=', stat
+        call mkl_sparse_destroy(A_handle)
+        stop 2
+    end if
+
+    ! Build f_val = phi * (T*T) + yvec + omega - B
+    TS(:) = T(:) * T(:)
+    f_val(:) = phi(:) * TS(:) + yvec(:) + omega(:) - B(:)
+
+    ! cleanup
+    call mkl_sparse_destroy(A_handle)
+    deallocate(acsr, ja, ia, row_start, row_end, yvec)
+
+    end function nl_F_Cat
+
 
     function Jac_nl_F_Cat(T, phi, gamma, H) result(jac_val)
     implicit none
-    real(real12) :: jac_val
+    type(sprs2_dp) :: jac
     real(real12), dimension(NA) :: T, phi, gamma, H
     real(real12) :: H0 ! Holds the value of the H matrix
     integer(int12) :: i, j, len, count, k ! i and j are the row and column of the H matrix
@@ -196,13 +303,13 @@ module TempDep
     if (Periodicx) len = len + 2*ny*nz
     if (Periodicy) len = len + 2*nz*nx
     if (Periodicz) len = len + 2*nx*ny
-    ra%n = NA ! The number of rows in the H matrix
-    ra%len = len ! The number of non-zero elements in the H matrix
-    ! Allocate the arrays to hold the H matrix in sparse row storage
-    allocate(ra%val(len), ra%irow(len), ra%jcol(len))
-    ra%val(:)=0
-    ra%irow(:)=-2
-    ra%jcol(:)=-1
+    jac%n = NA ! The number of rows in the H matrix
+    jac%len = len ! The number of non-zero elements in the H matrix
+    ! Allocate the arjacys to hold the H matrix in sparse row stojacge
+    allocate(jac%val(len), jac%irow(len), jac%jcol(len))
+    jac%val(:)=0
+    jac%irow(:)=-2
+    jac%jcol(:)=-1
     addit = [1] ! The values to add to the row to get the column
     if (Periodicx) addit = [addit, (nx-1)]
     if (ny .gt. 1) addit = [addit, nx] ! Add the values to add to the row to get the column
@@ -215,9 +322,9 @@ module TempDep
         i=j ! The row of the H matrix
         count = count + 1 ! The number of non-zero elements in the H matrix
         H0 = hmatrixfunc(i,j) ! The value of the H matrix
-        ra%val(count) = 2.0_real12*Phi(J)*T(J) + (gamma(J)-H0) ! The value of the H matrix
-        ra%irow(count) = i ! The row of the H matrix
-        ra%jcol(count) = j ! The column of the H matrix
+        jac%val(count) = 2.0_real12*Phi(J)*T(J) + (gamma(J)-H0) ! The value of the H matrix
+        jac%irow(count) = i ! The row of the H matrix
+        jac%jcol(count) = j ! The column of the H matrix
         ! Loop over the values to add to the row to get the column
         neighbour_loop: do k = 1, size(addit,1)
             i = j + addit(k) ! The row of the H matrix
@@ -229,14 +336,14 @@ module TempDep
                 !...to add to the row to get the column
                 if (abs(H0).lt.TINY) cycle neighbour_loop 
                     count = count + 1 ! The number of non-zero elements in the H matrix
-                    ra%val(count) = H0 ! The value of the H matrix
-                    ra%irow(count) = i ! The row of the H matrix
-                    ra%jcol(count) = j ! The column of the H matrix
+                    jac%val(count) = H0 ! The value of the H matrix
+                    jac%irow(count) = i ! The row of the H matrix
+                    jac%jcol(count) = j ! The column of the H matrix
                     count = count + 1 ! The number of non-zero elements in the H matrix
                     H0=hmatrixfunc(j,i) ! The value of the H matrix
-                    ra%val(count) = H0 ! The value of the H matrix
-                    ra%irow(count) = j ! The row of the H matrix
-                    ra%jcol(count) = i ! The column of the H matrix
+                    jac%val(count) = H0 ! The value of the H matrix
+                    jac%irow(count) = j ! The row of the H matrix
+                    jac%jcol(count) = i ! The column of the H matrix
                     !write(6,*) j,i, H0, count
         end do neighbour_loop
      end do parent_loop
