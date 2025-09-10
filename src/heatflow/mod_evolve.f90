@@ -23,14 +23,14 @@ module evolution
   use constants, only: real12, int12, TINY
   use inputs, only: NA, icattaneo, isteady, nx, ny, nz, IVERB,T_System, time_step, grid, power_in
   use inputs, only: TempDepProp
-  use sptype, only: I4B
+  use sptype, only: sprs2_dp
   use solver, only: linbcg
   use globe_data, only: Temp_p, Temp_pp, inverse_time, heat, lin_rhoc
   use globe_data, only: acsr, ja, ia
   use heating, only: heater
   use boundary_vector, only: boundary
   use cattaneo, only: S_catS
-!   use tempdep, only: ChangeProp 
+  use tempdep, only: nl_F_Cat, Jac_nl_F_Cat 
   use sparse_solver, only: bicgstab, solve_pardiso
   implicit none
 
@@ -46,12 +46,13 @@ contains
 !!!#################################################################################################
   subroutine simulate(itime)
     integer(int12), intent(in) :: itime
-    real(real12), dimension(NA) :: S, Q, Qdens, S_CAT, B
+    real(real12), dimension(NA) :: S, Q, Qdens, S_CAT, B, F, Tn, delta
     real(real12), dimension(:), allocatable :: x
     integer:: ncg, itol, itmax !, iss
-    integer :: iter
+    integer :: iter, n
     real(real12) :: e, err, tol
-    
+    type(sprs2_dp) :: jac
+    logical :: check
     !----------------------
     ! Initialize vectors
     !----------------------
@@ -98,37 +99,39 @@ contains
     !------------------------------------------
     ! Calculate Cattaneo correction
     !------------------------------------------
-    if ( iCAttaneo .eq. 1) then
-       CALL S_catS(S_CAT)
-       if (IVERB .gt. 3) write(*,*) "S_CAT average", sum(S_CAT)/size(S_CAT)
-       if (IVERB .gt. 4) write(*,*) "S_CAT", S_CAT
-       if (any(isnan(S_CAT))) then
-            write(*,*) "fatal error: NAN in S_CAT vector"
-            stop 1
-         end if
-    end if
+   !  if ( iCAttaneo .eq. 1) then
+   !     CALL S_catS(S_CAT)
+   !     if (IVERB .gt. 3) write(*,*) "S_CAT average", sum(S_CAT)/size(S_CAT)
+   !     if (IVERB .gt. 4) write(*,*) "S_CAT", S_CAT
+   !     if (any(isnan(S_CAT))) then
+   !          write(*,*) "fatal error: NAN in S_CAT vector"
+   !          stop 1
+   !       end if
+   !  end if
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     !---------------------------------------------
     ! Construct S vector 
     !---------------------------------------------
-    if ( iSteady .eq. 0 ) then
-       S = - inverse_time * Temp_p * lin_rhoc - Qdens - B
-       if ( iCAttaneo  .eq. 1) then
-          S = S + S_CAT
-       end if
-    else
-       S = -Qdens - B
-    end if
+   !  if ( iSteady .eq. 0 ) then
+   !     S = - inverse_time * Temp_p * lin_rhoc - Qdens - B
+   !     if ( iCAttaneo  .eq. 1) then
+   !        S = S + S_CAT
+   !     end if
+   !  else
+   !     S = -Qdens - B
+   !  end if
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    if (IVERB .gt.3) write(*,*) "S average", sum(S)/size(S)
-    if (IVERB .gt.4) write(*,*) "S", S
+
+
+   !  if (IVERB .gt.3) write(*,*) "S average", sum(S)/size(S)
+   !  if (IVERB .gt.4) write(*,*) "S", S
     
-    if (any(isnan(S(:)))) then
-       write(0,*) "fatal error: NAN in S vector"
-       stop 1
-    end if
-    
+   !  if (any(isnan(S(:)))) then
+   !     write(0,*) "fatal error: NAN in S vector"
+   !     stop 1
+   !  end if
+   
    !----------------------------------------------------
    ! Call the CG method to solve the equation Ax=b.
    !---------------------------------------------------
@@ -149,10 +152,35 @@ contains
     iter= 0
     err=E
 
+    F(:) = 0.0_real12
+    Tn(:) = Temp_p(:)
+    delta(:) = 0.0_real12
 
-   !  CALL bicgstab(acsr, ia, ja, S, itmax, x, x0, iter)
 
-   CALL solve_pardiso(acsr, S, ia, ja, x)
+   solve: do n=1,itmax
+
+   
+    F(:) = nl_F_Cat(Tn)
+    F(:) = F(:)-Qdens(:)-B(:)
+
+    jac = Jac_nl_F_Cat(Tn)
+    CALL solve_pardiso(jax%acsr, F, jax%ia, jac%ja, delta, iter)
+
+    if any(abs(delta(:)) .gt. tol) then
+       Tn = Tn + delta
+    else
+       x = Tn
+       check = .True.
+       exit solve
+    end if
+
+   end do solve
+
+   if (.not. check) then
+      write(0,*) "Warning: Solver did not converge in the allotted number of iterations"
+      write(0,*) "         Consider increasing itmax or tol"
+      x = Tn
+   end if
    !  CALL linbcg(S,x,itol=int(itol,I4B),tol=tol, itmax=int(itmax,I4B), iter=iter, &
          ! err=E)
          

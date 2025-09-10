@@ -215,7 +215,7 @@ module TempDep
         end do parent_loop
     end function
 
-    function nl_F_Cat(T,B) result(f_val)
+    function nl_F_Cat(T) result(f_val)
     use mkl_spblas
     implicit none
     real(real12), intent(in)  :: T(:)
@@ -290,7 +290,7 @@ module TempDep
     end function nl_F_Cat
 
 
-    function Jac_nl_F_Cat(T, phi, gamma, H) result(jac_val)
+    function Jac_nl_F_Cat(T, phi, gamma, H) result(jac)
     implicit none
     type(sprs2_dp) :: jac
     real(real12), dimension(NA) :: T, phi, gamma, H
