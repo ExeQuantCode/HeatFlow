@@ -282,14 +282,21 @@ module TempDep
     end function nl_F_Cat
 
 
-    function Jac_nl_F_Cat(T, phi, gamma, H) result(jac)
+    function Jac_nl_F_Cat(T) result(jac)
     implicit none
     type(sprs2_dp) :: jac
-    real(real12), dimension(NA) :: T, phi, gamma, H
+    real(real12), dimension(NA) :: T, phi, gamma
     real(real12) :: H0 ! Holds the value of the H matrix
     integer(int12) :: i, j, len, count, k ! i and j are the row and column of the H matrix
     ! Holds the values to add to the row to get the column
     integer(int12), allocatable, dimension(:) :: addit 
+    real(real12), dimension(NA) :: G, A
+    ! --- compute required quantities (you already did similar)
+    CALL G_A(Temp_p)               ! ensure this actually sets G and A
+
+    phi = Phi_func(G)               ! ensure this actually sets phi
+    gamma = Gamma_func(G,A)             ! ensure this actually sets gamma
+
     ! The number of non-zero elements in the H matrix to look for
     len = 7*nx*ny*nz - 2*(nx*ny + ny*nz + nz*nx)
 

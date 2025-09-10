@@ -24,14 +24,12 @@ module evolution
   use inputs, only: NA, icattaneo, isteady, nx, ny, nz, IVERB,T_System, time_step, grid, power_in
   use inputs, only: TempDepProp
   use sptype, only: sprs2_dp
-  use solver, only: linbcg
   use globe_data, only: Temp_p, Temp_pp, inverse_time, heat, lin_rhoc
-  use globe_data, only: acsr, ja, ia
   use heating, only: heater
   use boundary_vector, only: boundary
   use cattaneo, only: S_catS
   use tempdep, only: nl_F_Cat, Jac_nl_F_Cat 
-  use sparse_solver, only: solve_pardiso
+  use sparse_solver, only: solve_pardiso, coo2csr
   implicit none
 
   private
@@ -46,13 +44,16 @@ contains
 !!!#################################################################################################
   subroutine simulate(itime)
     integer(int12), intent(in) :: itime
-    real(real12), dimension(NA) :: S, Q, Qdens, S_CAT, B, F, Tn, delta
+    real(real12), dimension(NA) :: S, Q, Qdens, S_CAT, B, F, Tn
     real(real12), dimension(:), allocatable :: x
     integer:: ncg, itol, itmax !, iss
     integer :: iter, n
     real(real12) :: e, err, tol
     type(sprs2_dp) :: jac
     logical :: check
+    real(real12), dimension(:), allocatable :: acsr, delta
+    integer, dimension(:), allocatable :: ja
+    integer, dimension(:), allocatable :: ia
     !----------------------
     ! Initialize vectors
     !----------------------
@@ -164,17 +165,15 @@ contains
     F(:) = F(:)-Qdens(:)-B(:)
 
     jac = Jac_nl_F_Cat(Tn)
-      ! Convert jac to csr format
-    CALL  coo2csr(nrow, &
-                      nnz, &
-                      a, &
-                      ir, &
-                      jc, &
-                      acsr, &
-                      ja, &
-                      ia )
-    CALL solve_pardiso(acsr, F, ia, ja, delta, iter)
 
+    ! Convert jac to csr format
+    allocate(acsr(jac%len), ja(jac%len), ia(jac%n+1))
+
+    CALL  coo2csr(jac%n, jac%len, jac%val, jac%irow, jac%jcol, acsr, ja, ia)
+    CALL solve_pardiso(acsr, F, ia, ja, delta)
+    
+    deallocate(acsr, ja, ia)
+    
     if (any(abs(delta(:)) .gt. tol)) then
        Tn = Tn + delta
     else
