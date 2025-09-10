@@ -82,10 +82,10 @@ module TempDep
 
     end subroutine read_HC
     
-    subroutine G_A()
+    subroutine G_A(Temp_p)
         implicit none
         integer(int12) :: index, ix, iy, iz
-        real(real12), dimension(NA) :: G, A
+        real(real12), dimension(NA) :: G, A, Temp_p
         !G = G*(2/dt)
         ! A = A/dt
         
@@ -224,7 +224,7 @@ module TempDep
     type(matrix_descr)    :: descr
     real(real12), allocatable :: yvec(:)
     integer, allocatable :: row_start(:), row_end(:)
-    integer(int12) :: nrows, ncols, nnz
+    integer :: nrows, ncols, nnz
 
     ! --- compute required quantities (you already did similar)
     CALL G_A(Temp_p)               ! ensure this actually sets G and A
@@ -267,7 +267,7 @@ module TempDep
     stat = mkl_sparse_d_mv(SPARSE_OPERATION_NON_TRANSPOSE, 1.0_real12, A_handle, descr, T, 0.0_real12, yvec)
     if (stat /= SPARSE_STATUS_SUCCESS) then
         write(*,*) 'mkl_sparse_d_mv failed, stat=', stat
-        call mkl_sparse_destroy(A_handle)
+        stat = mkl_sparse_destroy(A_handle)
         stop 2
     end if
 
@@ -276,7 +276,7 @@ module TempDep
     f_val(:) = phi(:) * TS(:) + yvec(:) + omega(:) - B(:)
 
     ! cleanup
-    call mkl_sparse_destroy(A_handle)
+    stat = mkl_sparse_destroy(A_handle)
     deallocate(acsr, ja, ia, row_start, row_end, yvec)
 
     end function nl_F_Cat

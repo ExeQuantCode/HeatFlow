@@ -31,7 +31,7 @@ module evolution
   use boundary_vector, only: boundary
   use cattaneo, only: S_catS
   use tempdep, only: nl_F_Cat, Jac_nl_F_Cat 
-  use sparse_solver, only: bicgstab, solve_pardiso
+  use sparse_solver, only: solve_pardiso
   implicit none
 
   private
@@ -164,9 +164,18 @@ contains
     F(:) = F(:)-Qdens(:)-B(:)
 
     jac = Jac_nl_F_Cat(Tn)
-    CALL solve_pardiso(jax%acsr, F, jax%ia, jac%ja, delta, iter)
+      ! Convert jac to csr format
+    CALL  coo2csr(nrow, &
+                      nnz, &
+                      a, &
+                      ir, &
+                      jc, &
+                      acsr, &
+                      ja, &
+                      ia )
+    CALL solve_pardiso(acsr, F, ia, ja, delta, iter)
 
-    if any(abs(delta(:)) .gt. tol) then
+    if (any(abs(delta(:)) .gt. tol)) then
        Tn = Tn + delta
     else
        x = Tn
