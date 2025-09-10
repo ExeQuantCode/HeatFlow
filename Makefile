@@ -28,6 +28,7 @@ SRCS := heatflow/mod_constants.f90 \
 		heatflow/mod_boundary.f90 \
 		heatflow/mod_heating.f90 \
 		heatflow/mod_cattaneo.f90 \
+		heatflow/mkl_spblas.f90 \
 		heatflow/mod_tempdep.f90 \
 		heatflow/mod_evolve.f90 \
         heatflow/mod_output.f90 \
