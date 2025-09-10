@@ -110,6 +110,64 @@ module TempDep
     end do
     end function
 
+    function gamma_M_H(gamma) result(gammaMH)
+        implicit none
+        real(real12) dimension(NA) :: gamma
+        real(real12) :: H0 ! Holds the value of the H matrix
+        integer(int12) :: i, j, len, count, k ! i and j are the row and column of the H matrix
+        ! Holds the values to add to the row to get the column
+        integer(int12), allocatable, dimension(:) :: addit 
+        ! The number of non-zero elements in the H matrix to look for
+        len = 7*nx*ny*nz - 2*(nx*ny + ny*nz + nz*nx)
+        if (Periodicx) len = len + 2*ny*nz
+        if (Periodicy) len = len + 2*nz*nx
+        if (Periodicz) len = len + 2*nx*ny
+        ra%n = NA ! The number of rows in the H matrix
+        ra%len = len ! The number of non-zero elements in the H matrix
+        ! Allocate the arrays to hold the H matrix in sparse row storage
+        allocate(ra%val(len), ra%irow(len), ra%jcol(len))
+        ra%val(:)=0
+        ra%irow(:)=-2
+        ra%jcol(:)=-1
+        addit = [1] ! The values to add to the row to get the column
+        if (Periodicx) addit = [addit, (nx-1)]
+        if (ny .gt. 1) addit = [addit, nx] ! Add the values to add to the row to get the column
+        if ((Periodicy).and.(ny .gt. 1)) addit = [addit, (ny-1)*nx]
+        if (nz .gt. 1) addit = [addit, nx*ny]  ! Add the values to add to the row to get the column
+        if ((Periodicz).and.(nz .gt. 1)) addit = [addit, (nz-1)*ny*nx]
+
+        count = 0 ! The number of non-zero elements in the H matrix
+        parent_loop: do j = 1, NA ! Loop over the columns of the H matrix
+            i=j ! The row of the H matrix
+            count = count + 1 ! The number of non-zero elements in the H matrix
+            H0 = hmatrixfunc(i,j) ! The value of the H matrix
+            ra%val(count) = (gamma(count)-H0) ! The value of the H matrix
+            ra%irow(count) = i ! The row of the H matrix
+            ra%jcol(count) = j ! The column of the H matrix
+            ! Loop over the values to add to the row to get the column
+            neighbour_loop: do k = 1, size(addit,1)
+                i = j + addit(k) ! The row of the H matrix
+                ! If the row is greater than the number of rows ...
+                !...in the H matrix then go to the next column
+                if ((i.gt.NA)) cycle parent_loop 
+                    H0=hmatrixfunc(i,j) ! The value of the H matrix
+                    ! If the value of the H matrix is less than TINY then go to the next value ...
+                    !...to add to the row to get the column
+                    if (abs(H0).lt.TINY) cycle neighbour_loop 
+                        count = count + 1 ! The number of non-zero elements in the H matrix
+                        ra%val(count) = H0 ! The value of the H matrix
+                        ra%irow(count) = i ! The row of the H matrix
+                        ra%jcol(count) = j ! The column of the H matrix
+                        count = count + 1 ! The number of non-zero elements in the H matrix
+                        H0=hmatrixfunc(j,i) ! The value of the H matrix
+                        ra%val(count) = H0 ! The value of the H matrix
+                        ra%irow(count) = j ! The row of the H matrix
+                        ra%jcol(count) = i ! The column of the H matrix
+                        !write(6,*) j,i, H0, count
+            end do neighbour_loop
+        end do parent_loop
+    end function
+
     function nl_F_Cat(T,phi, A, G, B, H) result(f_val)
     implicit none
     real(real12), dimension(NA) :: TS, phi, omega, gamma, f_val
@@ -121,18 +179,66 @@ module TempDep
     do indx = 1, NA
         f_val(indx) = phi(indx)*(TS(indx)) + (gamma(indx)-H(i,j,k))*T(indx) + omega(indx) - B(indx)
     end do
+
+    
     end function
 
     function Jac_nl_F_Cat(T, phi, gamma, H) result(jac_val)
     implicit none
     real(real12) :: jac_val
     real(real12), dimension(NA) :: T, phi, gamma, H
-    integer(int12) :: i,j,k, indx
+    real(real12) :: H0 ! Holds the value of the H matrix
+    integer(int12) :: i, j, len, count, k ! i and j are the row and column of the H matrix
+    ! Holds the values to add to the row to get the column
+    integer(int12), allocatable, dimension(:) :: addit 
+    ! The number of non-zero elements in the H matrix to look for
+    len = 7*nx*ny*nz - 2*(nx*ny + ny*nz + nz*nx)
+    if (Periodicx) len = len + 2*ny*nz
+    if (Periodicy) len = len + 2*nz*nx
+    if (Periodicz) len = len + 2*nx*ny
+    ra%n = NA ! The number of rows in the H matrix
+    ra%len = len ! The number of non-zero elements in the H matrix
+    ! Allocate the arrays to hold the H matrix in sparse row storage
+    allocate(ra%val(len), ra%irow(len), ra%jcol(len))
+    ra%val(:)=0
+    ra%irow(:)=-2
+    ra%jcol(:)=-1
+    addit = [1] ! The values to add to the row to get the column
+    if (Periodicx) addit = [addit, (nx-1)]
+    if (ny .gt. 1) addit = [addit, nx] ! Add the values to add to the row to get the column
+    if ((Periodicy).and.(ny .gt. 1)) addit = [addit, (ny-1)*nx]
+    if (nz .gt. 1) addit = [addit, nx*ny]  ! Add the values to add to the row to get the column
+    if ((Periodicz).and.(nz .gt. 1)) addit = [addit, (nz-1)*ny*nx]
 
-    !2*(phi.dot(T)) + (gamma-H)
-    do indx = 1, NA
-        jac_val(indx) = 2*phi(indx)*T(indx) + (gamma(indx)-H(i,j,k))
-
-    end do
+    count = 0 ! The number of non-zero elements in the H matrix
+    parent_loop: do j = 1, NA ! Loop over the columns of the H matrix
+        i=j ! The row of the H matrix
+        count = count + 1 ! The number of non-zero elements in the H matrix
+        H0 = hmatrixfunc(i,j) ! The value of the H matrix
+        ra%val(count) = 2.0_real12*Phi(J)*T(J) + (gamma(J)-H0) ! The value of the H matrix
+        ra%irow(count) = i ! The row of the H matrix
+        ra%jcol(count) = j ! The column of the H matrix
+        ! Loop over the values to add to the row to get the column
+        neighbour_loop: do k = 1, size(addit,1)
+            i = j + addit(k) ! The row of the H matrix
+            ! If the row is greater than the number of rows ...
+            !...in the H matrix then go to the next column
+            if ((i.gt.NA)) cycle parent_loop 
+                H0=hmatrixfunc(i,j) ! The value of the H matrix
+                ! If the value of the H matrix is less than TINY then go to the next value ...
+                !...to add to the row to get the column
+                if (abs(H0).lt.TINY) cycle neighbour_loop 
+                    count = count + 1 ! The number of non-zero elements in the H matrix
+                    ra%val(count) = H0 ! The value of the H matrix
+                    ra%irow(count) = i ! The row of the H matrix
+                    ra%jcol(count) = j ! The column of the H matrix
+                    count = count + 1 ! The number of non-zero elements in the H matrix
+                    H0=hmatrixfunc(j,i) ! The value of the H matrix
+                    ra%val(count) = H0 ! The value of the H matrix
+                    ra%irow(count) = j ! The row of the H matrix
+                    ra%jcol(count) = i ! The column of the H matrix
+                    !write(6,*) j,i, H0, count
+        end do neighbour_loop
+     end do parent_loop
     end function
 end module TempDep
