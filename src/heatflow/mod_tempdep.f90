@@ -26,73 +26,113 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 module TempDep
-    use inputs, only: Grid, TempDepProp, Nz, Ny, Nx
+    use inputs, only: Grid, TempDepProp, Nz, Ny, Nx, NA, time_step, grid
     ! use setup, only: sparse_Hmatrix
-    use globe_data, only:  Temp_p, lin_rhoc
+    use globe_data, only:  Temp_p, lin_rhoc, Temp_pp
     use constants, only: real12, int12
+    use hmatrixmod, only: hmatrixfunc
     
     implicit none
     
     contains
 
-    ! subroutine ChangeProp()
-    !     character(len=100) :: filename
-    !     integer(int12) :: ix,iy,iz, index
-    !     logical :: res
-    !     index = 1
-    !     !Loop over all the grid points
-    !     do iz = 1, Nz
-    !         do iy = 1, Ny
-    !             do ix = 1, Nx
-    !                 ! Construct the filename for the Material table asscoiated with the grid point
-    !                 filename = trim('./inputs/MatTable' // & 
-    !                      trim(adjustl(char(Grid(ix, iy, iz)%imaterial_type))))
-    !                 inquire(file=filename, exist=res)
-    !                 if (res) then
-    !                     ! Read the temperature dependent properties from the file
-    !                     ! CALL ReadTempDepTable(filename, ix, iy, iz, index)
-    !                 else
-    !                     ! File does not exist, continue to the next grid point
-    !                     continue
-    !                 end if
-    !                 ! Read the temperature dependent properties from the file
-    !                 index = index + 1
-    !             end do
-    !         end do
-    !     end do
-    !     ! Construct the sparse matrix
-    !     CALL sparse_Hmatrix()
-    ! end subroutine ChangeProp
+    subroutine G_A(TP)
+        implicit none
+        integer(int12) :: index, ix, iy, iz
+        real(real12), dimension(NA), intent(in) :: TP
+        real(real12), dimension(:) :: T, CV 
+            !G = G*(2/dt)
+            ! A = A/dt
 
-    ! subroutine ReadTempDepTable(filename, ix, iy, iz, index)
-    !     character(len=*), intent(in) :: filename
-    !     integer(int12), intent(in) :: iz, iy, ix, index
-    !     integer(int12) :: i, j, k, num_rows, num_cols, iostat
         
-    !     ! Update the properties based on the temperature table
-    !     ! Find the corresponding kappa value in the temperature table
-    !     do k = 1, num_rows
-    !         if (Temp_p(index) .le. temp_table(k, 1)) then
-    !             exit
-    !         end if
-    !     end do
-    !     if (Temp_p(index) .gt. temp_table(num_rows, 1)) then
-    !         write(*,*) 'Temperature is out of range'
-    !     end if
-    !     !Apply Forward difference linear extrapolation and assing to global variables
-    !     Grid(ix, iy, iz)%kappa =  ((temp_table(k+1,2) - temp_table(k, 2))/&
-    !          (temp_table(k+1,1)-temp_table(k,1)))*Temp_p(index) + temp_table(k,2) 
 
-    !     Grid(ix, iy, iz)%rho = ((temp_table(k+1,3) - temp_table(k, 3))/&
-    !          (temp_table(k+1,1)-temp_table(k,1)))*Temp_p(index) + temp_table(k,3)
+    end subroutine
 
-    !     Grid(ix, iy, iz)%heat_capacity = ((temp_table(k+1,4) - temp_table(k, 4))/&
-    !          (temp_table(k+1,1)-temp_table(k,1)))*Temp_p(index) + temp_table(k,4)
+    function Phi_func(G) result(Phi)
+    implicit none
+    integer(int12) :: i, j, k, indx
+    real(real12), dimension(NA), intent(in) :: G
+    real(real12), dimension(NA), intent(out) :: Phi
+    real(real12) :: tau2
 
-    !     lin_rhoc(index) = Grid(ix, iy, iz)%rho * Grid(ix, iy, iz)%heat_capacity
-        
-    !     ! Deallocate the temperature table
-    !     deallocate(temp_table)
-            
-    ! end subroutine ReadTempDepTable
+    indx = 1
+
+    do k = 1, NA
+        do j = 1, Ny
+            do i = 1, Nx
+                tau2 = grid(i,j,k)%tau * time_step*time_step ! tau = tau/time_step**2
+                Phi(indx) = G(indx)+ 2.0_real12 * G(indx) * tau2
+                indx = indx + 1
+            end do
+        end do
+    end do
+
+
+    end function
+
+    function Gamma_func(G, A) result(Gamma)
+    implicit none
+    integer(int12) :: i, j, k, indx
+    real(real12), dimension(NA), intent(in) :: G,A
+    real(real12), dimension(NA), intent(out) :: Gamma
+    real(real12) :: tau2
+    indx = 1
+    Gamma(:) = 0.0_real12
+    do k = 1, Nz
+        do j = 1, Ny
+            do i = 1, Nx
+                tau2 = grid(i,j,k)%tau * time_step*time_step ! tau = tau/time_step**2
+                Gamma(indx) = A(indx) - (G(indx)*Temp_p(indx)) - ((4.0_real12*grid(i,j,k)%tau2*G(indx)*Temp_p(indx))/time_step) + &
+                             ((G(indx)*grid(i,j,k)%tau2*Temp_pp(indx))/time_step) + A(indx)*(grid(i,j,k)%tau2/time_step)
+                indx = indx + 1 
+            end do
+        end do
+    end do
+    end function
+
+    function Omega_func() result(Omega)
+    implicit none
+    integer(int12) :: i, j, k, indx
+    real(real12), dimension(Nx,Ny,Nz), intent(in) :: G,A
+    real(real12), dimension(Nx,Ny,Nz), intent(out) :: Omega
+    real(real12) :: tau2
+
+    indx = 1
+    do k = 1, Nz
+        do j = 1, Ny
+            do i = 1, Nx
+                tau2 = grid(i,j,k)%tau * time_step*time_step ! tau = tau/time_step**2
+                Omega(indx) = (-A(indx)*Temp_p(indx)) + ((G(indx)*Temp_p(indx)*Temp_p(indx)*grid(i,j,k)%tau2)/time_step) + &
+                             ((grid(i,j,k)%tau2/time_step)*((-2.0_real12*A(indx)*Temp_p(indx)) + (A(indx)*Temp_pp(indx))))
+                indx = indx + 1
+            end do
+        end do
+    end do
+    end function
+
+    function nl_F_Cat(T,phi, A, G, B, H) result(f_val)
+    implicit none
+    real(real12), dimension(NA) :: TS, phi, omega, gamma, f_val
+    integer(int12) :: i,j,k, indx
+    
+    TS(:) = T(:)*T(:)
+    !phi.dot(TS) + (gamma-H).dot(T) + omega - B
+    indx = 1
+    do indx = 1, NA
+        f_val(indx) = phi(indx)*(TS(indx)) + (gamma(indx)-H(i,j,k))*T(indx) + omega(indx) - B(indx)
+    end do
+    end function
+
+    function Jac_nl_F_Cat(T, phi, gamma, H) result(jac_val)
+    implicit none
+    real(real12) :: jac_val
+    real(real12), dimension(NA) :: T, phi, gamma, H
+    integer(int12) :: i,j,k, indx
+
+    !2*(phi.dot(T)) + (gamma-H)
+    do indx = 1, NA
+        jac_val(indx) = 2*phi(indx)*T(indx) + (gamma(indx)-H(i,j,k))
+
+    end do
+    end function
 end module TempDep

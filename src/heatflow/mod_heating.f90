@@ -30,6 +30,7 @@ contains
     integer(int12) :: ix, iy, iz, IA ,heated_num
     real(real12) :: time, POWER, time_pulse, x, x2
     real(real12) :: rho, volume, heat_capacity, area, tau, sum_temp
+    logical :: shared_power
 
     ! Initialize variables
     IA = 0
@@ -114,6 +115,15 @@ contains
                    Q(IA) = 0.0
                 end if
                 !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+               case(10)
+                  Q(IA) = POWER - (POWER/time_step)
+
+               case(11)
+                  Q(IA) = POWER
+                  
+               case(12)
+                  Q(IA) = POWER + (POWER/time_step)
              end select
              !------------------------------
              ! If emissitivity is not zero, then calculate the radiative heating
@@ -161,11 +171,15 @@ contains
    
 
     ! Normalize all heat sources by the heated volume
-    if (heated_volume .gt. 0.0) then
-      Qdens(:) = Q(:) / heated_volume
-      heated_temp = sum_temp / heated_volume
-    end if
-
+    shared_power = .False.
+    if (shared_power) then
+      if (heated_volume .gt. 0.0) then
+         Qdens(:) = Q(:) / heated_volume
+         heated_temp = sum_temp / heated_volume
+      end if
+    else
+      Qdens(:) = Q(:) / grid(1,1,1)%volume 
+    end if 
   end subroutine heater
 
 

@@ -141,7 +141,7 @@ contains
     H=0.0_real12
     if ((i-j) .eq. 0)  then
 
-      H = -(A + B + D + E + F + G ) - alpha  ! Diagonal term (self interaction)
+      H = -(A + B + D + E + F + G ) !- alpha  ! Diagonal term (self interaction)
     end if 
 
     if ((i-j) .eq. 1) then
@@ -149,7 +149,7 @@ contains
         H=0.0_real12
       else
          H = A ! X left neighbor (left cell interaction)
-         H = H + calculate_convective_conductivity(xm, y, z, x, y, z)
+         !H = H + calculate_convective_conductivity(xm, y, z, x, y, z)
       end if
     end if 
 
@@ -158,7 +158,7 @@ contains
         H=0.0_real12
       else
         H = B  ! X right neighbor (right cell interaction)
-        H = H + calculate_convective_conductivity(xp, y, z, x, y, z)
+        !H = H + calculate_convective_conductivity(xp, y, z, x, y, z)
       end if
     end if
 
@@ -167,7 +167,7 @@ contains
         H=0.0_real12
       else
         H = D  ! Y down neighbor (down cell interaction)
-        H = H + calculate_convective_conductivity(x, ym, z, x, y, z)
+        !H = H + calculate_convective_conductivity(x, ym, z, x, y, z)
       end if 
     end if 
     if ((i-j) .eq. -nx) then
@@ -175,7 +175,7 @@ contains
         H=0.0_real12
       else
         H = E  ! Y up neighbor (up cell interaction)
-        H = H + calculate_convective_conductivity(x, yp, z, x, y, z)
+        !H = H + calculate_convective_conductivity(x, yp, z, x, y, z)
       end if 
     end if 
 
@@ -185,7 +185,7 @@ contains
      else
         !write(*,*) 'F   this is forward (in) z',F
          H = F  ! Z in neighbor (forward cell interaction) !!!Frank had this as G during testing
-         H = H + calculate_convective_conductivity(x, y, zm, x, y, z)
+         !H = H + calculate_convective_conductivity(x, y, zm, x, y, z)
       end if
     end if 
 
@@ -195,7 +195,7 @@ contains
      else  
         !write(*,*) 'G   this is backward (out) z?',G
         H = G  ! Z out neighbor (backward cell interaction) !!!Frank Had this as F during testing
-        H = H + calculate_convective_conductivity(x, y, zp, x, y, z)
+        !H = H + calculate_convective_conductivity(x, y, zp, x, y, z)
       end if
    end if
    
