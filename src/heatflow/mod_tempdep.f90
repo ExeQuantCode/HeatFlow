@@ -30,9 +30,9 @@ module TempDep
 
     ! use setup, only: sparse_Hmatrix
     use sparse_solver, only: coo2csr
-    use sptype, only :: sprs2_dp
+    use sptype, only : sprs2_dp
     use globe_data, only:  Temp_p, lin_rhoc, Temp_pp
-    use constants, only: real12, int12
+    use constants, only: real12, int12, TINY
     use hmatrixmod, only: hmatrixfunc
     
     implicit none
@@ -96,8 +96,8 @@ module TempDep
     function Phi_func(G) result(Phi)
     implicit none
     integer(int12) :: i, j, k, indx
-    real(real12), dimension(NA), intent(in) :: G
-    real(real12), dimension(NA), intent(out) :: Phi
+    real(real12), dimension(NA) :: G
+    real(real12), dimension(NA) :: Phi
     real(real12) :: tau2
 
     indx = 1
@@ -118,17 +118,17 @@ module TempDep
     function Gamma_func(G, A) result(Gamma)
     implicit none
     integer(int12) :: i, j, k, indx
-    real(real12), dimension(NA), intent(in) :: G,A
-    real(real12), dimension(NA), intent(out) :: Gamma
+    real(real12), dimension(NA) :: G,A
+    real(real12), dimension(NA) :: Gamma
     real(real12) :: tau2
     indx = 1
     Gamma(:) = 0.0_real12
     do k = 1, Nz
         do j = 1, Ny
             do i = 1, Nx
-                tau2 = grid(i,j,k)%tau * time_step*time_step ! tau = tau/time_step**2
-                Gamma(indx) = A(indx) - (G(indx)*Temp_p(indx)) - ((4.0_real12*grid(i,j,k)%tau2*G(indx)*Temp_p(indx))/time_step) + &
-                             ((G(indx)*grid(i,j,k)%tau2*Temp_pp(indx))/time_step) + A(indx)*(grid(i,j,k)%tau2/time_step)
+                tau2 = grid(i,j,k)%tau * time_step ! tau = tau/time_step**2
+                Gamma(indx) = A(indx) - (G(indx)*Temp_p(indx)) - ((4.0_real12*tau2*G(indx)*Temp_p(indx))) + &
+                             ((G(indx)*tau2*Temp_pp(indx))) + A(indx)*(tau2)
                 indx = indx + 1 
             end do
         end do
@@ -138,8 +138,7 @@ module TempDep
     function Omega_func(G,A) result(Omega)
     implicit none
     integer(int12) :: i, j, k, indx
-    real(real12), dimension(Nx,Ny,Nz), intent(in) :: G,A
-    real(real12), dimension(Nx,Ny,Nz), intent(out) :: Omega
+    real(real12), dimension(NA) :: G,A, Omega
     real(real12) :: tau2
 
     indx = 1
@@ -147,8 +146,8 @@ module TempDep
         do j = 1, Ny
             do i = 1, Nx
                 tau2 = grid(i,j,k)%tau * time_step*time_step ! tau = tau/time_step**2
-                Omega(indx) = (-A(indx)*Temp_p(indx)) + ((G(indx)*Temp_p(indx)*Temp_p(indx)*grid(i,j,k)%tau2)/time_step) + &
-                             ((grid(i,j,k)%tau2/time_step)*((-2.0_real12*A(indx)*Temp_p(indx)) + (A(indx)*Temp_pp(indx))))
+                Omega(indx) = (-A(indx)*Temp_p(indx)) + (G(indx)*Temp_p(indx)*Temp_p(indx)*tau2) + &
+                             ((tau2)*((-2.0_real12*A(indx)*Temp_p(indx)) + (A(indx)*Temp_pp(indx))))
                 indx = indx + 1
             end do
         end do
@@ -157,18 +156,15 @@ module TempDep
 
     function gamma_M_H(gamma) result(gammaMH)
         implicit none
-        real(real12) dimension(NA) :: gamma
+        real(real12), dimension(NA) :: gamma
         real(real12) :: H0 ! Holds the value of the H matrix
         integer(int12) :: i, j, len, count, k ! i and j are the row and column of the H matrix
         ! Holds the values to add to the row to get the column
         integer(int12), allocatable, dimension(:) :: addit 
-        type(sprs2_dp), allocatable :: gammaMH
+        TYPE(sprs2_dp) :: gammaMH
 
         ! The number of non-zero elements in the H matrix to look for
         len = 7*nx*ny*nz - 2*(nx*ny + ny*nz + nz*nx)
-        if (Periodicx) len = len + 2*ny*nz
-        if (Periodicy) len = len + 2*nz*nx
-        if (Periodicz) len = len + 2*nx*ny
         gammaMH%n = NA ! The number of rows in the H matrix
         gammaMH%len = len ! The number of non-zero elements in the H matrix
         ! Allocate the arrays to hold the H matrix in sparse row storage
@@ -177,11 +173,8 @@ module TempDep
         gammaMH%irow(:)=-2
         gammaMH%jcol(:)=-1
         addit = [1] ! The values to add to the row to get the column
-        if (Periodicx) addit = [addit, (nx-1)]
         if (ny .gt. 1) addit = [addit, nx] ! Add the values to add to the row to get the column
-        if ((Periodicy).and.(ny .gt. 1)) addit = [addit, (ny-1)*nx]
         if (nz .gt. 1) addit = [addit, nx*ny]  ! Add the values to add to the row to get the column
-        if ((Periodicz).and.(nz .gt. 1)) addit = [addit, (nz-1)*ny*nx]
 
         count = 0 ! The number of non-zero elements in the H matrix
         parent_loop: do j = 1, NA ! Loop over the columns of the H matrix
@@ -219,8 +212,7 @@ module TempDep
     use mkl_spblas
     implicit none
     real(real12), intent(in)  :: T(:)
-    real(real12), intent(in)  :: B(:)
-    real(real12), dimension(NA) :: TS, phi, omega, gamma, f_val, G, A
+    real(real12), dimension(NA) :: TS, phi, omega, gamma, f_val, G, A, B
     integer(int12) :: i, j, k, indx, stat
     type(sprs2_dp) :: gammaMH
     real(real12), dimension(:), allocatable :: acsr
@@ -300,9 +292,7 @@ module TempDep
     integer(int12), allocatable, dimension(:) :: addit 
     ! The number of non-zero elements in the H matrix to look for
     len = 7*nx*ny*nz - 2*(nx*ny + ny*nz + nz*nx)
-    if (Periodicx) len = len + 2*ny*nz
-    if (Periodicy) len = len + 2*nz*nx
-    if (Periodicz) len = len + 2*nx*ny
+
     jac%n = NA ! The number of rows in the H matrix
     jac%len = len ! The number of non-zero elements in the H matrix
     ! Allocate the arjacys to hold the H matrix in sparse row stojacge
@@ -311,11 +301,9 @@ module TempDep
     jac%irow(:)=-2
     jac%jcol(:)=-1
     addit = [1] ! The values to add to the row to get the column
-    if (Periodicx) addit = [addit, (nx-1)]
+
     if (ny .gt. 1) addit = [addit, nx] ! Add the values to add to the row to get the column
-    if ((Periodicy).and.(ny .gt. 1)) addit = [addit, (ny-1)*nx]
     if (nz .gt. 1) addit = [addit, nx*ny]  ! Add the values to add to the row to get the column
-    if ((Periodicz).and.(nz .gt. 1)) addit = [addit, (nz-1)*ny*nx]
 
     count = 0 ! The number of non-zero elements in the H matrix
     parent_loop: do j = 1, NA ! Loop over the columns of the H matrix
