@@ -167,9 +167,7 @@ contains
     solve: do n=1,itmax
 
       
-    print*, 'here'
     F(:) = nl_F_Cat(Tn)
-    print*, 'done'
 
     F(:) = F(:)-Qdens(:)-B(:)
     F(:) = -1.0_real12*F(:)

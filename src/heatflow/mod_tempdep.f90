@@ -39,10 +39,10 @@ module TempDep
     
     contains
     
-    subroutine read_HC(Tfile, CVfile, J)
+    subroutine read_HC(Tfile, CVfile)
         implicit none
         ! Arguments
-        integer :: n, J
+        integer :: n
         real(real12), allocatable, intent(out) :: Tfile(:), CVfile(:)
 
         ! Locals
@@ -82,20 +82,27 @@ module TempDep
 
     end subroutine read_HC
     
-    function G_A(Temp_p, rho, j) result(GA)
+    function G_A(T, rho) result(GA)
         implicit none
-        integer(int12) :: index, ix, iy, iz, i1, i2
-        real(real12) :: G_val, A_val, Temp_p, CPm, CPp, TPm, TPp
+        integer(int12) :: index, i1, i2
+        real(real12) :: G_val, A_val, T, CPm, CPp, TPm, TPp
         real(real12) :: rho
         type(GA_pair) :: GA
         !G = G*(2/dt)
         ! A = A/dt
         real(real12), allocatable :: Tfile(:), CVfile(:)
-        integer :: J
 
-        call read_HC(Tfile, CVfile, J)
-
-
+        call read_HC(Tfile, CVfile)
+        
+        ! Find the index in Tfile where Tfile(index) <= T < Tfile(index+1)
+        index = 0
+        do i1 = 1, size(Tfile)-1
+            if (Tfile(i1) .ge. T .and. T .lt. Tfile(i1+1)) then
+                index = i1
+                exit
+            end if
+        end do
+    
         if ((index .gt. 1) .and. (index .lt. size(CVfile))) then
             i1 = index - 1
             i2 = index+1
@@ -116,7 +123,7 @@ module TempDep
 
         G_val = (CPp - CPm) / (TPp - TPm)
 
-        A_val = CPp - (G_val*Temp_p)
+        A_val = CPp - (G_val*T)
 
         G_val = G_val * (2.0_real12 / time_step)
         A_val = A_val / time_step
@@ -137,7 +144,7 @@ module TempDep
 
 
     do indx = 1, NA
-        GA = G_A(Temp_p(indx), lin_rhoc(indx), indx)
+        GA = G_A(Temp_p(indx), lin_rhoc(indx))
         G(indx) = GA%G_val
         A(indx) = GA%A_val
     end do
@@ -158,7 +165,7 @@ module TempDep
         do j = 1, Ny
             do i = 1, Nx
                 tau2 = grid(i,j,k)%tau * time_step ! tau = tau/time_step**2
-                Phi(indx) = G(indx)+ 2.0_real12 * G(indx) * tau2
+                Phi(indx) = G(indx) + 2.0_real12 * G(indx) * tau2
                 indx = indx + 1
             end do
         end do
@@ -198,7 +205,7 @@ module TempDep
         do j = 1, Ny
             do i = 1, Nx
                 tau2 = grid(i,j,k)%tau*time_step ! tau = tau/time_step**2
-                Omega(indx) = (-A(indx)*Temp_p(indx)) + (G(indx)*Temp_p(indx)*Temp_p(indx)*tau2) + &
+                Omega(indx) = (-1.0_real12*A(indx)*Temp_p(indx)) + (G(indx)*Temp_p(indx)*Temp_p(indx)*tau2) + &
                              ((tau2)*((-2.0_real12*A(indx)*Temp_p(indx)) + (A(indx)*Temp_pp(indx))))
                 indx = indx + 1
             end do
@@ -233,7 +240,7 @@ module TempDep
             i=j ! The row of the H matrix
             count = count + 1 ! The number of non-zero elements in the H matrix
             H0 = hmatrixfunc(i,j) ! The value of the H matrix
-            gammaMH%val(count) = (gamma(count)-H0) ! The value of the H matrix
+            gammaMH%val(count) = (gamma(j)-H0) ! The value of the H matrix
             gammaMH%irow(count) = i ! The row of the H matrix
             gammaMH%jcol(count) = j ! The column of the H matrix
             ! Loop over the values to add to the row to get the column
@@ -288,7 +295,6 @@ module TempDep
     omega = Omega_func(G,A)        ! fixed typo: was 'omage' in your file
 
     phi   = Phi_func(G)
-        print*, 'Here3'              ! ensure this actually sets G and A
 
     gammaMH = gamma_M_H(gamma)     ! returns COO in your sprs2_dp type
 
@@ -377,7 +383,7 @@ module TempDep
         i=j ! The row of the H matrix
         count = count + 1 ! The number of non-zero elements in the H matrix
         H0 = hmatrixfunc(i,j) ! The value of the H matrix
-        jac%val(count) = 2.0_real12*Phi(J)*T(J) + (gamma(J)-H0) ! The value of the H matrix
+        jac%val(count) = 2.0_real12*phi(j)*T(j) + (gamma(j)-H0) ! The value of the H matrix
         jac%irow(count) = i ! The row of the H matrix
         jac%jcol(count) = j ! The column of the H matrix
         ! Loop over the values to add to the row to get the column
