@@ -30,7 +30,7 @@ contains
     integer(int12) :: ix, iy, iz, IA ,heated_num
     real(real12) :: time, POWER, time_pulse, x, x2
     real(real12) :: rho, volume, heat_capacity, area, tau, sum_temp
-
+    logical :: shared_power
     ! Initialize variables
     IA = 0
     Q = 0._real12
@@ -53,7 +53,7 @@ contains
              heat_capacity = grid(ix,iy,iz)%heat_capacity
              area = grid(ix,iy,iz)%Length(1)*grid(ix,iy,iz)%Length(2) !???
              !tau divided by time_step squared in setup.f90
-             tau = grid(ix,iy,iz)%tau*(time_step**2.0_real12) 
+             tau = grid(ix,iy,iz)%tau*(time_step) 
              ! select heater case
 
              select case(grid(ix,iy,iz)%iheater)
@@ -114,13 +114,22 @@ contains
                    Q(IA) = 0.0
                 end if
                 !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+               case(10)
+                  Q(IA) = POWER - (tau*(POWER))
+
+               case(11)
+                  Q(IA) = POWER
+                  
+               case(12)
+                  Q(IA) = POWER + (tau*(POWER))
              end select
              !------------------------------
              ! If emissitivity is not zero, then calculate the radiative heating
              !------------------------------
-               Q(IA) = Q(IA) - grid(ix,iy,iz)%em * grid(ix,iy,iz)%length(1)*&
-                       grid(ix,iy,iz)%length(2)*StefBoltz &
-                       * ((Temp_p(IA)**4.0_real12) - (T_Bath**4.0_real12)) 
+               ! Q(IA) = Q(IA) - grid(ix,iy,iz)%em * grid(ix,iy,iz)%length(1)*&
+               !         grid(ix,iy,iz)%length(2)*StefBoltz &
+               !         * ((Temp_p(IA)**4.0_real12) - (T_Bath**4.0_real12)) 
 
              !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -161,11 +170,15 @@ contains
    
 
     ! Normalize all heat sources by the heated volume
-    if (heated_volume .gt. 0.0) then
-      Qdens(:) = Q(:) / heated_volume
-      heated_temp = sum_temp / heated_volume
-    end if
-
+    shared_power = .False.
+    if (shared_power) then
+      if (heated_volume .gt. 0.0) then
+         Qdens(:) = Q(:) / heated_volume
+         heated_temp = sum_temp / heated_volume
+      end if
+    else
+      Qdens(:) = Q(:) / grid(1,1,1)%volume 
+    end if 
   end subroutine heater
 
 

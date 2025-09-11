@@ -70,7 +70,7 @@ contains
     do iz = 1, nz
        do iy = 1, ny
           do ix = 1, nx
-             Temp_cur(ix,iy,iz) = Temp_pp(indexA)
+             Temp_cur(ix,iy,iz) = Temp_p(indexA)
              indexA = indexA+1
           end do
        end do
