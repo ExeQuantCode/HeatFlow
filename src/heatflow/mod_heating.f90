@@ -14,7 +14,7 @@ module Heating
   use constants, only: real12, int12, pi, StefBoltz
   use globe_data, only: Temp_p, Temp_pp, Heat, heated_volume, Q_P, heated_temp
   use inputs, only: nx,ny,nz, grid, NA, power_in, time_step, heated_steps, T_System, freq, ntime, &
-       T_Bath
+       T_Bath, icattaneo
   use materials, only: material
   implicit none
 contains
@@ -81,6 +81,15 @@ contains
                 else
                    Q(IA) = 0.0_real12
                 end if
+               
+                if (icattaneo .eq. 1) then
+                if (itime .eq. 1) then
+                  Q(IA) = Q(IA) + (tau*(POWER))
+                  end if
+                if (itime .eq. heated_steps+1) then
+                  Q(IA) = Q(IA) - (tau*(POWER))
+                end if
+                end if 
                 !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              case(3)
                 !------------------------------
