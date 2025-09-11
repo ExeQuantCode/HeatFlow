@@ -682,7 +682,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 QtWidgets.QMessageBox.critical(self, "Error", f"Error reading static file: {e}")
                 return
             temp_full = flat_data.reshape((self.full_nx, self.full_ny, self.full_nz), order='F')
-            temp_subset = temp_full[:self.eff_nx, :self.eff_ny, :self.eff_nz]
+            temp_subset = temp_full #[:self.eff_nx, :self.eff_ny, :self.eff_nz]
             rec_time = 0.0
             ts = 0
 

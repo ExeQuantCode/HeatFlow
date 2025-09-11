@@ -99,7 +99,7 @@ module setup
       if (Periodicz) len = len + 2*nx*ny
       ra%n = NA ! The number of rows in the H matrix
       ra%len = len ! The number of non-zero elements in the H matrix
-      ! Allocate the arrays to hold the H matrix in sparse row storage
+      ! Allocate the arrays to hold the H matrix in sparse storage
       allocate(ra%val(len), ra%irow(len), ra%jcol(len))
       ra%val(:)=0
       ra%irow(:)=-2
