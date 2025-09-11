@@ -78,10 +78,6 @@ contains
                 !------------------------------
                 if ( time .le. time_pulse ) then
                    Q(IA) = POWER
-                else
-                   Q(IA) = 0.0_real12
-                end if
-               
                 if (icattaneo .eq. 1) then
                 if (itime .eq. 1) then
                   Q(IA) = Q(IA) + (tau*(POWER))
@@ -90,6 +86,12 @@ contains
                   Q(IA) = Q(IA) - (tau*(POWER))
                 end if
                 end if 
+                
+                else
+                   Q(IA) = 0.0_real12
+                end if
+               
+
                 !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              case(3)
                 !------------------------------
