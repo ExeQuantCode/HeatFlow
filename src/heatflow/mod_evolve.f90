@@ -163,6 +163,7 @@ contains
    
     F(:) = nl_F_Cat(Tn)
     F(:) = F(:)-Qdens(:)-B(:)
+    F(:) = -1.0_real12*F(:)
 
     jac = Jac_nl_F_Cat(Tn)
 
@@ -170,7 +171,7 @@ contains
     allocate(acsr(jac%len), ja(jac%len), ia(jac%n+1))
 
     CALL  coo2csr(jac%n, jac%len, jac%val, jac%irow, jac%jcol, acsr, ja, ia)
-    CALL solve_pardiso(acsr, -1.0_real12*F(:), ia, ja, delta)
+    CALL solve_pardiso(acsr, F(:), ia, ja, delta)
     
     deallocate(acsr, ja, ia)
     

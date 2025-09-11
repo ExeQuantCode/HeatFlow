@@ -44,5 +44,10 @@ module constructions
      real(real12) :: em !emisstivity
      logical :: source !whether the material is a source of heat ??
   end type material
+
+  type GA_pair
+      real(real12) :: G_val
+      real(real12) :: A_val
+  end type GA_pair
 end module constructions
   

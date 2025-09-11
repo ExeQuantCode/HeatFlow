@@ -34,7 +34,7 @@ module TempDep
     use globe_data, only:  Temp_p, lin_rhoc, Temp_pp
     use constants, only: real12, int12, TINY
     use hmatrixmod, only: hmatrixfunc
-    
+    use constructions, only: GA_pair
     implicit none
     
     contains
@@ -82,11 +82,12 @@ module TempDep
 
     end subroutine read_HC
     
-    function G_A(Temp_p, rho, j) result(G,A)
+    function G_A(Temp_p, rho, j) result(GA)
         implicit none
         integer(int12) :: index, ix, iy, iz, i1, i2
-        real(real12) :: G, A, Temp_p, CPm, CPp, TPm, TPp
+        real(real12) :: G_val, A_val, Temp_p, CPm, CPp, TPm, TPp
         real(real12) :: rho
+        type(GA_pair) :: GA
         !G = G*(2/dt)
         ! A = A/dt
         real(real12), allocatable :: Tfile(:), CVfile(:)
@@ -113,15 +114,35 @@ module TempDep
         TPm = Tfile(i1)*rho
         TPp = Tfile(i2)*rho
 
-        G = (CPp - CPm) / (TPp - TPm)
+        G_val = (CPp - CPm) / (TPp - TPm)
 
-        A = CPp - (G*Temp_p)
+        A_val = CPp - (G_val*Temp_p)
 
-        G = G * (2.0_real12 / time_step)
-        A = A / time_step
+        G_val = G_val * (2.0_real12 / time_step)
+        A_val = A_val / time_step
         
+        GA%G_val = G_val
+        GA%A_val = A_val
 
     end function
+
+    subroutine make_G_A(G, A)
+    implicit none
+    integer :: indx
+    real(real12), dimension(NA) :: G, A
+    type(GA_pair) :: GA
+    
+    G(:) = 0.0_real12
+    A(:) = 0.0_real12
+
+
+    do indx = 1, NA
+        GA = G_A(Temp_p(indx), lin_rhoc(indx), indx)
+        G(indx) = GA%G_val
+        A(indx) = GA%A_val
+    end do
+
+    end subroutine
 
     function Phi_func(G) result(Phi)
     implicit none
@@ -257,7 +278,9 @@ module TempDep
     integer :: nrows, ncols, nnz
 
     ! --- compute required quantities (you already did similar)
-    CALL G_A(Temp_p)               ! ensure this actually sets G and A
+    G(:) = 0.0_real12
+    A(:) = 0.0_real12
+    CALL make_G_A(G,A)              ! ensure this actually sets G and A
     gamma = Gamma_func(G,A)
     omega = Omega_func(G,A)        ! fixed typo: was 'omage' in your file
     phi   = Phi_func(G)
@@ -303,7 +326,7 @@ module TempDep
 
     ! Build f_val = phi * (T*T) + yvec + omega - B
     TS(:) = T(:) * T(:)
-    f_val(:) = phi(:) * TS(:) + yvec(:) + omega(:) - B(:)
+    f_val(:) = phi(:) * TS(:) + yvec(:) + omega(:)
 
     ! cleanup
     stat = mkl_sparse_destroy(A_handle)
@@ -322,7 +345,9 @@ module TempDep
     integer(int12), allocatable, dimension(:) :: addit 
     real(real12), dimension(NA) :: G, A
     ! --- compute required quantities (you already did similar)
-    CALL G_A(Temp_p)               ! ensure this actually sets G and A
+    G(:) = 0.0_real12
+    A(:) = 0.0_real12
+    CALL make_G_A(G,A)              ! ensure this actually sets G and A
 
     phi = Phi_func(G)               ! ensure this actually sets phi
     gamma = Gamma_func(G,A)             ! ensure this actually sets gamma

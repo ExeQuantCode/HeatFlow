@@ -64,7 +64,7 @@ module setup
             grid(ix,iy,iz)%tau = tau*inverse_time*inverse_time
             grid(ix,iy,iz)%em = em
             grid(ix,iy,iz)%vel(:) = vel(:)
-            lin_rhoc(index) = rho*heat_capacity
+            lin_rhoc(index) = rho
             if (Check_Stability) CALL stability(kappa, rho, heat_capacity, ix, iy, iz)
             end do               
          end do
