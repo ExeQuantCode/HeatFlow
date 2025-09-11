@@ -39,10 +39,10 @@ module TempDep
     
     contains
     
-    subroutine read_HC(Tfile, CVfile, n)
+    subroutine read_HC(Tfile, CVfile, J)
         implicit none
         ! Arguments
-        integer, intent(out) :: n
+        integer :: n, J
         real(real12), allocatable, intent(out) :: Tfile(:), CVfile(:)
 
         ! Locals
@@ -82,16 +82,46 @@ module TempDep
 
     end subroutine read_HC
     
-    subroutine G_A(Temp_p)
+    function G_A(Temp_p, rho, j) result(G,A)
         implicit none
-        integer(int12) :: index, ix, iy, iz
-        real(real12), dimension(NA) :: G, A, Temp_p
+        integer(int12) :: index, ix, iy, iz, i1, i2
+        real(real12) :: G, A, Temp_p, CPm, CPp, TPm, TPp
+        real(real12) :: rho
         !G = G*(2/dt)
         ! A = A/dt
-        
+        real(real12), allocatable :: Tfile(:), CVfile(:)
+        integer :: J
+
+        call read_HC(Tfile, CVfile, J)
+
+
+        if ((index .gt. 1) .and. (index .lt. size(CVfile))) then
+            i1 = index - 1
+            i2 = index+1
+        end if
+        if (index .eq. 0) then
+            i1 = index
+            i2 = index + 1
+        end if
+        if (index .eq. size(CVfile)) then
+            i1 = index - 1
+            i2 = index
+        end if
+
+        CPm = CVfile(i1)*rho
+        CPp = CVfile(i2)*rho
+        TPm = Tfile(i1)*rho
+        TPp = Tfile(i2)*rho
+
+        G = (CPp - CPm) / (TPp - TPm)
+
+        A = CPp - (G*Temp_p)
+
+        G = G * (2.0_real12 / time_step)
+        A = A / time_step
         
 
-    end subroutine
+    end function
 
     function Phi_func(G) result(Phi)
     implicit none
