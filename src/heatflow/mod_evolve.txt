@@ -62,16 +62,8 @@ contains
     Qdens = 0.0_real12
     S_CAT = 0.0_real12
     S = 0.0_real12
-    allocate(x(NA))
-    x = Temp_p
     !^^^^^^^^^^^^^^^^^^^^^
     
-    !----------------------
-      ! Initialize variables
-      !----------------------
-      check = .False.
-     !^^^^^^^^^^^^^^^^^^^^^^^
-
     !--------------------------------
     ! Calculate boundary Vector
     !--------------------------------
@@ -155,7 +147,7 @@ contains
    !  x=Temp_p+(Temp_p-Temp_pp)
    !  if (any(x-Temp_p .lt. TINY)) x=x+TINY !avoid nan solver issue
     itol=1
-    tol=1.e-12_real12
+    tol=1.e-32_real12
     itmax=50000
     ncg = 0
     iter= 0
@@ -163,14 +155,13 @@ contains
 
     F(:) = 0.0_real12
     Tn(:) = Temp_p(:)
+    delta(:) = 0.0_real12
 
-    solve: do n=1,itmax
 
-      
-    print*, 'here'
+   solve: do n=1,itmax
+
+   
     F(:) = nl_F_Cat(Tn)
-    print*, 'done'
-
     F(:) = F(:)-Qdens(:)-B(:)
     F(:) = -1.0_real12*F(:)
 
@@ -184,7 +175,7 @@ contains
     
     deallocate(acsr, ja, ia)
     
-    if (maxval(abs(delta)) .gt. tol) then
+    if (any(abs(delta(:)) .gt. tol)) then
        Tn = Tn + delta
     else
        x = Tn

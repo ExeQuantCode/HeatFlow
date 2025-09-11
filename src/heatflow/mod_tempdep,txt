@@ -150,14 +150,13 @@ module TempDep
     real(real12), dimension(NA) :: G
     real(real12), dimension(NA) :: Phi
     real(real12) :: tau2
-    
-    Phi(:) = 0.0_real12
+
     indx = 1
 
-    do k = 1, Nz
+    do k = 1, NA
         do j = 1, Ny
             do i = 1, Nx
-                tau2 = grid(i,j,k)%tau * time_step ! tau = tau/time_step**2
+                tau2 = grid(i,j,k)%tau * time_step*time_step ! tau = tau/time_step**2
                 Phi(indx) = G(indx)+ 2.0_real12 * G(indx) * tau2
                 indx = indx + 1
             end do
@@ -197,7 +196,7 @@ module TempDep
     do k = 1, Nz
         do j = 1, Ny
             do i = 1, Nx
-                tau2 = grid(i,j,k)%tau*time_step ! tau = tau/time_step**2
+                tau2 = grid(i,j,k)%tau * time_step*time_step ! tau = tau/time_step**2
                 Omega(indx) = (-A(indx)*Temp_p(indx)) + (G(indx)*Temp_p(indx)*Temp_p(indx)*tau2) + &
                              ((tau2)*((-2.0_real12*A(indx)*Temp_p(indx)) + (A(indx)*Temp_pp(indx))))
                 indx = indx + 1
@@ -281,14 +280,10 @@ module TempDep
     ! --- compute required quantities (you already did similar)
     G(:) = 0.0_real12
     A(:) = 0.0_real12
-    CALL make_G_A(G,A)
-
+    CALL make_G_A(G,A)              ! ensure this actually sets G and A
     gamma = Gamma_func(G,A)
-    
     omega = Omega_func(G,A)        ! fixed typo: was 'omage' in your file
-
     phi   = Phi_func(G)
-        print*, 'Here3'              ! ensure this actually sets G and A
 
     gammaMH = gamma_M_H(gamma)     ! returns COO in your sprs2_dp type
 
