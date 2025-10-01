@@ -28,6 +28,7 @@ program HEATFLOW_V0_3
   use evolution, only: simulate
   use setup, only: set_global_variables
   use INITIAL, only: initial_evolve
+  use petsc_solver, only: petsc_init, petsc_finalize
 
   implicit none
    real(real12) :: cpustart, cpuend, cpustart2, progress
@@ -79,8 +80,11 @@ program HEATFLOW_V0_3
       ! CALL initial_evolve to set systems initial Temperature conditions      
       if (itime .eq. 1) CALL initial_evolve                      
       
-      ! run the time evolution                                   
+      ! run the time evolution  
+      CALL petsc_init()                                 
       CALL simulate(itime)
+      CALL petsc_finalize()
+
                                                 
                              
       ! Write results                           

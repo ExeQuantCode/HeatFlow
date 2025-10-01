@@ -31,7 +31,8 @@ module evolution
   use boundary_vector, only: boundary
   use cattaneo, only: S_catS
 !   use tempdep, only: ChangeProp 
-  use sparse_solver, only: bicgstab, solve_pardiso
+   use petsc_solver, only: solve_petsc_csr
+
   implicit none
 
   private
@@ -51,7 +52,9 @@ contains
     integer:: ncg, itol, itmax !, iss
     integer :: iter
     real(real12) :: e, err, tol
-    
+    integer, allocatable :: ia32(:), ja32(:)   ! 32-bit copies for PETSc
+    integer :: NA32
+
     !----------------------
     ! Initialize vectors
     !----------------------
@@ -149,8 +152,19 @@ contains
     iter= 0
     err=E
 
+   print *, "Calling solver..."
+   !  call bicgstab(acsr, ia, ja, S, itmax, Temp_p, x, iter)
+  if (.not. allocated(ia32)) then
+     allocate(ia32(size(ia)), ja32(size(ja)))
+     ia32 = int(ia, kind=kind(ia32))
+     ja32 = int(ja, kind=kind(ja32))
+  end if
+   NA32 = int(NA, kind=kind(NA32))
+   allocate(x(NA))
+   call solve_petsc_csr(NA32, ia32, ja32, acsr, S, x, tol, itmax)
+  if (allocated(ia32)) deallocate(ia32, ja32)
 
-    call bicgstab(acsr, ia, ja, S, itmax, Temp_p, x, iter)
+   print *, "Solver finished."
 
    ! CALL solve_pardiso(acsr, S, ia, ja, x)
    !  CALL linbcg(S,x,itol=int(itol,I4B),tol=tol, itmax=int(itmax,I4B), iter=iter, &

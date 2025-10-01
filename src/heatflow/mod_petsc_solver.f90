@@ -1,0 +1,94 @@
+module petsc_solver
+#include "petsc/finclude/petscsys.h"
+#include "petsc/finclude/petscksp.h"
+  use petscksp
+  implicit none
+  private
+  public :: petsc_init, petsc_finalize, solve_petsc_csr
+
+contains
+
+  subroutine petsc_init()
+    integer :: ierr
+    call PetscInitialize(PETSC_NULL_CHARACTER, ierr)
+  end subroutine petsc_init
+
+  subroutine petsc_finalize()
+    integer :: ierr
+    call PetscFinalize(ierr)
+  end subroutine petsc_finalize
+
+  subroutine solve_petsc_csr(n, ia, ja, aval, b, x, rtol, maxit)
+    integer,  intent(in) :: n
+    integer,  intent(in) :: ia(:), ja(:)
+    real(8),  intent(in) :: aval(:), b(:)
+    real(8),  intent(inout) :: x(:)
+    real(8),  intent(in) :: rtol
+    integer,  intent(in) :: maxit
+    Mat :: A
+    Vec :: bb, xx
+    KSP :: ksp
+    PC  :: pc
+    integer :: ierr, i, row_nz, start_k
+    integer, allocatable :: cols0(:), idx(:)
+    real(8), allocatable :: vals(:)
+    real(8), pointer :: xptr(:)
+
+    if (size(ia) /= n+1) stop 'solve_petsc_csr: ia size mismatch'
+    if (size(b) /= n .or. size(x) /= n) stop 'solve_petsc_csr: vector size mismatch'
+
+    ! Create matrix with an estimated 7 nonzeros/row (adjust if needed)
+    call MatCreateSeqAIJ(PETSC_COMM_SELF, n, n, 7, PETSC_NULL_INTEGER, A, ierr)
+
+    do i = 1, n
+       row_nz = ia(i+1) - ia(i)
+       if (row_nz > 0) then
+          start_k = ia(i)
+          allocate(cols0(row_nz), vals(row_nz))
+          cols0 = ja(start_k:start_k+row_nz-1) - 1      ! zero-based
+          vals  = aval(start_k:start_k+row_nz-1)
+          call MatSetValues(A, 1, (/i-1/), row_nz, cols0, vals, INSERT_VALUES, ierr)
+          deallocate(cols0, vals)
+       end if
+    end do
+    call MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY, ierr)
+    call MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY, ierr)
+
+    ! Create vectors
+    call VecCreateSeq(PETSC_COMM_SELF, n, bb, ierr)
+    call VecCreateSeq(PETSC_COMM_SELF, n, xx, ierr)
+
+    ! Set RHS and initial guess
+    allocate(idx(n))
+    idx = [(i-1, i=1,n)]
+    call VecSetValues(bb, n, idx, b, INSERT_VALUES, ierr)
+    call VecAssemblyBegin(bb,ierr); call VecAssemblyEnd(bb,ierr)
+
+    call VecSetValues(xx, n, idx, x, INSERT_VALUES, ierr)
+    call VecAssemblyBegin(xx,ierr); call VecAssemblyEnd(xx,ierr)
+
+    ! KSP setup
+    call KSPCreate(PETSC_COMM_SELF, ksp, ierr)
+    call KSPSetOperators(ksp, A, A, ierr)     ! 3-arg form (reuse automatically)
+    call KSPGetPC(ksp, pc, ierr)
+    call PCSetType(pc, PCILU, ierr)           ! Override at runtime with -pc_type
+    call KSPSetType(ksp, KSPCG, ierr)         ! Use -ksp_type bcgs if not SPD
+    call KSPSetTolerances(ksp, rtol, PETSC_DEFAULT_REAL, PETSC_DEFAULT_REAL, maxit, ierr)
+    call KSPSetFromOptions(ksp, ierr)
+
+    call KSPSolve(ksp, bb, xx, ierr)
+
+    ! Extract solution
+    call VecGetArrayF90(xx, xptr, ierr)
+    x = xptr
+    call VecRestoreArrayF90(xx, xptr, ierr)
+
+    ! Cleanup
+    deallocate(idx)
+    call KSPDestroy(ksp, ierr)
+    call VecDestroy(bb, ierr)
+    call VecDestroy(xx, ierr)
+    call MatDestroy(A, ierr)
+  end subroutine solve_petsc_csr
+
+end module petsc_solver

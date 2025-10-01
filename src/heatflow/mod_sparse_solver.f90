@@ -139,7 +139,6 @@ contains
     real(8), dimension(:), allocatable :: r, p, s, rst, temp1, temp2
     
     n = size(b,1)
-    
     allocate(x(n))
     allocate(r(n))
     allocate(p(n))
@@ -150,6 +149,7 @@ contains
     
     call mkl_dcsrgemv("N",n,acsr,ia,ja,x,temp1)
     
+    print *, "Initial residual norm: ", norm2(b - temp1)
     r = b - temp1
 
     call random_number(rst)
@@ -163,7 +163,7 @@ contains
     delta0 = delta
 
     do i = 1, maxiter
-       
+       print *, "Iteration ", i
        if ( norm2(r) /= norm2(r) ) then
           write(*,'(a)') "Error in solver: residual NaN"
           exit
