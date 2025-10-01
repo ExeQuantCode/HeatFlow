@@ -150,9 +150,9 @@ contains
     err=E
 
 
-   !  CALL bicgstab(acsr, ia, ja, S, itmax, x, x0, iter)
+    call bicgstab(acsr, ia, ja, S, itmax, Temp_p, x, iter)
 
-   CALL solve_pardiso(acsr, S, ia, ja, x)
+   ! CALL solve_pardiso(acsr, S, ia, ja, x)
    !  CALL linbcg(S,x,itol=int(itol,I4B),tol=tol, itmax=int(itmax,I4B), iter=iter, &
          ! err=E)
          

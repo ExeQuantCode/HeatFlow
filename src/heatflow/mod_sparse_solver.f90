@@ -56,8 +56,8 @@ contains
     integer (kind=8), dimension(nnz), intent(in) :: ir
     integer (kind=8), dimension(nnz), intent(in) :: jc   
     real(8), dimension(nnz), intent(out) :: acsr
-    integer, dimension(nnz), intent(out) :: ja
-    integer, dimension(nrow+1), intent(out) :: ia
+    integer(kind=8), dimension(nnz), intent(out) :: ja
+    integer(kind=8), dimension(nrow+1), intent(out) :: ia
 
     ! Local variables.
     integer (kind=8) :: i, iad, j, k, k0
@@ -240,7 +240,8 @@ contains
     integer, dimension(:), allocatable :: iparm  
     integer,dimension(1) :: idum
     real(8),dimension(1) :: ddum
-    
+        integer :: badcol, missing_diag, k
+    logical :: found
     n = size(b,1)
     nnz = size(acsr,1)
     nrhs = 1
@@ -284,7 +285,60 @@ contains
     do i=1,64
        pt(i)%dummy =  0
     end do
-    
+
+    !---------------- CSR integrity / diagnostic checks ----------------
+
+    badcol = 0
+
+    write(*,*) 'PARDISO debug:'
+    write(*,*) ' n       =', n
+    write(*,*) ' nnz     =', nnz
+    write(*,*) ' ia(1)   =', ia(1), ' ia(n+1)=', ia(n+1), ' ia(n+1)-1=', ia(n+1)-1
+
+    if (ia(1) /= 1) stop 'ERROR: ia(1) must be 1'
+    if (ia(n+1)-1 /= nnz) stop 'ERROR: ia end mismatch'
+
+    do i=1,n
+       if (ia(i) > ia(i+1)) then
+          write(*,*) 'Row pointer decreases at row', i
+          stop 'ERROR: ia not monotone'
+       end if
+    end do
+
+    do k=1,nnz
+       if (ja(k) < 1 .or. ja(k) > n) then
+          badcol = badcol + 1
+          if (badcol <= 10) write(*,*) 'Bad column index k=',k,' ja=',ja(k)
+       end if
+    end do
+    if (badcol > 0) then
+       write(*,*) 'Total bad columns =', badcol
+       stop 'ERROR: invalid ja entries'
+    end if
+
+    ! Check each row has a diagonal and (optionally) detect duplicates
+    missing_diag = 0
+    do i=1,n
+       found = .false.
+       if (ia(i) < ia(i+1)) then
+          ! simple duplicate check (requires row segment unsorted ascending to be meaningful)
+          do k = ia(i), ia(i+1)-1
+             if (ja(k) == i) then
+                if (acsr(k) == 0.0d0) then
+                   write(*,*) 'Zero diagonal at row', i
+                   stop 'ERROR: zero diagonal'
+                end if
+                found = .true.
+             end if
+          end do
+       end if
+       if (.not. found) then
+          missing_diag = missing_diag + 1
+          if (missing_diag <= 10) write(*,*) 'Missing diagonal at row', i
+       end if
+    end do
+    if (missing_diag > 0) stop 'ERROR: missing diagonals'
+    !-------------------------------------------------------------------
     phase = 11 ! Only reordering and symbolic factorization
     
     call pardiso (pt,maxfct,mnum,mtype,phase,n,acsr,ia,ja, &

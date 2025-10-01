@@ -84,7 +84,7 @@ contains
                             kappaHarm = (2*kappa*kappaBoundx1/(kappa+kappaBoundx1)) / &
                             (grid(ix, iy, iz)%Length(1)**2)
                             if (kappa .ne. kappaBoundx1) kappaHarm = kappaHarm*BR
-                            B(I) = B(I) + (kappaHarm) * T_Bathx1 + boundray_term_vel(1_int12,iy,iz,T_Bathx1)
+                            B(I) = B(I) + (kappaHarm) * T_Bathx1 !+ boundray_term_vel(1_int12,iy,iz,T_Bathx1)
                         end if
                     end if
                     if (ix .eq. nx) then
@@ -94,7 +94,7 @@ contains
                             kappaHarm = (2*kappa*kappaBoundNx/(kappa+kappaBoundNx)) / &
                             (grid(ix, iy, iz)%Length(1)**2)
                             if (kappa .ne. kappaBoundNx) kappaHarm = kappaHarm*BR
-                            B(I) = B(I) + (kappaHarm) * T_Bathx2 + boundray_term_vel(nx,iy,iz,T_Bathx2)
+                            B(I) = B(I) + (kappaHarm) * T_Bathx2 !+ boundray_term_vel(nx,iy,iz,T_Bathx2)
                         end if
                     end if
                 end if
@@ -107,7 +107,7 @@ contains
                             kappaHarm = (2*kappa*kappaBoundy1/(kappa+kappaBoundy1)) / &
                             (grid(ix, iy, iz)%Length(2)**2)
                             if (kappa .ne. kappaBoundy1) kappaHarm = kappaHarm*BR
-                            B(I) = B(I) + (kappaHarm) * T_Bathy1 + boundray_term_vel(ix,1_int12,iz,T_Bathy1)
+                            B(I) = B(I) + (kappaHarm) * T_Bathy1 !+ boundray_term_vel(ix,1_int12,iz,T_Bathy1)
                         end if
                     end if
                     if (iy .eq. ny) then
@@ -117,7 +117,7 @@ contains
                             kappaHarm = (2*kappa*kappaBoundNy/(kappa+kappaBoundNy)) / &
                             (grid(ix, iy, iz)%Length(2)**2)
                             if (kappa .ne. kappaBoundNy) kappaHarm = kappaHarm*BR
-                            B(I) = B(I) + (kappaHarm) * T_Bathy2 + boundray_term_vel(ix,ny,iz,T_Bathy2)
+                            B(I) = B(I) + (kappaHarm) * T_Bathy2 !+ boundray_term_vel(ix,ny,iz,T_Bathy2)
                         end if
                     end if
                 end if
@@ -130,7 +130,7 @@ contains
                             kappaHarm = (2*kappa*kappaBoundz1/(kappa+kappaBoundz1)) / &
                             (grid(ix, iy, iz)%Length(3)**2)
                             if (kappa .ne. kappaBoundz1) kappaHarm = kappaHarm*BR
-                            B(I) = B(I) + (kappaHarm) * T_Bathz1 + boundray_term_vel(ix,iy,1_int12,T_Bathz1)
+                            B(I) = B(I) + (kappaHarm) * T_Bathz1 !+ boundray_term_vel(ix,iy,1_int12,T_Bathz1)
                         end if
                     end if
                     if (iz .eq. nz) then
@@ -140,7 +140,7 @@ contains
                             kappaHarm = (2*kappa*kappaBoundNz/(kappa+kappaBoundNz)) / &
                             (grid(ix, iy, iz)%Length(3)**2)
                             if (kappa .ne. kappaBoundNz) kappaHarm = kappaHarm*BR
-                            B(I) = B(I) + (kappaHarm) * T_Bathz2 + boundray_term_vel(ix,iy,nz,T_Bathz2)
+                            B(I) = B(I) + (kappaHarm) * T_Bathz2 !+ boundray_term_vel(ix,iy,nz,T_Bathz2)
                         end if
                     end if
                 end if

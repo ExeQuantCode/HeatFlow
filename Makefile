@@ -42,9 +42,11 @@ MKL_INCLUDE_DIR = $(MKLROOT)/include
 #MKL_FLAGS = -L$(MKL_LIB_DIR) -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl
 MKL_FLAGS = -L$(MKL_LIB_DIR) -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl
 
-FFLAGS = -O3 -I$(MKL_INCLUDE_DIR)
+#FFLAGS = -O3 -I$(MKL_INCLUDE_DIR)
 MODULEFLAGS = -J$(BUILD_DIR)
 FC = gfortran
+NCORES := $(shell nproc)
+FFLAGS = -O3 -fopenmp -I$(MKL_INCLUDE_DIR)
 
 ##########################################
 # TARGETS
@@ -71,6 +73,10 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.f90 | $(BUILD_DIR)
 
 $(programs): $(OBJS) | $(BIN_DIR)
 	$(FC) -O3 -fopenmp $(OBJS) -o $@ $(MKL_FLAGS)
+
+.PHONY: run
+run: $(programs)
+    OMP_NUM_THREADS=$(NCORES) MKL_NUM_THREADS=$(NCORES) MKL_DYNAMIC=FALSE OMP_PROC_BIND=spread OMP_PLACES=cores ./bin/$(NAME)
 
 debug: FFLAGS = -O0 -Wall -g -ffpe-trap=invalid,zero,overflow,underflow -fbacktrace -fcheck=all -fbounds-check -I$(MKL_INCLUDE_DIR)
 debug: $(OBJS) | $(BIN_DIR)

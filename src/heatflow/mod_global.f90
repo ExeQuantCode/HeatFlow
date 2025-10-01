@@ -14,8 +14,8 @@ module globe_data
   TYPE(sprs2_dp) :: ra !Techniqually rH
   TYPE(diag_sprs_dp) :: da !Techniqually dH
   real(real12), dimension(:), allocatable :: acsr
-  integer, dimension(:), allocatable :: ja
-  integer, dimension(:), allocatable :: ia
+  integer(kind=8), dimension(:), allocatable :: ja
+  integer(kind=8), dimension(:), allocatable :: ia
   character(len=1024) :: logname ! Log file name
    
 end module globe_data
