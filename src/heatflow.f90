@@ -65,6 +65,8 @@ program HEATFLOW_V0_3
    !-------------------------------------------------------------!
    ! run simulation for 'ntime' time steps                       !
    !-------------------------------------------------------------!
+   CALL petsc_init()                                 
+
    do itime=1,ntime 
 
       if (iverb.eq.0) then
@@ -81,9 +83,7 @@ program HEATFLOW_V0_3
       if (itime .eq. 1) CALL initial_evolve                      
       
       ! run the time evolution  
-      CALL petsc_init()                                 
       CALL simulate(itime)
-      CALL petsc_finalize()
 
                                                 
                              
@@ -91,7 +91,9 @@ program HEATFLOW_V0_3
       CALL data_write(itime) 
       if (IVERB.ge.3) CALL final_print                           
                                                                  
-   end do                                                        
+   end do  
+   CALL petsc_finalize()
+                                                      
    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
 
    !-------------------------------------------------------------!

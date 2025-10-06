@@ -152,7 +152,6 @@ contains
     iter= 0
     err=E
 
-   print *, "Calling solver..."
    !  call bicgstab(acsr, ia, ja, S, itmax, Temp_p, x, iter)
   if (.not. allocated(ia32)) then
      allocate(ia32(size(ia)), ja32(size(ja)))
@@ -164,7 +163,6 @@ contains
    call solve_petsc_csr(NA32, ia32, ja32, acsr, S, x, tol, itmax)
   if (allocated(ia32)) deallocate(ia32, ja32)
 
-   print *, "Solver finished."
 
    ! CALL solve_pardiso(acsr, S, ia, ja, x)
    !  CALL linbcg(S,x,itol=int(itol,I4B),tol=tol, itmax=int(itmax,I4B), iter=iter, &
