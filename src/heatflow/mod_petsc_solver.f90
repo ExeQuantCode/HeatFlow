@@ -29,10 +29,12 @@ contains
     Vec :: bb, xx
     KSP :: ksp
     PC  :: pc
-    integer :: ierr, i, row_nz, start_k
+    integer :: ierr, i, row_nz, start_k, its
     integer, allocatable :: cols0(:), idx(:)
     real(8), allocatable :: vals(:)
     real(8), pointer :: xptr(:)
+    KSPConvergedReason :: reason
+    real(8) :: rnorm
 
     if (size(ia) /= n+1) stop 'solve_petsc_csr: ia size mismatch'
     if (size(b) /= n .or. size(x) /= n) stop 'solve_petsc_csr: vector size mismatch'
@@ -71,12 +73,33 @@ contains
     call KSPCreate(PETSC_COMM_SELF, ksp, ierr)
     call KSPSetOperators(ksp, A, A, ierr)     ! 3-arg form (reuse automatically)
     call KSPGetPC(ksp, pc, ierr)
-    call PCSetType(pc, PCILU, ierr)           ! Override at runtime with -pc_type
-    call KSPSetType(ksp, KSPCG, ierr)         ! Use -ksp_type bcgs if not SPD
+    call PCSetType(pc, PCJACOBI, ierr)        ! Use Jacobi (diagonal) preconditioner to match linbcg
+    call KSPSetType(ksp, KSPBCGS, ierr)       ! Use BCGS to match linbcg behavior
+    
+    ! Set convergence tolerances
+    ! rtol = relative tolerance, atol = absolute tolerance (use default), dtol = divergence tolerance, maxits = max iterations
     call KSPSetTolerances(ksp, rtol, PETSC_DEFAULT_REAL, PETSC_DEFAULT_REAL, maxit, ierr)
+    
+    ! Use unpreconditioned norm (matching linbcg with itol=1)
+    call KSPSetNormType(ksp, KSP_NORM_UNPRECONDITIONED, ierr)
+    
+    ! Allow command line override of solver options
     call KSPSetFromOptions(ksp, ierr)
 
     call KSPSolve(ksp, bb, xx, ierr)
+    
+    ! Check convergence
+    call KSPGetConvergedReason(ksp, reason, ierr)
+    call KSPGetIterationNumber(ksp, its, ierr)
+    call KSPGetResidualNorm(ksp, rnorm, ierr)
+    
+    if (reason < 0) then
+       write(0,*) "WARNING: PETSc solver diverged or failed!"
+       write(0,*) "  Reason code:", reason
+       write(0,*) "  Iterations:", its
+       write(0,*) "  Residual norm:", rnorm
+       ! Don't stop - let the main code detect NaNs if needed
+    end if
 
     ! Extract solution
     call VecGetArrayF90(xx, xptr, ierr)

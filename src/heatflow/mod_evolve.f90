@@ -153,22 +153,30 @@ contains
     err=E
 
    !  call bicgstab(acsr, ia, ja, S, itmax, Temp_p, x, iter)
-  if (.not. allocated(ia32)) then
-     allocate(ia32(size(ia)), ja32(size(ja)))
-     ia32 = int(ia, kind=kind(ia32))
-     ja32 = int(ja, kind=kind(ja32))
-  end if
-   NA32 = int(NA, kind=kind(NA32))
+   
+   ! Allocate and initialize x with a good initial guess
    allocate(x(NA))
+   x = Temp_p + (Temp_p - Temp_pp)
+   if (any(x - Temp_p .lt. TINY)) x = x + TINY ! avoid nan solver issue
+   
+   ! Convert to 32-bit integers for PETSc (only on first call)
+   if (.not. allocated(ia32)) then
+      allocate(ia32(size(ia)), ja32(size(ja)))
+      ia32 = int(ia, kind=kind(ia32))
+      ja32 = int(ja, kind=kind(ja32))
+   end if
+   NA32 = int(NA, kind=kind(NA32))
+   
    call solve_petsc_csr(NA32, ia32, ja32, acsr, S, x, tol, itmax)
-  if (allocated(ia32)) deallocate(ia32, ja32)
+   
+   ! Note: Don't deallocate ia32, ja32 - keep them for next time step
 
 
    ! CALL solve_pardiso(acsr, S, ia, ja, x)
    !  CALL linbcg(S,x,itol=int(itol,I4B),tol=tol, itmax=int(itmax,I4B), iter=iter, &
          ! err=E)
          
-   ! 
+   !
     if (any(isnan(x(:)))) then
        write(0,*) "fatal error: NAN in x tempurature vector"
        write(0,*) 'time step ', itime, "      T   ", sum(Temp_p)/size(Temp_p), E ,iter
