@@ -60,10 +60,14 @@ contains
     integer(kind=8), dimension(nrow+1), intent(out) :: ia
 
     ! Local variables.
-    integer (kind=8) :: i, iad, j, k, k0
+    integer (kind=8) :: i, iad, j, k, k0, row_start
+    integer (kind=8) :: dup_count
     real(kind=8) :: x
+    logical :: found_dup
+    integer(kind=8), dimension(nrow+1) :: ia_save  ! Save original row starts
     
     ia(1:nrow+1) = 0
+    dup_count = 0
     
     ! determine the row lengths.
     
@@ -83,19 +87,44 @@ contains
 
     end do
     
+    ! Save the original row pointers
+    ia_save = ia
+    
     ! go through the structure once more. fill in output matrix.
+    ! This version handles duplicate (i,j) entries by summing them.
     
     do k = 1, nnz
 
        i = ir(k)
        j = jc(k)
        x = a(k)
-       iad = ia(i)
-       acsr(iad) = x
-       ja(iad) = j
-       ia(i) = iad + 1
+       
+       ! Search for existing entry in this row with same column
+       found_dup = .false.
+       row_start = ia_save(i)
+       do iad = row_start, ia(i)-1
+          if (ja(iad) == j) then
+             ! Found duplicate - sum the values
+             acsr(iad) = acsr(iad) + x
+             found_dup = .true.
+             dup_count = dup_count + 1
+             exit
+          end if
+       end do
+       
+       if (.not. found_dup) then
+          ! New entry - insert it
+          iad = ia(i)
+          acsr(iad) = x
+          ja(iad) = j
+          ia(i) = iad + 1
+       end if
 
     end do
+    
+    if (dup_count > 0) then
+       write(*,'(A,I0,A)') 'WARNING: COO->CSR found and summed ', dup_count, ' duplicate entries'
+    end if
     
     ! shift back ia.
     

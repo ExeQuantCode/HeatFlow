@@ -37,6 +37,9 @@ module evolution
 
   private
   public :: simulate
+  
+  ! Module-level variables for PETSc (persist across time steps)
+  integer, allocatable, save :: ia32(:), ja32(:)   ! 32-bit copies for PETSc
 
 contains
 
@@ -52,7 +55,6 @@ contains
     integer:: ncg, itol, itmax !, iss
     integer :: iter
     real(real12) :: e, err, tol
-    integer, allocatable :: ia32(:), ja32(:)   ! 32-bit copies for PETSc
     integer :: NA32
 
     !----------------------
@@ -117,6 +119,16 @@ contains
     !---------------------------------------------
     if ( iSteady .eq. 0 ) then
        S = - inverse_time * Temp_p * lin_rhoc - Qdens - B
+       if (IVERB .gt. 3) then
+          write(*,*) "S construction diagnostics:"
+          write(*,*) "  inverse_time =", inverse_time
+          write(*,*) "  Temp_p avg =", sum(Temp_p)/size(Temp_p)
+          write(*,*) "  lin_rhoc avg =", sum(lin_rhoc)/size(lin_rhoc)
+          write(*,*) "  Qdens avg =", sum(Qdens)/size(Qdens)
+          write(*,*) "  B avg =", sum(B)/size(B)
+          write(*,*) "  -inverse_time*Temp_p*lin_rhoc avg =", sum(-inverse_time*Temp_p*lin_rhoc)/size(Temp_p)
+          write(*,*) "  S before S_CAT avg =", sum(S)/size(S)
+       end if
        if ( iCAttaneo  .eq. 1) then
           S = S + S_CAT
        end if
@@ -159,6 +171,17 @@ contains
    x = Temp_p + (Temp_p - Temp_pp)
    if (any(x - Temp_p .lt. TINY)) x = x + TINY ! avoid nan solver issue
    
+   ! Debug: Print initial guess statistics
+   if (IVERB .gt. 3) then
+      write(*,*) "========== PETSc Solver Diagnostics =========="
+      write(*,*) "Time step:", itime
+      write(*,*) "Initial guess x: min=", minval(x), " max=", maxval(x), " avg=", sum(x)/size(x)
+      write(*,*) "RHS S: min=", minval(S), " max=", maxval(S), " avg=", sum(S)/size(S)
+      write(*,*) "Temp_p: min=", minval(Temp_p), " max=", maxval(Temp_p), " avg=", sum(Temp_p)/size(Temp_p)
+      write(*,*) "Matrix acsr: min=", minval(acsr), " max=", maxval(acsr), " avg=", sum(acsr)/size(acsr)
+      write(*,*) "Matrix size: n=", NA32, " nnz=", size(acsr)
+   end if
+   
    ! Convert to 32-bit integers for PETSc (only on first call)
    if (.not. allocated(ia32)) then
       allocate(ia32(size(ia)), ja32(size(ja)))
@@ -168,6 +191,14 @@ contains
    NA32 = int(NA, kind=kind(NA32))
    
    call solve_petsc_csr(NA32, ia32, ja32, acsr, S, x, tol, itmax)
+   
+   ! Debug: Print solution statistics and verify solution
+   if (IVERB .gt. 3) then
+      write(*,*) "Solution x after PETSc: min=", minval(x), " max=", maxval(x), " avg=", sum(x)/size(x)
+      write(*,*) "Temperature change: avg(x-Temp_p)=", sum(x-Temp_p)/size(x)
+      write(*,*) "Max temperature change: ", maxval(abs(x-Temp_p))
+      write(*,*) "=============================================="
+   end if
    
    ! Note: Don't deallocate ia32, ja32 - keep them for next time step
 

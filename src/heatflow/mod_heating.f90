@@ -181,7 +181,7 @@ contains
    
 
     ! Normalize all heat sources by the heated volume
-    shared_power = .False.
+    shared_power = .TRUE.
     if (shared_power) then
       if (heated_volume .gt. 0.0) then
          Qdens(:) = Q(:) / heated_volume

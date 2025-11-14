@@ -37,6 +37,7 @@ module setup
       integer(int12) :: ix,iy,iz,index
       real(real12) :: kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau, em
       real(real12), dimension(3) :: vel
+
       allocate(Temp_cur(nx, ny, nz))
       allocate(Temp_p(NA))
       allocate(Temp_pp(NA))
@@ -82,7 +83,6 @@ module setup
          ! Allocate the arrays to hold the H matrix in CSR format
          allocate(acsr(ra%len), ja(ra%len), ia(ra%n+1))
          CALL coo2csr(ra%n, ra%len, ra%val, ra%irow, ra%jcol, acsr, ja, ia)
-         ! print*, ra%val               
       end if
       !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -106,7 +106,7 @@ module setup
       if (Periodicz) len = len + 2*nx*ny
       ra%n = NA ! The number of rows in the H matrix
       ra%len = len ! The number of non-zero elements in the H matrix
-      ! Allocate the arrays to hold the H matrix in sparse row storage
+      ! Allocate the arrays to hold the H matrix in sparse storage
       allocate(ra%val(len), ra%irow(len), ra%jcol(len))
       ra%val(:)=0
       ra%irow(:)=-2
@@ -147,7 +147,6 @@ module setup
              ra%irow(count) = i ! The row of the H matrix
              ra%jcol(count) = j ! The column of the H matrix
              count = count + 1 ! The number of non-zero elements in the H matrix
-             H0=hmatrixfunc(j,i) ! The value of the H matrix
              ra%val(count) = H0 ! The value of the H matrix
              ra%irow(count) = j ! The row of the H matrix
              ra%jcol(count) = i ! The column of the H matrix

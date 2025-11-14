@@ -42,19 +42,34 @@ contains
     ! Create matrix with an estimated 7 nonzeros/row (adjust if needed)
     call MatCreateSeqAIJ(PETSC_COMM_SELF, n, n, 7, PETSC_NULL_INTEGER, A, ierr)
 
+    ! Fill matrix from CSR format (ia, ja are 1-based Fortran indexing)
     do i = 1, n
        row_nz = ia(i+1) - ia(i)
        if (row_nz > 0) then
           start_k = ia(i)
           allocate(cols0(row_nz), vals(row_nz))
-          cols0 = ja(start_k:start_k+row_nz-1) - 1      ! zero-based
+          ! Convert column indices from 1-based to 0-based for PETSc
+          cols0 = ja(start_k:start_k+row_nz-1) - 1
           vals  = aval(start_k:start_k+row_nz-1)
+          
+          ! Debug: print first row details
+          if (i == 1) then
+             write(*,'(A,I0,A,I0)') 'Row 1: nnz=', row_nz, ', start_k=', start_k
+             write(*,'(A,10I6)') '  1-based cols:', ja(start_k:min(start_k+9,start_k+row_nz-1))
+             write(*,'(A,10I6)') '  0-based cols:', cols0(1:min(10,row_nz))
+             write(*,'(A,10ES12.4)') '  vals:', vals(1:min(10,row_nz))
+          end if
+          
+          ! Set row i-1 (0-based) with column indices cols0 (0-based)
           call MatSetValues(A, 1, (/i-1/), row_nz, cols0, vals, INSERT_VALUES, ierr)
           deallocate(cols0, vals)
        end if
     end do
     call MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY, ierr)
     call MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY, ierr)
+    
+    ! Optional: Verify matrix assembly (uncomment for debugging)
+    ! call MatView(A, PETSC_VIEWER_STDOUT_SELF, ierr)
 
     ! Create vectors
     call VecCreateSeq(PETSC_COMM_SELF, n, bb, ierr)
@@ -93,6 +108,10 @@ contains
     call KSPGetIterationNumber(ksp, its, ierr)
     call KSPGetResidualNorm(ksp, rnorm, ierr)
     
+    ! Report convergence status (commented out by default for performance)
+    ! Uncomment the next line to see convergence info every solve:
+    ! write(*,'(A,I0,A,ES12.5,A,I0)') ' PETSc: iterations=', its, ', residual=', rnorm, ', reason=', reason
+    
     if (reason < 0) then
        write(0,*) "WARNING: PETSc solver diverged or failed!"
        write(0,*) "  Reason code:", reason
@@ -105,6 +124,37 @@ contains
     call VecGetArrayF90(xx, xptr, ierr)
     x = xptr
     call VecRestoreArrayF90(xx, xptr, ierr)
+    
+    ! Manual residual check: compute ||A*x - b||
+    block
+      real(8), allocatable :: Ax(:), residual(:)
+      real(8) :: manual_rnorm, bnorm
+      integer(8) :: i, k, start_k, row_nz
+      
+      allocate(Ax(n), residual(n))
+      Ax = 0.0_8
+      
+      ! Compute A*x manually using CSR format
+      do i = 1, n
+         row_nz = ia(i+1) - ia(i)
+         if (row_nz > 0) then
+            start_k = ia(i)
+            do k = start_k, start_k + row_nz - 1
+               Ax(i) = Ax(i) + aval(k) * x(ja(k))
+            end do
+         end if
+      end do
+      
+      residual = Ax - b
+      manual_rnorm = sqrt(sum(residual**2))
+      bnorm = sqrt(sum(b**2))
+      
+      write(*,'(A,ES15.7)') ' Manual residual check: ||A*x-b|| = ', manual_rnorm
+      write(*,'(A,ES15.7)') '                        ||b||     = ', bnorm
+      write(*,'(A,ES15.7)') '                        ||A*x-b||/||b|| = ', manual_rnorm/bnorm
+      
+      deallocate(Ax, residual)
+    end block
 
     ! Cleanup
     deallocate(idx)
