@@ -24,7 +24,6 @@ module setup
   use globe_data, only: acsr, ja, ia
   use solver, only: SRSin
   use materials, only: material
-  use sparse_solver, only: coo2csr
   implicit none
   
    contains

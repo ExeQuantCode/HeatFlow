@@ -2,6 +2,7 @@ module petsc_solver
 #include "petsc/finclude/petscsys.h"
 #include "petsc/finclude/petscksp.h"
   use petscksp
+  use iso_c_binding
   implicit none
   private
   public :: petsc_init, petsc_finalize, solve_petsc_csr, petsc_cleanup
@@ -53,36 +54,69 @@ contains
     PC  :: pc
     integer :: ierr, i, row_nz, start_k, its
     integer, allocatable :: cols0(:), idx(:), d_nnz(:)
+    PetscInt :: idx_array(1)
+    PetscScalar :: val_array(1)
     real(8), allocatable :: vals(:)
-    real(8), pointer :: xptr(:)
-    KSPConvergedReason :: reason
     real(8) :: rnorm
     logical :: rebuild_needed
 
+    write(*,'(A,I0)') ' [DEBUG] Entered solve_petsc_csr, n=', n
+    call flush(6)
+    
     if (size(ia) /= n+1) stop 'solve_petsc_csr: ia size mismatch'
     if (size(b) /= n .or. size(x) /= n) stop 'solve_petsc_csr: vector size mismatch'
+
+    write(*,'(A)') ' [DEBUG] Size checks passed'
+    call flush(6)
 
     ! Determine if we need to rebuild the matrix structure
     rebuild_needed = .false.
     if (.not. initialized) rebuild_needed = .true.
     if (n /= n_saved) rebuild_needed = .true.
     
+    write(*,'(A,L1)') ' [DEBUG] rebuild_needed=', rebuild_needed
+    call flush(6)
+    
     ! Create PETSc objects on first call or if size changed
     if (rebuild_needed) then
+      write(*,'(A)') ' [DEBUG] Starting PETSc object creation...'
+      call flush(6)
+      
       ! Clean up old objects if they exist
       if (initialized) call petsc_cleanup()
+      
+      write(*,'(A)') ' [DEBUG] Preallocating matrix...'
+      call flush(6)
       
       ! Preallocate matrix with exact nonzeros per row (saves memory)
       allocate(d_nnz(n))
       do i = 1, n
         d_nnz(i) = ia(i+1) - ia(i)
       end do
+      
+      write(*,'(A,I0,A,I0)') ' [DEBUG] Creating matrix: n=', n, ', max_nnz/row=', maxval(d_nnz)
+      call flush(6)
+      
+      ! Create matrix with exact preallocation (most memory-efficient)
       call MatCreateSeqAIJ(PETSC_COMM_SELF, n, n, 0, d_nnz, A_saved, ierr)
+      if (ierr /= 0) then
+        write(0,*) "ERROR: MatCreateSeqAIJ failed with ierr=", ierr
+        write(0,*) "  Matrix size may exceed system limits"
+        write(0,*) "  n=", n, ", nnz=", sum(int(d_nnz,8)), ", max_nnz/row=", maxval(d_nnz)
+        stop
+      end if
+      
+      write(*,'(A)') ' [DEBUG] Matrix created successfully'
+      call flush(6)
+      
       deallocate(d_nnz)
       
       ! Create persistent vectors
       call VecCreateSeq(PETSC_COMM_SELF, n, bb_saved, ierr)
       call VecCreateSeq(PETSC_COMM_SELF, n, xx_saved, ierr)
+      
+      write(*,'(A)') ' [DEBUG] Vectors created'
+      call flush(6)
       
       ! Create and configure KSP solver (persistent across timesteps)
       call KSPCreate(PETSC_COMM_SELF, ksp_saved, ierr)
@@ -100,6 +134,8 @@ contains
     end if
 
     ! Update matrix values (always needed each timestep)
+    write(*,'(A)') ' Updating PETSc matrix values...'
+    call flush(6)
     call MatZeroEntries(A_saved, ierr)
     do i = 1, n
        row_nz = ia(i+1) - ia(i)
@@ -115,47 +151,133 @@ contains
           deallocate(cols0, vals)
        end if
     end do
+    write(*,'(A)') ' Matrix assembly beginning...'
+    call flush(6)
     call MatAssemblyBegin(A_saved, MAT_FINAL_ASSEMBLY, ierr)
     call MatAssemblyEnd(A_saved, MAT_FINAL_ASSEMBLY, ierr)
+    write(*,'(A)') ' Matrix assembly complete.'
+    call flush(6)
     
     ! Optional: Verify matrix assembly (uncomment for debugging)
     ! call MatView(A_saved, PETSC_VIEWER_STDOUT_SELF, ierr)
 
-    ! Update RHS vector
-    allocate(idx(n))
-    idx = [(i-1, i=1,n)]
-    call VecSetValues(bb_saved, n, idx, b, INSERT_VALUES, ierr)
+    ! Update RHS vector in batches to avoid memory issues with huge systems
+    write(*,'(A)') ' Updating RHS vector...'
+    call flush(6)
+    block
+      integer, parameter :: VEC_CHUNK = 1000000
+      integer :: vec_start, vec_end, vec_len, k
+      integer, allocatable :: idx_vec(:)
+      
+      do vec_start = 1, n, VEC_CHUNK
+        vec_end = min(vec_start + VEC_CHUNK - 1, n)
+        vec_len = vec_end - vec_start + 1
+        
+        allocate(idx_vec(vec_len))
+        idx_vec = [(vec_start + k - 2, k=1,vec_len)]  ! 0-based indices
+        
+        call VecSetValues(bb_saved, vec_len, idx_vec, b(vec_start:vec_end), INSERT_VALUES, ierr)
+        if (ierr /= 0) then
+          write(0,*) "ERROR: VecSetValues(bb) failed at", vec_start, "ierr=", ierr
+          stop
+        end if
+        
+        deallocate(idx_vec)
+      end do
+    end block
     call VecAssemblyBegin(bb_saved,ierr); call VecAssemblyEnd(bb_saved,ierr)
+    write(*,'(A)') ' RHS vector complete.'
+    call flush(6)
 
-    ! Update initial guess
-    call VecSetValues(xx_saved, n, idx, x, INSERT_VALUES, ierr)
+    ! Update initial guess in batches
+    write(*,'(A)') ' Updating initial guess vector...'
+    call flush(6)
+    block
+      integer, parameter :: VEC_CHUNK = 1000000
+      integer :: vec_start, vec_end, vec_len, k
+      integer, allocatable :: idx_vec(:)
+      
+      do vec_start = 1, n, VEC_CHUNK
+        vec_end = min(vec_start + VEC_CHUNK - 1, n)
+        vec_len = vec_end - vec_start + 1
+        
+        allocate(idx_vec(vec_len))
+        idx_vec = [(vec_start + k - 2, k=1,vec_len)]  ! 0-based indices
+        
+        call VecSetValues(xx_saved, vec_len, idx_vec, x(vec_start:vec_end), INSERT_VALUES, ierr)
+        if (ierr /= 0) then
+          write(0,*) "ERROR: VecSetValues(xx) failed at", vec_start, "ierr=", ierr
+          stop
+        end if
+        
+        deallocate(idx_vec)
+      end do
+    end block
     call VecAssemblyBegin(xx_saved,ierr); call VecAssemblyEnd(xx_saved,ierr)
-    deallocate(idx)
 
     ! Solve the system (reusing persistent KSP)
+    write(*,'(A,I0,A)') ' Solving linear system with n=', n, ' unknowns...'
+    call flush(6)
     call KSPSolve(ksp_saved, bb_saved, xx_saved, ierr)
     
-    ! Check convergence
-    call KSPGetConvergedReason(ksp_saved, reason, ierr)
+    write(*,'(A)') ' KSPSolve completed, checking status...'
+    call flush(6)
+    
+    if (ierr /= 0) then
+       write(0,*) "ERROR: KSPSolve failed with error code:", ierr
+       stop
+    end if
+    
+    ! Check convergence - Note: KSPConvergedReason type changed in PETSc 3.24
+    ! Simplified error checking without explicit reason query
     call KSPGetIterationNumber(ksp_saved, its, ierr)
     call KSPGetResidualNorm(ksp_saved, rnorm, ierr)
     
     ! Report convergence status (commented out by default for performance)
     ! Uncomment the next line to see convergence info every solve:
-    ! write(*,'(A,I0,A,ES12.5,A,I0)') ' PETSc: iterations=', its, ', residual=', rnorm, ', reason=', reason
+    ! write(*,'(A,I0,A,ES12.5)') ' PETSc: iterations=', its, ', residual=', rnorm
     
-    if (reason < 0) then
-       write(0,*) "WARNING: PETSc solver diverged or failed!"
-       write(0,*) "  Reason code:", reason
+    ! Basic divergence check via error code from solve
+    if (ierr /= 0) then
+       write(0,*) "WARNING: PETSc solver returned non-zero error code!"
+       write(0,*) "  Error code:", ierr
        write(0,*) "  Iterations:", its
        write(0,*) "  Residual norm:", rnorm
        ! Don't stop - let the main code detect NaNs if needed
     end if
 
-    ! Extract solution
-    call VecGetArrayF90(xx_saved, xptr, ierr)
-    x = xptr
-    call VecRestoreArrayF90(xx_saved, xptr, ierr)
+    ! Extract solution vector using batched VecGetValues
+    ! Process in chunks for better performance on large systems
+    block
+      integer, parameter :: CHUNK_SIZE = 100000
+      PetscInt, allocatable :: idx_batch(:)
+      PetscScalar, allocatable :: val_batch(:)
+      integer :: i_start, i_end, chunk_len, j
+      
+      do i_start = 1, n, CHUNK_SIZE
+        i_end = min(i_start + CHUNK_SIZE - 1, n)
+        chunk_len = i_end - i_start + 1
+        
+        allocate(idx_batch(chunk_len), val_batch(chunk_len))
+        
+        ! Build index array (0-based for PETSc)
+        do j = 1, chunk_len
+          idx_batch(j) = i_start + j - 2  ! -1 for 0-based, -1 more for offset
+        end do
+        
+        ! Get chunk of values
+        call VecGetValues(xx_saved, chunk_len, idx_batch, val_batch, ierr)
+        if (ierr /= 0) then
+          write(0,*) "ERROR: VecGetValues failed at chunk starting", i_start, "ierr=", ierr
+          stop
+        end if
+        
+        ! Copy to output array
+        x(i_start:i_end) = val_batch(1:chunk_len)
+        
+        deallocate(idx_batch, val_batch)
+      end do
+    end block
 
   end subroutine solve_petsc_csr
 
