@@ -26,6 +26,8 @@ module setup
   use materials, only: material
   implicit none
   
+  public :: set_global_variables
+  
    contains
     
 
