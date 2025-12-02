@@ -78,18 +78,22 @@ contains
                 !------------------------------
                 if ( time .le. time_pulse ) then
                    Q(IA) = POWER
-                if (icattaneo .eq. 1) then
-                if (itime .eq. 1) then
-                  Q(IA) = Q(IA) + (tau*(POWER))
-                  end if
-                if (itime .eq. heated_steps+1) then
-                  Q(IA) = Q(IA) - (tau*(POWER))
-                end if
-                end if 
-                
+                  !  print *, "Heating on"
                 else
+                  !  print *, "Heating off"
                    Q(IA) = 0.0_real12
                 end if
+
+               if (icattaneo .eq. 1) then
+                  if (itime .eq. 1) then
+                     Q(IA) = Q(IA) + tau*POWER
+                     ! print *, "Turning on heater at time ", time
+                  end if
+                  if (itime .eq. (heated_steps + 1)) then
+                     Q(IA) = Q(IA) - tau*POWER
+                     ! print *, "Turning off heater at time ", time
+                  end if
+               end if
                
 
                 !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -125,6 +129,34 @@ contains
                    Q(IA) = 0.0
                 end if
                 !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+            case(7)
+               !---------------------------------------------------------
+               ! Heater on for a time period, off for a time period,
+               ! then on again (square-wave heating)
+               !---------------------------------------------------------
+
+               if (mod(time, 2.0_real12 * time_pulse) .le. time_pulse) then
+                  Q(IA) = POWER
+
+                  if (icattaneo .eq. 1) then
+
+                     ! Forward-time pulse check
+                     if (mod(time + time_step, 2.0_real12 * time_pulse) .le. time_pulse) then
+                        Q(IA) = Q(IA) + tau * POWER
+                     end if
+
+                     ! Backward-time pulse check
+                     if (mod(time - time_step, 2.0_real12 * time_pulse) .le. time_pulse) then
+                        Q(IA) = Q(IA) - tau * POWER
+                     end if
+
+                  end if
+
+               else
+                  Q(IA) = 0.0_real12
+               end if
+               
 
                case(10)
                   Q(IA) = POWER - (tau*(POWER))

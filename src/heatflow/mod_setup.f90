@@ -24,8 +24,9 @@ module setup
   use globe_data, only: acsr, ja, ia
   use solver, only: SRSin
   use materials, only: material
-  use sparse_solver, only: coo2csr
   implicit none
+  
+  public :: set_global_variables
   
    contains
     
@@ -52,8 +53,13 @@ module setup
       ! later date
       !---------------------------------------------------
       write(*,*) "Setting up material properties"
+      write(*,'(A,I10,A)') " Processing ", NA, " grid cells..."
       index = 0
       do iz = 1, nz
+         ! Progress reporting every 10% for large grids
+         if (mod(iz-1, max(1,nz/10)) == 0 .and. iz > 1) then
+            write(*,'(A,I3,A)') "   Progress: ", int(100.0*real(iz)/real(nz)), "%"
+         end if
          do iy = 1, ny
             do ix = 1, nx
             index = index + 1
@@ -75,14 +81,15 @@ module setup
       !---------------------------------------------------
       ! Check if the sparse matrix matches the full matrix
       !---------------------------------------------------
+      write(*,*) "Building sparse H matrix..."
       if (Check_Sparse_Full) then
          print*, "CHECK SPARSE FULL"
          CALL build_Hmatrix()
       else
+         ! Build CSR format directly (acsr, ja, ia are allocated inside sparse_Hmatrix)
          CALL sparse_Hmatrix()
-         ! Allocate the arrays to hold the H matrix in CSR format
-         allocate(acsr(ra%len), ja(ra%len), ia(ra%n+1))
-         CALL coo2csr(ra%n, ra%len, ra%val, ra%irow, ra%jcol, acsr, ja, ia)
+         ! No need for COO->CSR conversion anymore, it's already in CSR format!
+         write(*,*) "Sparse matrix setup complete."
       end if
       !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -91,26 +98,46 @@ module setup
 !!!#################################################################################################
 
 !!!#################################################################################################
-!!! This sets up the H Matrix directly in sparse row storage
+!!! This sets up the H Matrix directly in sparse row storage (CSR format)
+!!! Modified to build CSR directly instead of COO->CSR to save memory
 !!!#################################################################################################
    subroutine sparse_Hmatrix()
      implicit none
       real(real12) :: H0 ! Holds the value of the H matrix
-      integer(int12) :: i, j, len, count, k ! i and j are the row and column of the H matrix
+      integer(int12) :: i, j, count, k, row ! i and j are the row and column of the H matrix
+      integer(int12) :: nnz_estimate
       ! Holds the values to add to the row to get the column
       integer(int12), allocatable, dimension(:) :: addit 
-      ! The number of non-zero elements in the H matrix to look for
-      len = 7*nx*ny*nz - 2*(nx*ny + ny*nz + nz*nx)
-      if (Periodicx) len = len + 2*ny*nz
-      if (Periodicy) len = len + 2*nz*nx
-      if (Periodicz) len = len + 2*nx*ny
+      ! Temporary arrays for building each row
+      real(real12), allocatable, dimension(:) :: row_vals
+      integer(int12), allocatable, dimension(:) :: row_cols
+      integer(int12) :: row_count, max_row_size
+      
       ra%n = NA ! The number of rows in the H matrix
-      ra%len = len ! The number of non-zero elements in the H matrix
-      ! Allocate the arrays to hold the H matrix in sparse storage
-      allocate(ra%val(len), ra%irow(len), ra%jcol(len))
-      ra%val(:)=0
-      ra%irow(:)=-2
-      ra%jcol(:)=-1
+      
+      ! Estimate nonzeros (7 per interior cell, less at boundaries)
+      nnz_estimate = 7*nx*ny*nz - 2*(nx*ny + ny*nz + nz*nx)
+      if (Periodicx) nnz_estimate = nnz_estimate + 2*ny*nz
+      if (Periodicy) nnz_estimate = nnz_estimate + 2*nz*nx
+      if (Periodicz) nnz_estimate = nnz_estimate + 2*nx*ny
+      
+      ! Allocate CSR arrays with initial estimate (will grow if needed)
+      ! For 451^3: ~640M entries = 10GB, so allocate conservatively
+      write(*,'(A,I12,A)') " Estimated nonzeros: ", nnz_estimate, ""
+      allocate(acsr(nnz_estimate), ja(nnz_estimate))
+      allocate(ia(NA+1))
+      
+      ! Setup neighbor offsets
+      addit = [1] 
+      if (Periodicx) addit = [addit, (nx-1)]
+      if (ny .gt. 1) addit = [addit, nx]
+      if ((Periodicy).and.(ny .gt. 1)) addit = [addit, (ny-1)*nx]
+      if (nz .gt. 1) addit = [addit, nx*ny]
+      if ((Periodicz).and.(nz .gt. 1)) addit = [addit, (nz-1)*ny*nx]
+      
+      ! Allocate temporary row storage (max ~13 entries per row for 3D)
+      max_row_size = 2*size(addit,1) + 1
+      allocate(row_vals(max_row_size), row_cols(max_row_size))
       addit = [1] ! The values to add to the row to get the column
       if (Periodicx) addit = [addit, (nx-1)]
       if (ny .gt. 1) addit = [addit, nx] ! Add the values to add to the row to get the column
@@ -124,39 +151,129 @@ module setup
       !write(6,*) NA
       !write(6,*) "========================================="
 
-      count = 0 ! The number of non-zero elements in the H matrix
-      parent_loop: do j = 1, NA ! Loop over the columns of the H matrix
-         i=j ! The row of the H matrix
-         count = count + 1 ! The number of non-zero elements in the H matrix
-         H0 = hmatrixfunc(i,j) ! The value of the H matrix
-         ra%val(count) = H0 ! The value of the H matrix
-         ra%irow(count) = i ! The row of the H matrix
-         ra%jcol(count) = j ! The column of the H matrix
-         ! Loop over the values to add to the row to get the column
-         neighbour_loop: do k = 1, size(addit,1)
-             i = j + addit(k) ! The row of the H matrix
-             ! If the row is greater than the number of rows ...
-             !...in the H matrix then go to the next column
-             if ((i.gt.NA)) cycle parent_loop 
-             H0=hmatrixfunc(i,j) ! The value of the H matrix
-             ! If the value of the H matrix is less than TINY then go to the next value ...
-             !...to add to the row to get the column
-             if (abs(H0).lt.TINY) cycle neighbour_loop 
-             count = count + 1 ! The number of non-zero elements in the H matrix
-             ra%val(count) = H0 ! The value of the H matrix
-             ra%irow(count) = i ! The row of the H matrix
-             ra%jcol(count) = j ! The column of the H matrix
-             count = count + 1 ! The number of non-zero elements in the H matrix
-             ra%val(count) = H0 ! The value of the H matrix
-             ra%irow(count) = j ! The row of the H matrix
-             ra%jcol(count) = i ! The column of the H matrix
-             !write(6,*) j,i, H0, count
-          end do neighbour_loop
-     end do parent_loop
-
-     !write(6,*) "========================================="
-     !write(6,*) 'c len',count, len
+      
+      count = 0 ! Total nonzeros counter
+      ia(1) = 1 ! CSR row pointer (1-based for Fortran)
+      
+      ! Build CSR format row-by-row
+      write(*,'(A)') " Building CSR matrix row-by-row..."
+      parent_loop: do row = 1, NA
+         ! Progress reporting every 10%
+         if (mod(row-1, max(1,NA/10)) == 0 .and. row > 1) then
+            write(*,'(A,I3,A,I12,A)') "   Progress: ", int(100.0*real(row)/real(NA)), &
+                 "%, nnz=", count, ""
+         end if
+         
+         row_count = 0
+         
+         ! Diagonal element
+         j = row
+         row_count = row_count + 1
+         H0 = hmatrixfunc(row, j)
+         row_vals(row_count) = H0
+         row_cols(row_count) = j
+         
+         ! Off-diagonal elements (process in column-sorted order for CSR)
+         ! First pass: collect all neighbors
+         do k = 1, size(addit,1)
+            j = row + addit(k)
+            if (j > NA) cycle ! Skip if out of bounds
+            
+            H0 = hmatrixfunc(row, j)
+            if (abs(H0) >= TINY) then
+               row_count = row_count + 1
+               row_vals(row_count) = H0
+               row_cols(row_count) = j
+            end if
+         end do
+         
+         ! Second pass: collect reverse neighbors (j < row)
+         do k = 1, size(addit,1)
+            j = row - addit(k)
+            if (j < 1) cycle ! Skip if out of bounds
+            
+            H0 = hmatrixfunc(row, j)
+            if (abs(H0) >= TINY) then
+               row_count = row_count + 1
+               row_vals(row_count) = H0
+               row_cols(row_count) = j
+            end if
+         end do
+         
+         ! Sort this row's entries by column index (required for CSR)
+         call sort_row(row_vals, row_cols, row_count)
+         
+         ! Copy row data to CSR arrays (no bounds checking - we pre-allocated correctly)
+         do i = 1, row_count
+            count = count + 1
+            acsr(count) = row_vals(i)
+            ja(count) = row_cols(i)
+         end do
+         
+         ! Update row pointer
+         ia(row+1) = count + 1
+      end do parent_loop
+      
+      ra%len = count
+      
+      ! Trim arrays to actual size if we over-estimated
+      if (count < size(acsr)) then
+         write(*,'(A,I12,A,I12)') " Trimming arrays from ", size(acsr), " to ", count
+         call trim_csr_arrays(acsr, ja, count)
+      end if
+      
+      deallocate(row_vals, row_cols)
+      write(*,'(A,I12,A)') " CSR matrix built successfully. Actual nonzeros: ", count, ""
    end subroutine sparse_Hmatrix
+!!!#################################################################################################
+
+!!!#################################################################################################
+!!! Sort a row's entries by column index (simple insertion sort, rows are small)
+!!!#################################################################################################
+   subroutine sort_row(vals, cols, n)
+      implicit none
+      integer(int12), intent(in) :: n
+      real(real12), dimension(n), intent(inout) :: vals
+      integer(int12), dimension(n), intent(inout) :: cols
+      integer(int12) :: i, j, temp_col
+      real(real12) :: temp_val
+      
+      do i = 2, n
+         temp_val = vals(i)
+         temp_col = cols(i)
+         j = i - 1
+         do while (j >= 1)
+            if (cols(j) <= temp_col) exit
+            vals(j+1) = vals(j)
+            cols(j+1) = cols(j)
+            j = j - 1
+         end do
+         vals(j+1) = temp_val
+         cols(j+1) = temp_col
+      end do
+   end subroutine sort_row
+!!!#################################################################################################
+
+!!!#################################################################################################
+!!! Trim CSR arrays to exact size
+!!!#################################################################################################
+   subroutine trim_csr_arrays(acsr_arr, ja_arr, final_size)
+      implicit none
+      integer(int12), intent(in) :: final_size
+      real(real12), allocatable, dimension(:), intent(inout) :: acsr_arr
+      integer(int12), allocatable, dimension(:), intent(inout) :: ja_arr
+      real(real12), allocatable, dimension(:) :: temp_vals
+      integer(int12), allocatable, dimension(:) :: temp_cols
+      
+      allocate(temp_vals(final_size), temp_cols(final_size))
+      temp_vals = acsr_arr(1:final_size)
+      temp_cols = ja_arr(1:final_size)
+      deallocate(acsr_arr, ja_arr)
+      allocate(acsr_arr(final_size), ja_arr(final_size))
+      acsr_arr = temp_vals
+      ja_arr = temp_cols
+      deallocate(temp_vals, temp_cols)
+   end subroutine trim_csr_arrays
 !!!#################################################################################################
 
 !!!#################################################################################################

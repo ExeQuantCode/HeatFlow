@@ -159,7 +159,7 @@ contains
    !  if (any(x-Temp_p .lt. TINY)) x=x+TINY !avoid nan solver issue
     itol=1
     tol=1.e-32_real12
-    itmax=50000
+    itmax=500000
     ncg = 0
     iter= 0
     err=E
