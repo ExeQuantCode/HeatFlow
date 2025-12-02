@@ -9,34 +9,22 @@ SRC_DIR      := ./src
 BUILD_DIR    := ./obj
 BIN_DIR      := ./bin
 
-# Compiler
+# Compiler (gfortran with OpenMP for threading)
 FC           := gfortran
 
 # Core count
 NCORES       := $(shell nproc)
 
-# MKL
-MKLROOT      ?= /opt/intel/oneapi/mkl/latest
-MKL_LIB_DIR  := $(MKLROOT)/lib/intel64
-MKL_INCLUDE  := $(MKLROOT)/include
-MKL_FLAGS    := -L$(MKL_LIB_DIR) -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl
+# Detect conda environment for BLAS/LAPACK (fallback if no system libs)
+CONDA_PREFIX ?= $(shell conda info --base 2>/dev/null || echo /home/hm556/miniforge3)
 
-# PETSc (manual fallback if petsc-config missing)
-PETSC_PREFIX    := /usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real
-PETSC_FINCLUDE  := /usr/share/petsc/3.15/include
-PETSC_AINCLUDE  := $(PETSC_PREFIX)/include
-PETSC_LIBDIR    := $(PETSC_PREFIX)/lib
+# PETSc (system installation)
+PETSC_INC  := -I/usr/share/petsc/3.15/include -I/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/include
+PETSC_LIB  := -L/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/lib -lpetsc -Wl,-rpath,/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/lib
+PETSC_NOTE := (system PETSc 3.15)
 
-PETSC_CONFIG := $(shell command -v petsc-config 2>/dev/null)
-ifeq ($(PETSC_CONFIG),)
-  PETSC_INC  := -I$(PETSC_FINCLUDE) -I$(PETSC_AINCLUDE)
-  PETSC_LIB  := -L$(PETSC_LIBDIR) -lpetsc
-  PETSC_NOTE := (PETSc manual paths)
-else
-  PETSC_INC  := $(shell petsc-config --cflags)
-  PETSC_LIB  := $(shell petsc-config --libs)
-  PETSC_NOTE := (petsc-config)
-endif
+# Use OpenBLAS for multi-threaded BLAS/LAPACK (better than reference BLAS/ATLAS)
+BLAS_FLAGS := -lopenblas -lgomp -lpthread -lm
 
 # Flags
 OPTFLAGS    := -O3
@@ -44,8 +32,8 @@ OMPFLAGS    := -fopenmp
 WARNFLAGS   := -Wall
 MODDIR_FLAG := -J$(BUILD_DIR)
 
-FFLAGS      := -cpp $(OPTFLAGS) $(OMPFLAGS) $(WARNFLAGS) -I$(MKL_INCLUDE) $(PETSC_INC) $(MODDIR_FLAG)
-DEBUGFLAGS  := -cpp -O0 -g -fcheck=all -fbacktrace -ffpe-trap=invalid,zero,overflow,underflow -fbounds-check -I$(MKL_INCLUDE) $(PETSC_INC) $(MODDIR_FLAG)
+FFLAGS      := -cpp $(OPTFLAGS) $(OMPFLAGS) $(WARNFLAGS) $(PETSC_INC) $(MODDIR_FLAG)
+DEBUGFLAGS  := -cpp -O0 -g -fcheck=all -fbacktrace -ffpe-trap=invalid,zero,overflow,underflow -fbounds-check $(PETSC_INC) $(MODDIR_FLAG)
 
 # Program
 NAME    := ThermalFlow.x
@@ -62,8 +50,6 @@ SRCS := \
   heatflow/mod_material.f90 \
   heatflow/mod_hmatrix.f90 \
   heatflow/mod_init_evolve.f90 \
-  heatflow/mkl_pardiso.f90 \
-  heatflow/mod_sparse_solver.f90 \
   heatflow/mod_petsc_solver.f90 \
   heatflow/mod_boundary.f90 \
   heatflow/mod_heating.f90 \
@@ -96,15 +82,14 @@ $(BUILD_DIR)/heatflow.o: $(SRC_DIR)/heatflow.f90 | $(BUILD_DIR)
 
 # Link (single definition)
 $(TARGET): $(BIN_DIR) $(OBJS)
-	$(FC) $(OPTFLAGS) $(OMPFLAGS) $(OBJS) -o $@ $(MKL_FLAGS) $(PETSC_LIB) -Wl,-rpath,$(PETSC_LIBDIR)
+	$(FC) $(OPTFLAGS) $(OMPFLAGS) $(OBJS) -o $@ $(BLAS_FLAGS) $(PETSC_LIB)
 
 debug: FFLAGS = $(DEBUGFLAGS)
 debug: clean show $(TARGET)
 
 run: $(TARGET)
 	OMP_NUM_THREADS=$(NCORES) \
-	MKL_NUM_THREADS=$(NCORES) \
-	MKL_DYNAMIC=FALSE \
+	OPENBLAS_NUM_THREADS=$(NCORES) \
 	OMP_PROC_BIND=spread \
 	OMP_PLACES=cores \
 	$< $(RUN_ARGS)
