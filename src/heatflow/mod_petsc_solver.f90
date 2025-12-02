@@ -7,6 +7,14 @@ module petsc_solver
   private
   public :: petsc_init, petsc_finalize, solve_petsc_csr, petsc_cleanup
 
+  ! ===== PRECONDITIONER SELECTION =====
+  ! Change this to switch between preconditioners:
+  ! 'GAMG' = Algebraic Multigrid (best for elliptic PDEs, 10-20x faster)
+  ! 'ILU'  = Incomplete LU (good general purpose, robust)
+  ! 'LU'   = Direct solver (most robust, uses more memory)
+  character(len=10), parameter :: PRECONDITIONER = 'GAMG'  ! <-- Change here!
+  ! ====================================
+
   ! Persistent PETSc objects (reused across timesteps for memory efficiency)
   Mat, save :: A_saved = PETSC_NULL_MAT
   Vec, save :: bb_saved = PETSC_NULL_VEC
@@ -116,10 +124,35 @@ contains
       call KSPCreate(PETSC_COMM_SELF, ksp_saved, ierr)
       call KSPSetOperators(ksp_saved, A_saved, A_saved, ierr)
       call KSPGetPC(ksp_saved, pc, ierr)
-      ! Use ILU preconditioner for better conditioning (especially for high conductivity materials)
-      call PCSetType(pc, PCILU, ierr)           ! ILU preconditioner (better than Jacobi)
-      ! call PCSetType(pc, PCJACOBI, ierr)        ! Jacobi preconditioner (simple) 
-      call KSPSetType(ksp_saved, KSPBCGS, ierr) ! BiCGSTAB solver
+      
+      ! Select preconditioner based on parameter at top of module
+      select case (trim(PRECONDITIONER))
+        case ('GAMG')
+          ! Algebraic Multigrid - Best for elliptic PDEs with varying coefficients
+          ! Optimal O(1) iterations, 10-20x faster than ILU for large problems
+          call PCSetType(pc, PCGAMG, ierr)
+          call KSPSetType(ksp_saved, KSPGMRES, ierr)  ! GMRES works well with AMG
+          write(*,'(A)') ' [Solver] Using GAMG (Algebraic Multigrid) preconditioner with GMRES'
+          
+        case ('ILU')
+          ! Incomplete LU - Good general purpose, robust
+          call PCSetType(pc, PCILU, ierr)
+          call KSPSetType(ksp_saved, KSPBCGS, ierr)   ! BiCGSTAB works well with ILU
+          write(*,'(A)') ' [Solver] Using ILU preconditioner with BiCGSTAB'
+          
+        case ('LU')
+          ! Direct LU - Most robust, more memory intensive
+          call PCSetType(pc, PCLU, ierr)
+          call KSPSetType(ksp_saved, KSPPREONLY, ierr) ! Direct solve
+          write(*,'(A)') ' [Solver] Using direct LU solver'
+          
+        case default
+          write(*,'(A,A)') ' [Warning] Unknown preconditioner: ', trim(PRECONDITIONER)
+          write(*,'(A)') '           Defaulting to ILU'
+          call PCSetType(pc, PCILU, ierr)
+          call KSPSetType(ksp_saved, KSPBCGS, ierr)
+      end select
+      
       call KSPSetTolerances(ksp_saved, rtol, PETSC_DEFAULT_REAL, &
                            PETSC_DEFAULT_REAL, maxit, ierr)
       call KSPSetNormType(ksp_saved, KSP_NORM_UNPRECONDITIONED, ierr)
