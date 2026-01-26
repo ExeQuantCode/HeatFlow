@@ -23,6 +23,19 @@ PETSC_INC  := -I/usr/share/petsc/3.15/include -I/usr/lib/petscdir/petsc3.15/x86_
 PETSC_LIB  := -L/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/lib -lpetsc -Wl,-rpath,/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/lib
 PETSC_NOTE := (system PETSc 3.15)
 
+# HDF5 Support
+# Run `make USE_HDF5=1` to enable
+ifeq ($(USE_HDF5),1)
+    HDF5_INC   := -I/usr/include/hdf5/openmpi
+    HDF5_LIB   := -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi -lhdf5_fortran -lhdf5
+    HDF5_FLAGS := -DUSE_HDF5 $(HDF5_INC)
+    HDF5_NOTE  := (+ HDF5)
+else
+    HDF5_FLAGS :=
+    HDF5_LIB   :=
+    HDF5_NOTE  :=
+endif
+
 # Use OpenBLAS for multi-threaded BLAS/LAPACK (better than reference BLAS/ATLAS)
 BLAS_FLAGS := -lopenblas -lgomp -lpthread -lm
 
@@ -32,8 +45,8 @@ OMPFLAGS    := -fopenmp
 WARNFLAGS   := -Wall
 MODDIR_FLAG := -J$(BUILD_DIR)
 
-FFLAGS      := -cpp $(OPTFLAGS) $(OMPFLAGS) $(WARNFLAGS) $(PETSC_INC) $(MODDIR_FLAG)
-DEBUGFLAGS  := -cpp -O0 -g -fcheck=all -fbacktrace -ffpe-trap=invalid,zero,overflow,underflow -fbounds-check $(PETSC_INC) $(MODDIR_FLAG)
+FFLAGS      := -cpp $(OPTFLAGS) $(OMPFLAGS) $(WARNFLAGS) $(PETSC_INC) $(HDF5_FLAGS) $(MODDIR_FLAG)
+DEBUGFLAGS  := -cpp -O0 -g -fcheck=all -fbacktrace -ffpe-trap=invalid,zero,overflow,underflow -fbounds-check $(PETSC_INC) $(HDF5_FLAGS) $(MODDIR_FLAG)
 
 # Program
 NAME    := ThermalFlow.x
@@ -47,6 +60,7 @@ SRCS := \
   heatflow/mod_global.f90 \
   heatflow/mod_Sparse.f90 \
   heatflow/mod_inputs.f90 \
+  heatflow/mod_output_hdf5.f90 \
   heatflow/mod_material.f90 \
   heatflow/mod_hmatrix.f90 \
   heatflow/mod_init_evolve.f90 \
@@ -82,7 +96,7 @@ $(BUILD_DIR)/heatflow.o: $(SRC_DIR)/heatflow.f90 | $(BUILD_DIR)
 
 # Link (single definition)
 $(TARGET): $(BIN_DIR) $(OBJS)
-	$(FC) $(OPTFLAGS) $(OMPFLAGS) $(OBJS) -o $@ $(BLAS_FLAGS) $(PETSC_LIB)
+	$(FC) $(OPTFLAGS) $(OMPFLAGS) $(OBJS) -o $@ $(BLAS_FLAGS) $(PETSC_LIB) $(HDF5_LIB)
 
 debug: FFLAGS = $(DEBUGFLAGS)
 debug: clean show $(TARGET)

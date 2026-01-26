@@ -44,9 +44,10 @@
 module output
   use constants, only: real12, int12, TINY, fields
   use inputs, only: nx,ny,nz, time_step, grid, NA, Check_Steady_State, ntime, WriteToTxt
-  use inputs, only: Test_Run, freq, RunName, FullRestart, IVERB, write_every, CompressedOutput
+  use inputs, only: Test_Run, freq, RunName, FullRestart, IVERB, write_every, CompressedOutput, HDF5Output
   use inputs, only: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz
   use globe_data, only: Temp_p,Temp_pp, heat, heated_volume, logname
+  use output_hdf5, only: write_hdf5_data, finalize_hdf5
   implicit none
   
 contains
@@ -87,7 +88,7 @@ contains
           open(unit=33,file='./outputs/Power.txt')
           open(unit=30, file='./outputs/Test.txt')
           !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-       else
+       elseif (.not. HDF5Output) then
           !---------------------------------------
           ! find most recent log file and open it
           !---------------------------------------
@@ -117,7 +118,10 @@ contains
     !---------------------------------------
     if (.not. Test_run) then
        if (mod(itime, write_every) .eq. 0) then
-          if (CompressedOutput) then
+          if (HDF5Output) then
+             write(*, *) 'Writing Temperature (HDF5) to file'
+             call write_hdf5_data(itime, Temp_cur)
+          elseif (CompressedOutput) then
              write(*, *) 'Writing Temperature (Compressed) to file'
              open(logunit,file=logname, status='unknown', access='stream', position='append')
              write(logunit) real((itime-1)*(time_step), kind=real12)
@@ -163,6 +167,7 @@ contains
     !---------------------------------------
     if (itime .eq. ntime) then
        if (.not.Test_run) close(logunit)
+       if (HDF5Output) call finalize_hdf5()
        CALL final_print()
     end if
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

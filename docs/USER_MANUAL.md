@@ -2,6 +2,21 @@
 
 This manual provides a concise guide to configuring and running simulations using the **HeatFlow** software. The software simulates heat transport using finite difference methods, primarily focusing on the Cattaneo (hyperbolic heat equation) and Fourier models.
 
+## Compilation
+
+To build the software, use the provided `Makefile`.
+
+**Standard Build:**
+```bash
+make
+```
+
+**Build with HDF5 Support:**
+To enable `.h5` output files, you must compile with the `USE_HDF5` flag set. Ensure you have HDF5 libraries installed (specifically the Fortran modules).
+```bash
+make USE_HDF5=1
+```
+
 ## Input Files
 
 The simulation is controlled by three main input files located in the `inputs/` directory:
@@ -46,12 +61,32 @@ This file uses a `KEYWORD = VALUE` format. Comments can be added using `!`.
 | :--- | :--- | :--- | :--- |
 | `power_in` | Double | `0.0` | Power input for the heater. |
 
+#### Heating Types
+The heating type is defined in the `system.in` file (second integer in the material/heater pair).
+
+| ID | Description |
+| :--- | :--- |
+| `0` | No heating. |
+| `1` | Constant heating (`Q = power_in`). |
+| `2` | Pulse heating. On for `heattime` steps, then off. Includes Cattaneo transient corrections if enabled. |
+| `3` | AC oscillatory heating (Cosine averaged over time step). |
+| `4` | AC oscillatory heating (Sine squared). |
+| `5` | AC oscillatory heating with Cattaneo term. |
+| `6` | One-step impulse heating (On for step 1 only, then 0). |
+| `7` | Square-wave heating. On for `heattime`, off for `heattime`, repeating. |
+| `10` | Constant heating minus Cattaneo term (`P - tau*P`). |
+| `11` | Constant heating (redundant with 1). |
+| `12` | Constant heating plus Cattaneo term (`P + tau*P`). |
+
+
 #### Flags (Logical)
 All flags default to `.False.`. Set to `.True.` (or `T`) to enable.
 - `_Check_Sparse_Full`: Check if simulation is sparse or full.
 - `_Check_Stability`: Perform stability check.
 - `_Check_Steady_State`: Check for steady state convergence.
 - `_WriteToTxt`: Enable writing output to text files.
+- `_CompressedOutput`: Enable compressed binary output for temperature logs. Appends `.bin` extension.
+- `_HDF5Output`: Enable HDF5 compressed output for temperature logs (requires compilation with HDF5 support). Appends `.h5` extension.
 - `_Percentage_Completion`: Show progress % in output.
 - `_Test_Run`: Flag for test runs.
 - `_InputTempDis`: Load initial temperature distribution from file.
