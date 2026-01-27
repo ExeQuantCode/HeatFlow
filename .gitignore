@@ -20,3 +20,6 @@ utl/DFortran/make_geom/test_geometry.in
 utl/DPython/scripts/geom.in
 utl/DPython/scripts/Pillers.in
 build.sh
+test/test_run2/restart/TempDis.dat
+.gitignore
+test/test_run2/restart/TempDisTPD.dat
