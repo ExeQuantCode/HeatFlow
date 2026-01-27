@@ -23,7 +23,7 @@ contains
   !!!###############################################################################################
   subroutine boundary(B)
     real(real12), dimension(NA), intent(out) :: B
-    real(real12) :: kappa, temp, kappaHarm
+    real(real12) :: kappa, kappaHarm
     integer(int12) :: I,ix,iy,iz
     real(real12) :: x1_power_dens, xn_power_dens, y1_power_dens, yn_power_dens, &
         z1_power_dens, zn_power_dens

@@ -25,7 +25,7 @@ module setup
   use solver, only: SRSin
   use materials, only: material
   implicit none
-  
+
   public :: set_global_variables
   
    contains

@@ -61,9 +61,7 @@ contains
     
     PC  :: pc
     integer :: ierr, i, row_nz, start_k, its
-    integer, allocatable :: cols0(:), idx(:), d_nnz(:)
-    PetscInt :: idx_array(1)
-    PetscScalar :: val_array(1)
+    integer, allocatable :: cols0(:), d_nnz(:)
     real(8), allocatable :: vals(:)
     real(8) :: rnorm
     logical :: rebuild_needed

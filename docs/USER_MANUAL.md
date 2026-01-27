@@ -126,11 +126,12 @@ keyword = value
 
 **Example:**
 ```
-1
+1 ! a comment
 heat_capacity = 4200
 kappa = 0.541
 rho = 997
 tau = 1e-12
+em = 0.8
 vel = 0.0 0.0 0.0
 0
 ```

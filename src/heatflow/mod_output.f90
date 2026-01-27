@@ -79,35 +79,35 @@ contains
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-    if (itime .eq. 1) then
-    ! Needs logica testing does not make sense
-       if(Test_run) then
-          !---------------------------------------
-          ! open test output files                
-          !---------------------------------------
-          open(unit=33,file='./outputs/Power.txt')
-          open(unit=30, file='./outputs/Test.txt')
-          !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-       elseif (.not. HDF5Output) then
-          !---------------------------------------
-          ! find most recent log file and open it
-          !---------------------------------------
-          CALL last_log(logname,outdir)
-          if (CompressedOutput) then
-             open(logunit,file=logname, status='unknown', access='stream', position='append')
-             write(logunit) real((itime-1)*(time_step), kind=real12)
-             write(logunit) (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
-          else
-             open(logunit,file=logname)
-            !  print*, logunit
-            !  print*, logname
-             write(logunit,*) real((itime-1)*(time_step)), &
-                  (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
-          end if
-          close(logunit)
-          !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-       end if
-    end if
+      if (itime .eq. 1) then
+      ! Needs logica testing does not make sense
+         if(Test_run) then
+            !---------------------------------------
+            ! open test output files                
+            !---------------------------------------
+            open(unit=33,file='./outputs/Power.txt')
+            open(unit=30, file='./outputs/Test.txt')
+            !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          elseif (.not. HDF5Output) then
+            !---------------------------------------
+            ! find most recent log file and open it
+            !---------------------------------------
+            CALL last_log(logname,outdir)
+            if (CompressedOutput) then
+               open(logunit,file=logname, status='unknown', access='stream', position='append')
+               write(logunit) real((itime-1)*(time_step), kind=real12)
+               write(logunit) (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
+            else
+               open(logunit,file=logname)
+               !  print*, logunit
+               !  print*, logname
+               write(logunit,*) real((itime-1)*(time_step)), &
+                     (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
+            end if
+            close(logunit)
+            !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+         end if
+      end if
 
 
 

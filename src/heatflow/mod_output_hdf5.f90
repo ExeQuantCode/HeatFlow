@@ -113,10 +113,12 @@ contains
     call add_string_attribute(times_dset_id, "units", "seconds")
     call h5pclose_f(plist_id, error)
     
-    ! Create extendible 'temperatures' dataset: shape (nt, nx, ny, nz)
-    temps_dims = (/0_8, dnx, dny, dnz/)
-    temps_maxdims = (/H5S_UNLIMITED_F, dnx, dny, dnz/)
-    temps_chunk = (/1_8, dnx, dny, min(dnz, 10_8)/)  ! Chunk: 1 timestep, full XY, partial Z
+    ! Create extendible 'temperatures' dataset: shape (nt, nx, ny, nz) in Python
+    ! Note: Fortran is column-major, so we reverse dimensions for HDF5
+    ! Fortran specifies (nz, ny, nx, nt) so Python sees (nt, nx, ny, nz)
+    temps_dims = (/dnz, dny, dnx, 0_8/)
+    temps_maxdims = (/dnz, dny, dnx, H5S_UNLIMITED_F/)
+    temps_chunk = (/min(dnz, 10_8), dny, dnx, 1_8/)  ! Chunk: 1 timestep, full XY, partial Z
     
     call h5screate_simple_f(4, temps_dims, temps_space_id, error, temps_maxdims)
     call h5pcreate_f(H5P_DATASET_CREATE_F, plist_id, error)
@@ -134,7 +136,6 @@ contains
   subroutine write_hdf5_data(itime, Temp_cur)
     integer(int12), intent(in) :: itime
     real(real12), dimension(nx,ny,nz), intent(in) :: Temp_cur
-    
 #ifdef USE_HDF5
     integer(hid_t) :: memspace_id, filespace_id
     integer(hsize_t), dimension(1) :: times_newsize, times_offset, times_count
@@ -181,15 +182,17 @@ contains
     call h5sclose_f(filespace_id, error)
 
     ! === Extend and write 'temperatures' dataset ===
-    temps_newsize = (/current_step, eix, eiy, eiz/)
+    ! Dimensions reversed: (nz, ny, nx, nt) so Python sees (nt, nx, ny, nz)
+    temps_newsize = (/int(eiz, 8), int(eiy, 8), int(eix, 8), current_step/)
     call h5dset_extent_f(temps_dset_id, temps_newsize, error)
     
     ! Get updated filespace
     call h5dget_space_f(temps_dset_id, filespace_id, error)
     
     ! Select hyperslab for new data (append at end of time dimension)
-    temps_offset = (/current_step - 1, 0_8, 0_8, 0_8/)
-    temps_count = (/1_8, iex, iey, iez/)
+    ! Dimensions reversed: (nz, ny, nx, nt) so Python sees (nt, nx, ny, nz)
+    temps_offset = (/0_8, 0_8, 0_8, current_step - 1/)
+    temps_count = (/int(eiz, 8), int(eiy, 8), int(eix, 8), 1_8/)
     call h5sselect_hyperslab_f(filespace_id, H5S_SELECT_SET_F, temps_offset, temps_count, error)
     
     ! Create memory space
@@ -203,6 +206,9 @@ contains
     call h5sclose_f(memspace_id, error)
     call h5sclose_f(filespace_id, error)
 
+#else
+    ! Dummy to avoid unused argument warnings when HDF5 is not enabled
+    if (.false.) print *, itime, shape(Temp_cur)
 #endif
   end subroutine write_hdf5_data
 

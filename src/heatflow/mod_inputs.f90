@@ -77,7 +77,7 @@ module inputs
   use constructions, only: heatblock, material
   implicit none
 
-  integer :: unit, newunit
+  integer :: newunit
   ! time step, frequency, power in, boundary kappa
   logical :: Periodicx,Periodicy,Periodicz, T_BathCC
   real(real12) :: time_step, freq, power_in, kappaBoundx1, kappaBoundy1, kappaBoundz1, KappaBound
