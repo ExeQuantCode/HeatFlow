@@ -189,7 +189,7 @@ contains
     
     ! Select hyperslab for new data (append at end of time dimension)
     temps_offset = (/current_step - 1, 0_8, 0_8, 0_8/)
-    temps_count = (/1_8, dnx, dny, dnz/)
+    temps_count = (/1_8, iex, iey, iez/)
     call h5sselect_hyperslab_f(filespace_id, H5S_SELECT_SET_F, temps_offset, temps_count, error)
     
     ! Create memory space
