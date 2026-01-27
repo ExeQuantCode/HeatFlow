@@ -210,8 +210,8 @@ contains
 !!!########################################################################
 !!!
 !!!########################################################################
- subroutine last_log(logname,outdir)
-   character(len=1024), intent(out) :: logname
+ subroutine last_log(last_logname,outdir)
+   character(len=1024), intent(out) :: last_logname
    character(len=1024), intent(in) :: outdir
    logical :: flag
    integer(int12) :: i
@@ -220,13 +220,13 @@ contains
    flag=.true.
    do while (flag)
       if (CompressedOutput) then
-         write(logname, '(A,A,I2.2,A)') trim(adjustl(outdir)) // 'output_' // &
+         write(last_logname, '(A,A,I2.2,A)') trim(adjustl(outdir)) // 'output_' // &
               trim(adjustl(RunName)),'_',  i, '.bin'
       else
-         write(logname, '(A,A,I2.2)') trim(adjustl(outdir)) // 'output_' // &
+         write(last_logname, '(A,A,I2.2)') trim(adjustl(outdir)) // 'output_' // &
               trim(adjustl(RunName)),'_',  i
       endif
-      inquire(file=logname, exist=flag)
+      inquire(file=last_logname, exist=flag)
       i = i+1
    end do
  end subroutine last_log
