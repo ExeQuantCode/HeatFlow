@@ -31,17 +31,35 @@ contains
 #ifdef USE_HDF5
     integer :: error
     character(len=1024) :: filename
+    logical :: file_exists
 
     if (is_initialized) return
 
     ! Initialize HDF5 library
     call h5open_f(error)
+    if (error /= 0) then
+       write(*,*) " [HDF5] ERROR: Failed to initialize HDF5 library"
+       return
+    end if
     
     ! Construct filename
     write(filename, '(A,A)') "outputs/output_", trim(adjustl(RunName)) // ".h5"
     
+    ! Check if file exists and delete it first to avoid lock issues
+    inquire(file=trim(filename), exist=file_exists)
+    if (file_exists) then
+       write(*,*) " [HDF5] Removing existing file: ", trim(filename)
+       open(unit=999, file=trim(filename), status='old')
+       close(999, status='delete')
+    end if
+    
     ! Create new file (truncating existing)
     call h5fcreate_f(trim(filename), H5F_ACC_TRUNC_F, file_id, error)
+    if (error /= 0) then
+       write(*,*) " [HDF5] ERROR: Failed to create file: ", trim(filename)
+       call h5close_f(error)
+       return
+    end if
     
     current_step = 0
     datasets_created = .false.
@@ -146,6 +164,9 @@ contains
     integer(int12) :: six, eix, siy, eiy, siz, eiz
     
     if (.not. is_initialized) call init_hdf5()
+    
+    ! If initialization failed, skip writing
+    if (.not. is_initialized) return
 
     six = 1;    eix = nx
     siy = 1;    eiy = ny
