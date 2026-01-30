@@ -13,31 +13,58 @@ BIN_DIR      := ./bin
 FC           := gfortran
 
 # Core count
-NCORES       := $(shell nproc)
+NCORES       := $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)
 
 # Detect conda environment for BLAS/LAPACK (fallback if no system libs)
 CONDA_PREFIX ?= $(shell conda info --base 2>/dev/null || echo /home/hm556/miniforge3)
 
-# PETSc (system installation)
-PETSC_INC  := -I/usr/share/petsc/3.15/include -I/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/include
-PETSC_LIB  := -L/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/lib -lpetsc -Wl,-rpath,/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/lib
-PETSC_NOTE := (system PETSc 3.15)
+# PETSc Configuration
+BREW_PETSC := $(shell brew --prefix petsc 2>/dev/null)
+ifneq ($(BREW_PETSC),)
+    PETSC_INC := -I$(BREW_PETSC)/include
+    PETSC_LIB := -L$(BREW_PETSC)/lib -lpetsc -Wl,-rpath,$(BREW_PETSC)/lib
+    PETSC_NOTE := (Homebrew PETSc)
+else
+    # PETSc (system installation - Linux fallback)
+    PETSC_INC  := -I/usr/share/petsc/3.15/include -I/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/include
+    PETSC_LIB  := -L/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/lib -lpetsc -Wl,-rpath,/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/lib
+    PETSC_NOTE := (system PETSc 3.15)
+endif
 
 # HDF5 Support
 # Run `make USE_HDF5=1` to enable
 ifeq ($(USE_HDF5),1)
-    HDF5_INC   := -I/usr/include/hdf5/openmpi
-    HDF5_LIB   := -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi -lhdf5_fortran -lhdf5
-    HDF5_FLAGS := -DUSE_HDF5 $(HDF5_INC)
-    HDF5_NOTE  := (+ HDF5)
+    # Check for Homebrew HDF5 on macOS
+    BREW_HDF5 := $(shell brew --prefix hdf5-mpi 2>/dev/null || brew --prefix hdf5 2>/dev/null)
+    ifneq ($(BREW_HDF5),)
+        HDF5_INC   := -I$(BREW_HDF5)/include
+        HDF5_LIB   := -L$(BREW_HDF5)/lib -lhdf5_fortran -lhdf5 -Wl,-rpath,$(BREW_HDF5)/lib
+        HDF5_FLAGS := -DUSE_HDF5 $(HDF5_INC)
+        HDF5_NOTE  := (+ HDF5)
+    else
+        # Linux fallback
+        HDF5_INC   := -I/usr/include/hdf5/openmpi
+        HDF5_LIB   := -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi -lhdf5_fortran -lhdf5
+        HDF5_FLAGS := -DUSE_HDF5 $(HDF5_INC)
+        HDF5_NOTE  := (+ HDF5)
+    endif
 else
     HDF5_FLAGS :=
     HDF5_LIB   :=
     HDF5_NOTE  :=
 endif
 
-# Use OpenBLAS for multi-threaded BLAS/LAPACK (better than reference BLAS/ATLAS)
-BLAS_FLAGS := -lopenblas -lgomp -lpthread -lm
+# BLAS/LAPACK: Use Apple Accelerate on macOS, OpenBLAS on Linux
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+    # Apple Accelerate framework - optimized for Apple Silicon
+    BLAS_FLAGS := -framework Accelerate -lgomp -lpthread -lm
+    BLAS_NOTE := (Apple Accelerate)
+else
+    # Linux: Use OpenBLAS for multi-threaded BLAS/LAPACK
+    BLAS_FLAGS := -lopenblas -lgomp -lpthread -lm
+    BLAS_NOTE := (OpenBLAS)
+endif
 
 # Flags
 OPTFLAGS    := -O3
@@ -81,7 +108,7 @@ OBJS := $(addprefix $(BUILD_DIR)/,$(notdir $(SRCS:.f90=.o)))
 all: show $(TARGET)
 
 show:
-	@printf 'Building %s %s\n' '$(NAME)' '$(PETSC_NOTE)'
+	@printf 'Building %s %s %s\n' '$(NAME)' '$(PETSC_NOTE)' '$(BLAS_NOTE)'
 
 $(BIN_DIR) $(BUILD_DIR):
 	mkdir -p $@
@@ -102,11 +129,19 @@ debug: FFLAGS = $(DEBUGFLAGS)
 debug: clean show $(TARGET)
 
 run: $(TARGET)
+ifeq ($(UNAME_S),Darwin)
+	OMP_NUM_THREADS=$(NCORES) \
+	VECLIB_MAXIMUM_THREADS=$(NCORES) \
+	OMP_PROC_BIND=spread \
+	OMP_PLACES=cores \
+	$< $(RUN_ARGS)
+else
 	OMP_NUM_THREADS=$(NCORES) \
 	OPENBLAS_NUM_THREADS=$(NCORES) \
 	OMP_PROC_BIND=spread \
 	OMP_PLACES=cores \
 	$< $(RUN_ARGS)
+endif
 
 clean:
 	@echo "[CLEAN] objects and modules"
