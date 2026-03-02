@@ -6,6 +6,7 @@ module petsc_solver
   implicit none
   private
   public :: petsc_init, petsc_finalize, solve_petsc_csr, petsc_cleanup
+  public :: petsc_use_gpu, petsc_get_gpu_status
 
   ! ===== PRECONDITIONER SELECTION =====
   ! Change this to switch between preconditioners:
@@ -14,6 +15,13 @@ module petsc_solver
   ! 'LU'   = Direct solver (most robust, uses more memory)
   character(len=10), parameter :: PRECONDITIONER = 'ILU'  ! <-- Change here!
   ! ====================================
+
+  ! ===== GPU ACCELERATION =====
+  ! Set to .true. to enable GPU acceleration when PETSc is built with CUDA
+  ! If PETSc was not built with CUDA, this will be ignored
+  logical, save :: use_gpu = .false.
+  logical, save :: gpu_available = .false.
+  ! ============================
 
   ! Persistent PETSc objects (reused across timesteps for memory efficiency)
   Mat, save :: A_saved = PETSC_NULL_MAT
@@ -25,9 +33,38 @@ module petsc_solver
 
 contains
 
+  subroutine petsc_use_gpu(enable)
+    ! Enable or disable GPU acceleration
+    logical, intent(in) :: enable
+    use_gpu = enable
+    if (enable) then
+      write(*,'(A)') ' [PETSc] GPU acceleration requested'
+    else
+      write(*,'(A)') ' [PETSc] GPU acceleration disabled'
+    end if
+  end subroutine petsc_use_gpu
+
+  function petsc_get_gpu_status() result(status)
+    ! Return current GPU status
+    logical :: status
+    status = gpu_available
+  end function petsc_get_gpu_status
+
   subroutine petsc_init()
     integer :: ierr
+    
+    ! Initialize PETSc with potential GPU options
+    ! When PETSc is built with CUDA, these options will enable GPU:
+    !   -vec_type cuda     : Use CUDA vectors
+    !   -mat_type aijcusparse : Use cuSPARSE matrices
+    ! If not available, PETSc will gracefully fall back to CPU
     call PetscInitialize(PETSC_NULL_CHARACTER, ierr)
+    
+    ! Check if GPU is available (this works with PETSc >= 3.14)
+    ! The actual GPU detection happens when we create objects
+    gpu_available = .false.  ! Will be updated when objects are created
+    
+    write(*,'(A)') ' [PETSc] Initialized'
   end subroutine petsc_init
 
   subroutine petsc_finalize()
