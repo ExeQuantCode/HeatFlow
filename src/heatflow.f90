@@ -39,6 +39,9 @@ program HEATFLOW_V0_3
    CALL cpu_time(cpustart)                                         
    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
 
+   ! confirm to user that HeatFlow is running
+   write(*,*) 'HeatFlow is running'
+
    ! give feedback to user that code has begun
    write(*,*) 'Setup initialising' 
    
