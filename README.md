@@ -33,6 +33,22 @@ Thank you for your understanding and continued support!
 ---
 
 
+## VS Code and GitHub Copilot Setup
+
+If you are using [Visual Studio Code](https://code.visualstudio.com/), this repository includes recommended extensions for an improved development experience.
+When you open the repository in VS Code you will be prompted to install them, or you can install them manually via the Extensions panel (`Ctrl+Shift+X` / `Cmd+Shift+X`).
+
+To connect your **GitHub Copilot Education** account to VS Code:
+
+1. Install the [GitHub Copilot](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot) and [GitHub Copilot Chat](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot-chat) extensions (recommended automatically by this repo).
+2. Open the VS Code Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and run **"GitHub Copilot: Sign In"**, or click the Copilot icon in the status bar.
+3. Follow the browser prompt to authorise VS Code with your GitHub account. Make sure you sign in with the GitHub account that has the Copilot Education benefit activated (verify at [github.com/settings/copilot](https://github.com/settings/copilot)).
+4. Once authorisation is complete, Copilot suggestions will be active automatically in the editor.
+
+> **Note:** GitHub Copilot Education is available free of charge to verified students and educators through the [GitHub Education](https://education.github.com/) programme.
+
+---
+
 ## Requirements
 
 - Fortran compiler supporting Fortran 2003 standard or later
