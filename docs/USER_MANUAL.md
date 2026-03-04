@@ -1,6 +1,6 @@
 # HeatFlow User Manual
 
-This manual provides a concise guide to configuring and running simulations using the **HeatFlow** software. The software simulates heat transport using finite difference methods, primarily focusing on the Cattaneo (hyperbolic heat equation) and Fourier models.
+This manual provides a concise guide to configuring and running simulations using the **HeatFlow** software. The software simulates heat transport using finite difference methods, primarily focusing on the Cattaneo (hyperbolic heat equation) and Fourier models. Both Cartesian and cylindrical (axisymmetric) coordinate systems are supported.
 
 ## Compilation
 
@@ -55,6 +55,8 @@ This file uses a `KEYWORD = VALUE` format. Comments can be added using `!`.
 | `CG_dir` | String | `' '` | Direction for constant gradient (e.g., `'+x'`, `'-y'`). |
 | `T_BathCC` | Logical| `F` | Scale constant gradient with DeltaT. |
 | `BR` | Double | `1.0` | Bath Ratio (scaling factor). |
+| `kappaBoundNr` | Double | `0.0` | Boundary thermal conductivity at the outer radius (cylindrical mode only). |
+| `T_BathNr` | Double | `T_Bath` | Bath temperature at the outer radius (cylindrical mode only). |
 
 #### Power
 | Keyword | Type | Default | Description |
@@ -91,6 +93,7 @@ All flags default to `.False.`. Set to `.True.` (or `T`) to enable.
 - `_Test_Run`: Flag for test runs.
 - `_InputTempDis`: Load initial temperature distribution from file.
 - `_FullRestart`: Perform a full restart.
+- `_CylindricalGrid`: Enable cylindrical (axisymmetric) coordinate system. See [Cylindrical Grid Mode](#cylindrical-grid-mode).
 
 #### Output Control
 Defines the region of the grid to write to output.
@@ -162,6 +165,83 @@ Each line in the file (after header) corresponds to one row (X-direction).
 ```
 - `1:0` means Material ID 1, Heater ID 0 (no heater).
 - `1:1` means Material ID 1, Heater ID 1 (active heater).
+
+---
+
+## Cylindrical Grid Mode
+
+HeatFlow supports an axisymmetric cylindrical coordinate system, enabled by setting `_CylindricalGrid = T` in `param.in`. In this mode the standard Cartesian grid is reinterpreted as a 2D radial–axial (r–y) domain:
+
+| Grid axis | Physical meaning | Notes |
+| :--- | :--- | :--- |
+| **x** | Radial direction (r) | `x=1` is at the centre of the cylinder, increasing outward. |
+| **y** | Axial direction (down the cylinder) | Same as Cartesian y. |
+| **z** | Azimuthal (unused) | Must be set to `nz = 1`. |
+
+### How it works
+
+The simulation grid in `system.in` is defined as a standard 2D array (`nx × ny`, `nz = 1`). The physical dimensions `Lx` and `Ly` represent the cylinder radius and axial length respectively. Internally, the code makes two adjustments:
+
+1.  **Cell volumes** — Each radial shell at index `ix` (with `dr = Lx/nx`) has volume:
+
+    `V = π (r_out² − r_in²) × dy × dz`
+
+    where `r_in = (ix−1)·dr` and `r_out = ix·dr`.
+
+2.  **Heat-matrix conductivities** — The discretised radial heat equation in cylindrical coordinates is `(1/r) ∂/∂r (r κ ∂T/∂r)`. The interface area between adjacent radial shells scales with the interface radius. The code applies correction factors to the radial conductivity terms:
+
+    - Inner neighbour: factor = `(ix − 1) / (ix − 0.5)`
+    - Outer neighbour: factor = `ix / (ix − 0.5)`
+
+    Axial (y) conductivities are unchanged.
+
+### Boundary conditions
+
+| Boundary | Behaviour |
+| :--- | :--- |
+| **r = 0** (centre, `ix = 1` inner face) | Symmetry boundary — zero radial heat flux. Automatic, no user input needed. |
+| **r = R** (outer radius, `ix = nx` outer face) | Controlled by `kappaBoundNr` and `T_BathNr` in `param.in`. |
+| **y = 0** and **y = Ly** (top/bottom) | Standard Cartesian boundaries (`kappaBoundy1`/`kappaBoundNy`, `T_Bathy1`/`T_Bathy2`). |
+
+> **Note:** In cylindrical mode the Cartesian x and z boundary keywords (`kappaBoundx1`, `kappaBoundNx`, `kappaBoundz1`, `kappaBoundNz`) are not used. Set `kappaBoundNr` and `T_BathNr` instead.
+
+### Example `param.in` (cylindrical)
+```
+_RunName = cylinder_test
+_CylindricalGrid = T
+ntime = 1000
+time_step = 1e-6
+icattaneo = 0
+isteady = 0
+power_in = 1.0
+kappaBoundNr = 0.5
+kappaBoundy1 = 0.5
+kappaBoundNy = 0.5
+T_Bath = 300.0
+T_BathNr = 300.0
+_WriteToTxt = T
+```
+
+### Example `system.in` (cylindrical)
+A 10-cell radial × 5-cell axial cylinder, radius 0.005 m, length 0.01 m:
+```
+10 5 1
+0.005 0.01 0.001
+
+! Z=1, Y=1 Row (top)
+1:1 1:1 1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0
+! Z=1, Y=2 Row
+1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0
+! Z=1, Y=3 Row
+1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0
+! Z=1, Y=4 Row
+1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0
+! Z=1, Y=5 Row (bottom)
+1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0
+```
+Here `x=1,2` at `y=1` are heated (the central core at the top of the cylinder).
+
+---
 
 ## Execution
 
