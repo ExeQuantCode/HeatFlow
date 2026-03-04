@@ -48,6 +48,7 @@ module hmatrixmod
   use inputs, only: isteady, icattaneo, kappaBoundx1, kappaBoundy1, kappaBoundz1, BR
   use inputs, only: kappaBoundNx, kappaBoundNy, kappaBoundNz, Periodicx, Periodicy, Periodicz
   use inputs, only: CG_x_m, CG_x_p, CG_y_m, CG_y_p, CG_z_m, CG_z_p
+  use inputs, only: CylindricalGrid, kappaBoundNr
   use globe_data, only: inverse_time, lin_rhoc
   implicit none
 
@@ -67,6 +68,7 @@ contains
     integer(int12) :: xp, yp, zp, xm, ym, zm 
     real(real12) :: alpha, A, B, D, E, F, G 
     real(real12) :: H
+    real(real12) :: r_center, r_inner, r_outer  ! cylindrical radii
 
     ! Calculate x, y, and z based on the 1D index i
     x = altmod(i,nx)
@@ -136,6 +138,25 @@ contains
     E = calculate_conductivity(x, yp, z, x, y, z)
     F = calculate_conductivity(x, y, zm, x, y, z) 
     G = calculate_conductivity(x, y, zp, x, y, z)  
+
+    !---------------------------------------------------------------
+    ! Cylindrical grid correction:
+    ! In cylindrical coordinates, the radial heat equation is:
+    !   (1/r) d/dr (r * kappa * dT/dr)
+    ! Discretised: the interface area at r +/- 1/2 scales with r,
+    ! so the conductivity term gets multiplied by r_interface / r_center.
+    ! r_center = (x - 0.5) * dr,  r_inner = (x-1) * dr,  r_outer = x * dr
+    ! Factor for inner (A): (x-1) / (x-0.5)
+    ! Factor for outer (B): x / (x-0.5)
+    ! Y (axial) and Z terms are unchanged.
+    !---------------------------------------------------------------
+    if (CylindricalGrid) then
+       r_center = real(x,real12) - 0.5_real12
+       r_inner  = real(x - 1,real12)
+       r_outer  = real(x,real12)
+       A = A * r_inner / r_center
+       B = B * r_outer / r_center
+    end if
 
     ! Determine the value of H based on the relationship between i and j
     H=0.0_real12
@@ -353,6 +374,7 @@ contains
   subroutine boundry_diag_term(x_b, y_b, z_b, x, y, z, kappa_ab)
     integer(int12), intent(in) :: x_b, y_b, z_b, x, y, z
     real(real12) :: kappa, kappa_ab
+    real(real12) :: r_center, r_iface  ! cylindrical correction
 
     !------------------------------------------------------------
     ! The boundary term is calculated of the boundary grid point.
@@ -361,13 +383,33 @@ contains
 
     
     if (x_b .ne. x) then
-      if (x_b .lt. 1) then
-       kappa_ab = ((2*kappaBoundx1*kappa)/(kappaBoundx1+kappa))/((grid(x, y, z)%Length(1))**2)
-       if (kappa .ne. kappaBoundx1) kappa_ab = kappa_ab*BR
-      else if (x_b .gt. nx) then
-        kappa_ab = ((2*kappaBoundNx*kappa)/(kappaBoundNx+kappa))/((grid(x, y, z)%Length(1))**2)
-        if (kappa .ne. kappaBoundNx) kappa_ab = kappa_ab*BR
-      end if 
+      if (CylindricalGrid) then
+        !---------------------------------------------------------------
+        ! Cylindrical boundaries in the radial (x) direction:
+        !  x_b < 1 means inner boundary (r=0 center) -> symmetry, zero flux
+        !  x_b > nx means outer boundary (r=R) -> use kappaBoundNr
+        !---------------------------------------------------------------
+        if (x_b .lt. 1) then
+          ! Center symmetry: zero flux at r=0
+          kappa_ab = 0.0_real12
+        else if (x_b .gt. nx) then
+          ! Outer radial boundary
+          kappa_ab = ((2*kappaBoundNr*kappa)/(kappaBoundNr+kappa))/((grid(x, y, z)%Length(1))**2)
+          if (kappa .ne. kappaBoundNr) kappa_ab = kappa_ab*BR
+          ! Apply cylindrical area correction: r_outer / r_center
+          r_center = (real(x,real12) - 0.5_real12)
+          r_iface  = real(x,real12)
+          kappa_ab = kappa_ab * r_iface / r_center
+        end if
+      else
+        if (x_b .lt. 1) then
+         kappa_ab = ((2*kappaBoundx1*kappa)/(kappaBoundx1+kappa))/((grid(x, y, z)%Length(1))**2)
+         if (kappa .ne. kappaBoundx1) kappa_ab = kappa_ab*BR
+        else if (x_b .gt. nx) then
+          kappa_ab = ((2*kappaBoundNx*kappa)/(kappaBoundNx+kappa))/((grid(x, y, z)%Length(1))**2)
+          if (kappa .ne. kappaBoundNx) kappa_ab = kappa_ab*BR
+        end if 
+      end if
        kappa_ab = kappa_ab
 
     else if (y_b .ne. y) then

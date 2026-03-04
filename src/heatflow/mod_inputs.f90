@@ -92,7 +92,10 @@ module inputs
   ! flags
   logical :: Check_Sparse_Full, Check_Stability, Check_Steady_State
   logical :: WriteToTxt, LPercentage, InputTempDis, CompressedOutput, HDF5Output
-  logical ::  Test_Run = .FALSE., FullRestart = .FALSE.
+  logical :: Test_Run = .FALSE., FullRestart = .FALSE.
+  logical :: CylindricalGrid = .FALSE.
+  real(real12) :: kappaBoundNr  ! Boundary kappa at outer radius (cylindrical)
+  real(real12) :: T_BathNr      ! Bath temperature at outer radius (cylindrical)
 
   ! Name of simiulation run
   character(1024) :: RunName
@@ -204,7 +207,7 @@ contains
   subroutine read_param(unit)
     implicit none
     integer:: unit, Reason
-    integer,dimension(47)::readvar
+    integer,dimension(50)::readvar
     character(1024)::buffer
 
     readvar(:)=0
@@ -259,6 +262,8 @@ contains
     kappaBoundNx = 0.0
     kappaBoundNy = 0.0
     kappaBoundNz = 0.0
+    kappaBoundNr = 0.0
+    T_BathNr = T_Bath
     TempDepProp = 0
     !t_output = !{all, every_n, single_n}
     !s_output = !{all, region_[x:X,y:Y,z:Z], downsample_n}
@@ -329,6 +334,9 @@ contains
        CALL assignS(buffer,"CG_dir",CG_dir,readvar(45))
        CALL assignL(buffer,"_CompressedOutput",CompressedOutput,readvar(46))
        CALL assignL(buffer,"_HDF5Output",HDF5Output,readvar(47))
+       CALL assignL(buffer,"_CylindricalGrid",CylindricalGrid,readvar(48))
+       CALL assignD(buffer,"kappaBoundNr",kappaBoundNr,readvar(49))
+       CALL assignD(buffer,"T_BathNr",T_BathNr,readvar(50))
        !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     end do
@@ -532,6 +540,17 @@ contains
        readvar(47) = 1
     end if
 
+    ! Cylindrical grid defaults: if not set, mark as read
+    if (readvar(48) .eq. 0) then
+       readvar(48) = 1
+    end if
+    if (readvar(49) .eq. 0) then
+       readvar(49) = 1
+    end if
+    if (readvar(50) .eq. 0) then
+       readvar(50) = 1
+    end if
+
     if (any(readvar.eq.0)) then
        write(6,*)
        write(6,'(A43)') '###############################'
@@ -603,6 +622,11 @@ contains
        write(6,'(A35,I6)')      '   end_iy        = ', end_iy
        write(6,'(A35,I6)')      '   start_iz      = ', start_iz
        write(6,'(A35,I6)')      '   end_iz        = ', end_iz
+       write(6,'(A35,L1)')      '  _CylindricalGrid = ', CylindricalGrid
+       if (CylindricalGrid) then
+          write(6,'(A35,F12.5)')   '   kappaBoundNr  = ', kappaBoundNr
+          write(6,'(A35,F12.5)')   '   T_BathNr      = ', T_BathNr
+       end if
 
 
     end if
@@ -614,11 +638,13 @@ contains
 !!! The read in the system file, system.in
 !!!#################################################################################################
   subroutine read_system(unit)
+    use constants, only: pi
     implicit none
     integer, intent(in) :: unit
     integer(int12) :: ix, iy, iz, reason, pos !, pos_old ! counters
     character(10000) :: buffer, array,line
     character(10), dimension(:), allocatable :: temp
+    real(real12) :: dr, r_in, r_out, r_mid
     ! character(100)  :: part1, part2 ! buffer and array
     ! read mesh cell number
     read(unit,'(A)',iostat=Reason) buffer ! read the buffer
@@ -634,6 +660,27 @@ contains
     grid(:,:,:)%Length(2)=Ly/real(ny)
     grid(:,:,:)%Length(3)=Lz/real(nz)
     grid(:,:,:)%volume=grid(:,:,:)%Length(1)*grid(:,:,:)%Length(2)*grid(:,:,:)%Length(3)
+
+    !---------------------------------------------------------------
+    ! Cylindrical grid: override volume for each radial shell
+    ! x = radial (r), y = axial, z = 1 (azimuthally symmetric)
+    ! Volume of shell ix = pi*(r_out^2 - r_in^2) * dy * dz
+    !---------------------------------------------------------------
+    if (CylindricalGrid) then
+       if (nz .ne. 1) then
+          write(6,*) 'Error: Cylindrical grid requires nz = 1'
+          stop
+       end if
+       dr = Lx / real(nx)
+       do ix = 1, nx
+          r_in  = real(ix - 1) * dr
+          r_out = real(ix) * dr
+          r_mid = 0.5_real12 * (r_in + r_out)
+          grid(ix,:,:)%volume = pi * (r_out**2 - r_in**2) * grid(ix,1,1)%Length(2) &
+               * grid(ix,1,1)%Length(3)
+       end do
+       write(6,*) 'Cylindrical grid enabled: x=radial, y=axial, nz=1'
+    end if
     ! Read the file
     do iz = 1, nz
         read(unit, '(A)', iostat= Reason) buffer 

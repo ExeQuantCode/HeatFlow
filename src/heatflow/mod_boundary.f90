@@ -16,6 +16,7 @@ module boundary_vector
   use inputs, only: Periodicx, Periodicy, Periodicz
   use inputs, only: T_Bathx1, T_Bathx2, T_Bathy1, T_Bathy2, T_Bathz1, T_Bathz2, T_BathCG
   use inputs, only: CG_x_m, CG_x_p, CG_y_m, CG_y_p, CG_z_m, CG_z_p
+  use inputs, only: CylindricalGrid, kappaBoundNr, T_BathNr
   use globe_data, only: Temp_p
   implicit none
 contains
@@ -29,6 +30,7 @@ contains
         z1_power_dens, zn_power_dens
     real(real12) :: x1_edge_vol, xn_edge_vol, y1_edge_vol, yn_edge_vol, &
         z1_edge_vol, zn_edge_vol
+    real(real12) :: r_center, r_iface  ! cylindrical correction
 
 
     !Bound term has a correction for the ix,iy,iz edges of our grid (first vector) ...
@@ -77,6 +79,27 @@ contains
                 kappa = grid(ix, iy, iz)%kappa
     
                 if (.not. Periodicx) then
+                    if (CylindricalGrid) then
+                        !-------------------------------------------------------
+                        ! Cylindrical radial boundaries:
+                        !  ix=1: center symmetry -> zero flux, no bath term
+                        !  ix=nx: outer radius -> use kappaBoundNr, T_BathNr
+                        !-------------------------------------------------------
+                        if (ix .eq. 1) then
+                            ! Symmetry at r=0: no boundary flux contribution
+                            ! (B(I) unchanged, zero flux)
+                        end if
+                        if (ix .eq. nx) then
+                            kappaHarm = (2*kappa*kappaBoundNr/(kappa+kappaBoundNr)) / &
+                            (grid(ix, iy, iz)%Length(1)**2)
+                            if (kappa .ne. kappaBoundNr) kappaHarm = kappaHarm*BR
+                            ! Apply cylindrical area correction: r_outer / r_center
+                            r_center = real(ix,real12) - 0.5_real12
+                            r_iface  = real(ix,real12)
+                            kappaHarm = kappaHarm * r_iface / r_center
+                            B(I) = B(I) + (kappaHarm) * T_BathNr
+                        end if
+                    else
                     if (ix .eq. 1) then
                         if (CG_x_m) then
                             B(I) = x1_power_dens
@@ -96,6 +119,7 @@ contains
                             if (kappa .ne. kappaBoundNx) kappaHarm = kappaHarm*BR
                             B(I) = B(I) + (kappaHarm) * T_Bathx2 !+ boundray_term_vel(nx,iy,iz,T_Bathx2)
                         end if
+                    end if
                     end if
                 end if
     
