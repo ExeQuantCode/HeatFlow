@@ -156,6 +156,8 @@ contains
        r_outer  = real(x,real12)
        A = A * r_inner / r_center
        B = B * r_outer / r_center
+       F = F * 0.0_real12
+       G = G * 0.0_real12
     end if
 
     ! Determine the value of H based on the relationship between i and j

@@ -79,48 +79,48 @@ contains
                 kappa = grid(ix, iy, iz)%kappa
     
                 if (.not. Periodicx) then
-                    if (CylindricalGrid) then
-                        !-------------------------------------------------------
-                        ! Cylindrical radial boundaries:
-                        !  ix=1: center symmetry -> zero flux, no bath term
-                        !  ix=nx: outer radius -> use kappaBoundNr, T_BathNr
-                        !-------------------------------------------------------
-                        if (ix .eq. 1) then
-                            ! Symmetry at r=0: no boundary flux contribution
-                            ! (B(I) unchanged, zero flux)
-                        end if
-                        if (ix .eq. nx) then
-                            kappaHarm = (2*kappa*kappaBoundNr/(kappa+kappaBoundNr)) / &
-                            (grid(ix, iy, iz)%Length(1)**2)
-                            if (kappa .ne. kappaBoundNr) kappaHarm = kappaHarm*BR
-                            ! Apply cylindrical area correction: r_outer / r_center
-                            r_center = real(ix,real12) - 0.5_real12
-                            r_iface  = real(ix,real12)
-                            kappaHarm = kappaHarm * r_iface / r_center
-                            B(I) = B(I) + (kappaHarm) * T_BathNr
-                        end if
-                    else
-                    if (ix .eq. 1) then
-                        if (CG_x_m) then
+                   clyBC:if (CylindricalGrid) then
+                      !-------------------------------------------------------
+                      ! Cylindrical radial boundaries:
+                      !  ix=1: center symmetry -> zero flux, no bath term
+                      !  ix=nx: outer radius -> use kappaBoundNr, T_BathNr
+                      !-------------------------------------------------------
+                      if (ix .eq. 1) then
+                         ! Symmetry at r=0: no boundary flux contribution
+                         B(I) = 0.0_real12
+                      end if
+                      if (ix .eq. nx) then
+                         kappaHarm = (2*kappa*kappaBoundNr/(kappa+kappaBoundNr)) / &
+                              (grid(ix, iy, iz)%Length(1)**2)
+                         if (kappa .ne. kappaBoundNr) kappaHarm = kappaHarm*BR
+                         ! Apply cylindrical area correction: r_outer / r_center
+                         r_center = real(ix,real12) - 0.5_real12
+                         r_iface  = real(ix,real12)
+                         kappaHarm = kappaHarm * r_iface / r_center
+                         B(I) = B(I) + (kappaHarm) * T_BathNr
+                      end if
+                   else
+                      if (ix .eq. 1) then
+                         if (CG_x_m) then
                             B(I) = x1_power_dens
-                        else
+                         else
                             kappaHarm = (2*kappa*kappaBoundx1/(kappa+kappaBoundx1)) / &
-                            (grid(ix, iy, iz)%Length(1)**2)
+                                 (grid(ix, iy, iz)%Length(1)**2)
                             if (kappa .ne. kappaBoundx1) kappaHarm = kappaHarm*BR
                             B(I) = B(I) + (kappaHarm) * T_Bathx1 !+ boundray_term_vel(1_int12,iy,iz,T_Bathx1)
-                        end if
-                    end if
-                    if (ix .eq. nx) then
-                        if (CG_x_p) then
+                         end if
+                      end if
+                      if (ix .eq. nx) then
+                         if (CG_x_p) then
                             B(I) = xn_power_dens
-                        else
+                         else
                             kappaHarm = (2*kappa*kappaBoundNx/(kappa+kappaBoundNx)) / &
-                            (grid(ix, iy, iz)%Length(1)**2)
+                                 (grid(ix, iy, iz)%Length(1)**2)
                             if (kappa .ne. kappaBoundNx) kappaHarm = kappaHarm*BR
                             B(I) = B(I) + (kappaHarm) * T_Bathx2 !+ boundray_term_vel(nx,iy,iz,T_Bathx2)
-                        end if
-                    end if
-                    end if
+                         end if
+                      end if
+                   end if clyBC
                 end if
     
                 if (.not. Periodicy) then

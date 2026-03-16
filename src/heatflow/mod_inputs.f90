@@ -393,6 +393,34 @@ contains
     end if
 
 
+    !------------------------------------------------------------------------------------
+    ! Cylindrical grid: only kappaBoundy1, kappaBoundNy, kappaBoundNr are needed.
+    ! Map them to the Cartesian variables and mark the others as satisfied.
+    !------------------------------------------------------------------------------------
+    if (CylindricalGrid) then
+       ! ix=1 is reflection axis -> zero flux (already handled in mod_boundary)
+       kappaBoundx1 = 0.0
+       readvar(9) = 1
+       ! ix=nx outer radius -> uses kappaBoundNr directly in mod_boundary
+       ! but also set kappaBoundNx so downstream code doesn't complain
+       kappaBoundNx = kappaBoundNr
+       readvar(29) = 1
+       ! nz=1 in cylindrical mode -> z boundaries are unused
+       kappaBoundz1 = 0.0
+       kappaBoundNz = 0.0
+       readvar(11) = 1
+       readvar(31) = 1
+       ! T_Bath mapping: x boundaries use cylindrical values
+       T_Bathx1 = T_Bath   ! reflection, not used
+       T_Bathx2 = T_BathNr
+       T_Bathz1 = T_Bath   ! not used
+       T_Bathz2 = T_Bath   ! not used
+       readvar(20) = 1  ! T_Bathx1
+       readvar(21) = 1  ! T_Bathx2
+       readvar(24) = 1  ! T_Bathz1
+       readvar(25) = 1  ! T_Bathz2
+    end if
+
     PB:if ((.not. Periodicx).or.(.not. Periodicy).or.(.not. Periodicz)) then
        !------------------------------------------------------------------------------------
        ! Error about missing kappa bound 
@@ -423,28 +451,51 @@ contains
           write(6,'(A)')   ' ---            Warning in subroutine "check_param"            ---'
           write(6,'(A)')   ' --- Warning:  KappaBound is not set       ---'
           readvar(28) = 1
-          
        end if WarKBO
+       !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+       !------------------------------------------------------------------------------------
+       ! warning about missing kappa bound in cylindrical case. reassine to Kappabound
+       !------------------------------------------------------------------------------------
+        if (CylindricalGrid) then
+          WarcylKB:if ( (readvar(49).eq.0) .and. (readvar(28) .eq. 1) ) then
+            write(6,*)
+            write(6,'(A43)') '###############################'
+            write(6,'(A43)') '##########   Warning   ##########'
+            write(6,'(A43)') '###############################'
+            write(6,*)
+            write(6,'(A)')   ' ---            Warning in subroutine "check_param"            ---'
+            write(6,'(A)')   ' --- Warning:  KappaBound is not set       ---'
+            readvar(49) = 1
+            kappaBoundNr = KappaBound
+            kappaBoundy1 = KappaBound
+            kappaBoundNy = KappaBound
+            kappaBoundz1 = 0
+            kappaBoundNz = 0
+            kappaBoundx1 = 0
+            kappaBoundNx = 0
+        end if WarcylKB
        !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
        !------------------------------------------------------------------------------------
        ! warning about missing kappa bound. reassine to Kappabound
        !------------------------------------------------------------------------------------
-       WarKB:if (((any(readvar(9:11).eq.0)) .or. any(readvar(29:31).eq.0)) &
-            .and. (readvar(28) .eq. 1) )then
-          write(6,*)
-          write(6,'(A43)') '###############################'
-          write(6,'(A43)') '##########  WARNING  ##########'
-          write(6,'(A43)') '###############################'
-          write(6,*)
-          write(6,'(A)')   ' ---           Warning in subroutine "check_param"           ---'
-          write(6,'(A)')   ' --- WARNING: KappaBoundx,y,z not set, using KappaBound      ---'
-          kappaBoundx1 = KappaBound
-          kappaBoundy1 = KappaBound
-          kappaBoundz1 = KappaBound
-          kappaBoundNx = KappaBound
-          kappaBoundNy = KappaBound
-          kappaBoundNz = KappaBound
-       end if WarKB
+       else
+          WarKB:if (((any(readvar(9:11).eq.0)) .or. any(readvar(29:31).eq.0)) &
+              .and. (readvar(28) .eq. 1) )then
+            write(6,*)
+            write(6,'(A43)') '###############################'
+            write(6,'(A43)') '##########  WARNING  ##########'
+            write(6,'(A43)') '###############################'
+            write(6,*)
+            write(6,'(A)')   ' ---           Warning in subroutine "check_param"           ---'
+            write(6,'(A)')   ' --- WARNING: KappaBoundx,y,z not set, using KappaBound      ---'
+            kappaBoundx1 = KappaBound
+            kappaBoundy1 = KappaBound
+            kappaBoundz1 = KappaBound
+            kappaBoundNx = KappaBound
+            kappaBoundNy = KappaBound
+            kappaBoundNz = KappaBound
+          end if WarKB
+        end if
        !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     elseif (((any(readvar(9:11).eq.0)) .or. any(readvar(29:31).eq.0)) &
          .or. (readvar(28) .gt. 0) ) then
@@ -655,7 +706,12 @@ contains
     allocate(temp(nx))
     ! read mesh volume dimessions
     read(unit,'(A)',iostat=Reason) buffer
-    read(buffer,*) Lx, Ly, Lz 
+    if (CylindricalGrid) then
+      read(buffer,*) Lx, Ly
+      Lz = 1.0 !dummy value
+    else
+      read(buffer,*) Lx, Ly, Lz
+    end if 
     grid(:,:,:)%Length(1)=Lx/real(nx)
     grid(:,:,:)%Length(2)=Ly/real(ny)
     grid(:,:,:)%Length(3)=Lz/real(nz)
@@ -676,8 +732,8 @@ contains
           r_in  = real(ix - 1) * dr
           r_out = real(ix) * dr
           r_mid = 0.5_real12 * (r_in + r_out)
-          grid(ix,:,:)%volume = pi * (r_out**2 - r_in**2) * grid(ix,1,1)%Length(2) &
-               * grid(ix,1,1)%Length(3)
+          grid(ix,:,:)%volume = pi * (r_out**2 - r_in**2) &
+                                    * grid(ix,1,1)%Length(2)
        end do
        write(6,*) 'Cylindrical grid enabled: x=radial, y=axial, nz=1'
     end if

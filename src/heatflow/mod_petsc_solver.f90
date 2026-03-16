@@ -12,7 +12,7 @@ module petsc_solver
   ! 'GAMG' = Algebraic Multigrid (best for elliptic PDEs, 10-20x faster)
   ! 'ILU'  = Incomplete LU (good general purpose, robust)
   ! 'LU'   = Direct solver (most robust, uses more memory)
-  character(len=10), parameter :: PRECONDITIONER = 'ILU'  ! <-- Change here!
+  character(len=10), parameter :: PRECONDITIONER = 'LU'  ! <-- Change here!
   ! ====================================
 
   ! Persistent PETSc objects (reused across timesteps for memory efficiency)

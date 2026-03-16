@@ -78,6 +78,21 @@ contains
     end do
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+    ! DEBUG: Verify 1D-to-3D mapping at iy=16
+    if (itime .le. 2) then
+       write(*,*) ''
+       write(*,'(A,I6)') ' === DATA_WRITE DEBUG: itime=', itime
+       write(*,'(A6,A14,A14,A14)') 'ix', 'Temp_p(1D)', 'Temp_cur(3D)', 'diff'
+       do ix = 1, nx
+          indexA = ix + (16-1)*nx  ! iy=16, iz=1
+          write(*,'(I6,ES14.6,ES14.6,ES14.6)') &
+               ix, Temp_p(indexA), Temp_cur(ix,16,1), &
+               Temp_p(indexA) - Temp_cur(ix,16,1)
+       end do
+       write(*,*) '=== END DATA_WRITE DEBUG ==='
+       write(*,*) ''
+    end if
+
 
       if (itime .eq. 1) then
       ! Needs logica testing does not make sense

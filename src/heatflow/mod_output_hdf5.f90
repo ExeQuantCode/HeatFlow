@@ -132,11 +132,12 @@ contains
     call h5pclose_f(plist_id, error)
     
     ! Create extendible 'temperatures' dataset: shape (nt, nx, ny, nz) in Python
-    ! Note: Fortran is column-major, so we reverse dimensions for HDF5
-    ! Fortran specifies (nz, ny, nx, nt) so Python sees (nt, nx, ny, nz)
-    temps_dims = (/dnz, dny, dnx, 0_8/)
-    temps_maxdims = (/dnz, dny, dnx, H5S_UNLIMITED_F/)
-    temps_chunk = (/min(dnz, 10_8), dny, dnx, 1_8/)  ! Chunk: 1 timestep, full XY, partial Z
+    ! Note: Fortran memory is column-major (nx varies fastest).
+    ! By specifying dimensions natively as (nx, ny, nz, nt), HDF5 respects 
+    ! our memory layout and Python natively reads it as (nt, nz, ny, nx).
+    temps_dims = (/dnx, dny, dnz, 0_8/)
+    temps_maxdims = (/dnx, dny, dnz, H5S_UNLIMITED_F/)
+    temps_chunk = (/dnx, dny, min(dnz, 10_8), 1_8/)  ! Chunk: 1 timestep, full XY, partial Z
     
     call h5screate_simple_f(4, temps_dims, temps_space_id, error, temps_maxdims)
     call h5pcreate_f(H5P_DATASET_CREATE_F, plist_id, error)
@@ -203,17 +204,15 @@ contains
     call h5sclose_f(filespace_id, error)
 
     ! === Extend and write 'temperatures' dataset ===
-    ! Dimensions reversed: (nz, ny, nx, nt) so Python sees (nt, nx, ny, nz)
-    temps_newsize = (/int(eiz, 8), int(eiy, 8), int(eix, 8), current_step/)
+    temps_newsize = (/int(eix, 8), int(eiy, 8), int(eiz, 8), current_step/)
     call h5dset_extent_f(temps_dset_id, temps_newsize, error)
     
     ! Get updated filespace
     call h5dget_space_f(temps_dset_id, filespace_id, error)
     
     ! Select hyperslab for new data (append at end of time dimension)
-    ! Dimensions reversed: (nz, ny, nx, nt) so Python sees (nt, nx, ny, nz)
     temps_offset = (/0_8, 0_8, 0_8, current_step - 1/)
-    temps_count = (/int(eiz, 8), int(eiy, 8), int(eix, 8), 1_8/)
+    temps_count = (/int(eix, 8), int(eiy, 8), int(eiz, 8), 1_8/)
     call h5sselect_hyperslab_f(filespace_id, H5S_SELECT_SET_F, temps_offset, temps_count, error)
     
     ! Create memory space

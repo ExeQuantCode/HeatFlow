@@ -27,6 +27,7 @@ module evolution
   use solver, only: linbcg
   use globe_data, only: Temp_p, Temp_pp, inverse_time, heat, lin_rhoc
   use globe_data, only: acsr, ja, ia
+  use globe_data, only: heated_volume
   use heating, only: heater
   use boundary_vector, only: boundary
   use cattaneo, only: S_catS
@@ -117,6 +118,67 @@ contains
     !---------------------------------------------
     ! Construct S vector 
     !---------------------------------------------
+
+    ! COMPREHENSIVE DEBUG: Dump all quantities for radial cross-section at iy=16
+    if (itime .le. 2) then
+       block
+         integer(int12) :: dbg_ix, dbg_idx, dbg_k
+         real(real12) :: dbg_Ax, dbg_rowsum
+         write(*,*) ''
+         write(*,*) '=========================================================='
+         write(*,'(A,I6)') ' DEBUG TIMESTEP ', itime
+         write(*,*) '=========================================================='
+         write(*,*) 'inverse_time =', inverse_time
+         write(*,*) 'heated_volume =', heated_volume
+         write(*,*) 'sum(Q) =', sum(Q), '  sum(Qdens) =', sum(Qdens)
+         write(*,*) 'count(Qdens/=0) =', count(Qdens .ne. 0.0_real12)
+         write(*,*) ''
+         write(*,*) '--- Radial cross-section at iy=16, iz=1 ---'
+         write(*,'(A6,A12,A12,A14,A14,A14,A14,A14)') &
+              'ix', 'mat_id', 'kappa', 'rhoCp', 'Temp_p', 'B(I)', 'Qdens(I)', 'S(I)'
+         do dbg_ix = 1, nx
+            dbg_idx = dbg_ix + (16-1)*nx  ! 1D index for (ix, iy=16, iz=1)
+            write(*,'(I6,I12,ES12.4,ES14.6,ES14.6,ES14.6,ES14.6,ES14.6)') &
+                 dbg_ix, grid(dbg_ix,16,1)%imaterial_type, &
+                 grid(dbg_ix,16,1)%kappa, &
+                 lin_rhoc(dbg_idx), &
+                 Temp_p(dbg_idx), &
+                 B(dbg_idx), Qdens(dbg_idx), S(dbg_idx)
+         end do
+         write(*,*) ''
+         write(*,*) '--- H-matrix rows for iy=16 (radial): row_sum and entries ---'
+         do dbg_ix = 1, nx
+            dbg_idx = dbg_ix + (16-1)*nx
+            dbg_rowsum = 0.0_real12
+            do dbg_k = ia(dbg_idx), ia(dbg_idx+1)-1
+               dbg_rowsum = dbg_rowsum + acsr(dbg_k)
+            end do
+            ! Compute A*Temp_p for this row (matrix-vector product)
+            dbg_Ax = 0.0_real12
+            do dbg_k = ia(dbg_idx), ia(dbg_idx+1)-1
+               dbg_Ax = dbg_Ax + acsr(dbg_k) * Temp_p(ja(dbg_k))
+            end do
+            write(*,'(A,I3,A,ES14.6,A,ES14.6,A,ES14.6)') &
+                 ' ix=', dbg_ix, &
+                 '  row_sum=', dbg_rowsum, &
+                 '  H*Tp=', dbg_Ax, &
+                 '  S=', S(dbg_idx)
+         end do
+         write(*,*) ''
+         write(*,*) '--- Heater region at iy=32, iz=1 ---'
+         write(*,'(A6,A12,A14,A14,A14,A14)') &
+              'ix', 'iheater', 'Temp_p', 'B(I)', 'Qdens(I)', 'S(I)'
+         do dbg_ix = 1, min(10, nx)
+            dbg_idx = dbg_ix + (32-1)*nx
+            write(*,'(I6,I12,ES14.6,ES14.6,ES14.6,ES14.6)') &
+                 dbg_ix, grid(dbg_ix,32,1)%iheater, &
+                 Temp_p(dbg_idx), B(dbg_idx), Qdens(dbg_idx), S(dbg_idx)
+         end do
+         write(*,*) '=========================================================='
+         write(*,*) ''
+       end block
+    end if
+
     if ( iSteady .eq. 0 ) then
        S = - inverse_time * Temp_p * lin_rhoc - Qdens - B
        if (IVERB .gt. 3) then
@@ -192,12 +254,38 @@ contains
    
    call solve_petsc_csr(NA32, ia32, ja32, acsr, S, x, tol, itmax)
    
-   ! Debug: Print solution statistics and verify solution
-   if (IVERB .gt. 3) then
-      write(*,*) "Solution x after PETSc: min=", minval(x), " max=", maxval(x), " avg=", sum(x)/size(x)
-      write(*,*) "Temperature change: avg(x-Temp_p)=", sum(x-Temp_p)/size(x)
-      write(*,*) "Max temperature change: ", maxval(abs(x-Temp_p))
-      write(*,*) "=============================================="
+   ! POST-SOLVE DEBUG: Show solution and residual for radial cross-section
+   if (itime .le. 2) then
+      block
+        integer(int12) :: dbg_ix, dbg_idx, dbg_k
+        real(real12) :: dbg_Ax, dbg_resid
+        write(*,*) ''
+        write(*,*) '--- POST-SOLVE: Solution at iy=16, iz=1 ---'
+        write(*,'(A6,A14,A14,A14,A14)') &
+             'ix', 'Temp_p(old)', 'x(new)', 'deltaT', 'residual'
+        do dbg_ix = 1, nx
+           dbg_idx = dbg_ix + (16-1)*nx
+           ! Compute H*x for this row (should equal S)
+           dbg_Ax = 0.0_real12
+           do dbg_k = ia(dbg_idx), ia(dbg_idx+1)-1
+              dbg_Ax = dbg_Ax + acsr(dbg_k) * x(ja(dbg_k))
+           end do
+           dbg_resid = dbg_Ax - S(dbg_idx)
+           write(*,'(I6,ES14.6,ES14.6,ES14.6,ES14.6)') &
+                dbg_ix, Temp_p(dbg_idx), x(dbg_idx), &
+                x(dbg_idx) - Temp_p(dbg_idx), dbg_resid
+        end do
+        write(*,*) ''
+        write(*,*) '--- POST-SOLVE: Heater region iy=32 ---'
+        write(*,'(A6,A14,A14,A14)') 'ix', 'Temp_p(old)', 'x(new)', 'deltaT'
+        do dbg_ix = 1, min(10, nx)
+           dbg_idx = dbg_ix + (32-1)*nx
+           write(*,'(I6,ES14.6,ES14.6,ES14.6)') &
+                dbg_ix, Temp_p(dbg_idx), x(dbg_idx), &
+                x(dbg_idx) - Temp_p(dbg_idx)
+        end do
+        write(*,*) '=========================================================='
+      end block
    end if
    
    ! Note: Don't deallocate ia32, ja32 - keep them for next time step
@@ -226,6 +314,22 @@ contains
     
     Temp_pp = Temp_p
     Temp_p = x
+
+    ! DEBUG: Verify Temp_p after assignment
+    if (itime .le. 2) then
+       block
+         integer(int12) :: dbg_ix2, dbg_idx2
+         write(*,*) ''
+         write(*,'(A,I6)') ' === VERIFY Temp_p AFTER ASSIGNMENT, itime=', itime
+         write(*,'(A6,A14,A14)') 'ix', 'Temp_p(1D)', 'x(1D)'
+         do dbg_ix2 = 1, nx
+            dbg_idx2 = dbg_ix2 + (16-1)*nx
+            write(*,'(I6,ES14.6,ES14.6)') &
+                 dbg_ix2, Temp_p(dbg_idx2), x(dbg_idx2)
+         end do
+         write(*,*) '=== END VERIFY ==='
+       end block
+    end if
 
    !  if (TempDepProp .eq. 1) then
    !    CALL ChangeProp()

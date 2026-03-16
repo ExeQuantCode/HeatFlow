@@ -57,8 +57,15 @@ endif
 # BLAS/LAPACK: Use Apple Accelerate on macOS, OpenBLAS on Linux
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
+    # macOS SDK sysroot (fixes 'library System not found' with Homebrew gfortran)
+    MACOS_SDK := $(shell xcrun --show-sdk-path 2>/dev/null)
+    ifneq ($(MACOS_SDK),)
+        SYSROOT_FLAGS := -L$(MACOS_SDK)/usr/lib -F$(MACOS_SDK)/System/Library/Frameworks
+    else
+        SYSROOT_FLAGS :=
+    endif
     # Apple Accelerate framework - optimized for Apple Silicon
-    BLAS_FLAGS := -framework Accelerate -lgomp -lpthread -lm
+    BLAS_FLAGS := $(SYSROOT_FLAGS) -framework Accelerate -lgomp -lpthread -lm
     BLAS_NOTE := (Apple Accelerate)
 else
     # Linux: Use OpenBLAS for multi-threaded BLAS/LAPACK

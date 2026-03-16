@@ -224,6 +224,77 @@ module setup
       
       deallocate(row_vals, row_cols)
       write(*,'(A,I12,A)') " CSR matrix built successfully. Actual nonzeros: ", count, ""
+
+      ! ---- DEBUG: Material properties and cell geometry ----
+      write(*,*) ''
+      write(*,*) '=== SETUP DEBUG: Grid properties ==='
+      write(*,*) 'nx=', nx, ' ny=', ny, ' nz=', nz
+      write(*,*) 'dx=', grid(1,1,1)%Length(1), ' dy=', grid(1,1,1)%Length(2), &
+           ' dz=', grid(1,1,1)%Length(3)
+      write(*,*) ''
+      write(*,*) '--- Material properties at iy=16, iz=1 (radial cross-section) ---'
+      write(*,'(A6,A8,A12,A12,A12,A14,A14)') &
+           'ix', 'mat_id', 'kappa', 'rho', 'Cp', 'rhoCp', 'volume'
+      do i = 1, nx
+         row = i + (16-1)*nx
+         write(*,'(I6,I8,ES12.4,ES12.4,ES12.4,ES14.6,ES14.6)') &
+              i, grid(i,16,1)%imaterial_type, &
+              grid(i,16,1)%kappa, grid(i,16,1)%rho, &
+              grid(i,16,1)%heat_capacity, &
+              lin_rhoc(row), grid(i,16,1)%volume
+      end do
+      write(*,*) ''
+      
+      ! ---- DEBUG: H-matrix rows for radial cross-section ----
+      write(*,*) '=== H-MATRIX ROW DUMP (iy=16, iz=1) ==='
+      do i = 1, nx
+         row = i + (16-1)*nx
+         write(*,'(A,I5,A,I3,A)') ' Row ', row, ' (ix=', i, '):'
+         do k = ia(row), ia(row+1)-1
+            ! Identify what this entry represents
+            j = ja(k)
+            if (j .eq. row) then
+               write(*,'(A,I5,A,ES15.7,A)') '   col=', j, '  val=', acsr(k), '  [DIAG]'
+            else if (j .eq. row-1) then
+               write(*,'(A,I5,A,ES15.7,A)') '   col=', j, '  val=', acsr(k), '  [x-1, A]'
+            else if (j .eq. row+1) then
+               write(*,'(A,I5,A,ES15.7,A)') '   col=', j, '  val=', acsr(k), '  [x+1, B]'
+            else if (j .eq. row-nx) then
+               write(*,'(A,I5,A,ES15.7,A)') '   col=', j, '  val=', acsr(k), '  [y-1, D]'
+            else if (j .eq. row+nx) then
+               write(*,'(A,I5,A,ES15.7,A)') '   col=', j, '  val=', acsr(k), '  [y+1, E]'
+            else
+               write(*,'(A,I5,A,ES15.7,A)') '   col=', j, '  val=', acsr(k), '  [other]'
+            end if
+         end do
+         ! Also check: sum of off-diag vs diagonal
+      end do
+      write(*,*) ''
+      
+      ! ---- DEBUG: Verify row sums ----
+      write(*,*) '--- Row sums (should be negative = -alpha for interior) ---'
+      write(*,'(A6,A16,A16,A16)') 'ix', 'row_sum', 'diag', 'sum_offdiag'
+      do i = 1, nx
+         row = i + (16-1)*nx
+         block
+           real(real12) :: rs, dg, offdiag
+           rs = 0.0_real12
+           dg = 0.0_real12
+           offdiag = 0.0_real12
+           do k = ia(row), ia(row+1)-1
+              rs = rs + acsr(k)
+              if (ja(k) .eq. row) then
+                 dg = acsr(k)
+              else
+                 offdiag = offdiag + acsr(k)
+              end if
+           end do
+           write(*,'(I6,ES16.8,ES16.8,ES16.8)') i, rs, dg, offdiag
+         end block
+      end do
+      write(*,*) '=== END SETUP DEBUG ==='
+      write(*,*) ''
+      ! ---- END DEBUG ----
    end subroutine sparse_Hmatrix
 !!!#################################################################################################
 
