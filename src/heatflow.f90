@@ -28,7 +28,9 @@ program HEATFLOW_V0_3
   use evolution, only: simulate
   use setup, only: set_global_variables
   use INITIAL, only: initial_evolve
+#ifdef USE_PETSC
   use petsc_solver, only: petsc_init, petsc_finalize
+#endif
 
   implicit none
    real(real12) :: cpustart, cpuend, cpustart2, progress
@@ -37,7 +39,9 @@ program HEATFLOW_V0_3
    !-------------------------------------------------------------!
    ! Initialize PETSc FIRST (before any other operations)       !
    !-------------------------------------------------------------!
+#ifdef USE_PETSC
    CALL petsc_init()
+#endif
    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
 
    !-------------------------------------------------------------!
@@ -97,7 +101,9 @@ program HEATFLOW_V0_3
       if (IVERB.ge.3) CALL final_print                           
                                                                  
    end do  
+#ifdef USE_PETSC
    CALL petsc_finalize()
+#endif
                                                       
    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
 

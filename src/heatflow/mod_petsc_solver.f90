@@ -1,11 +1,15 @@
 module petsc_solver
+#ifdef USE_PETSC
 #include "petsc/finclude/petscsys.h"
 #include "petsc/finclude/petscksp.h"
   use petscksp
   use iso_c_binding
+#endif
   implicit none
   private
   public :: petsc_init, petsc_finalize, solve_petsc_csr, petsc_cleanup
+
+#ifdef USE_PETSC
 
   ! ===== PRECONDITIONER SELECTION =====
   ! Change this to switch between preconditioners:
@@ -23,10 +27,12 @@ module petsc_solver
   logical, save :: initialized = .false.
   integer, save :: n_saved = 0
   logical, save :: petsc_objects_nulled = .false.
+#endif
 
 contains
 
   subroutine petsc_init()
+#ifdef USE_PETSC
     integer :: ierr
     ! write(*,'(A DEBUG] Calling PetscInitialize...'
     ! call flush(6)
@@ -41,15 +47,21 @@ contains
       ksp_saved = PETSC_NULL_KSP
       petsc_objects_nulled = .true.
     end if
+#else
+    ! PETSc not compiled in - no-op
+#endif
   end subroutine petsc_init
 
   subroutine petsc_finalize()
+#ifdef USE_PETSC
     integer :: ierr
     call petsc_cleanup()
     call PetscFinalize(ierr)
+#endif
   end subroutine petsc_finalize
 
   subroutine petsc_cleanup()
+#ifdef USE_PETSC
     ! Clean up persistent PETSc objects
     integer :: ierr
     if (initialized) then
@@ -64,9 +76,11 @@ contains
       initialized = .false.
       n_saved = 0
     end if
+#endif
   end subroutine petsc_cleanup
 
   subroutine solve_petsc_csr(n, ia, ja, aval, b, x, rtol, maxit)
+#ifdef USE_PETSC
     integer,  intent(in) :: n
     integer,  intent(in) :: ia(:), ja(:)
     real(8),  intent(in) :: aval(:), b(:)
@@ -380,6 +394,16 @@ contains
       end do
     end block
 
+#else
+    integer, intent(in) :: n
+    integer, intent(in) :: ia(:), ja(:)
+    real(8), intent(in) :: aval(:), b(:)
+    real(8), intent(inout) :: x(:)
+    real(8), intent(in) :: rtol
+    integer, intent(in) :: maxit
+    write(*,*) ' [Error] PETSc solver called but not compiled with USE_PETSC=1'
+    stop 1
+#endif
   end subroutine solve_petsc_csr
 
 end module petsc_solver

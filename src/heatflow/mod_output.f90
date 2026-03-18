@@ -47,7 +47,9 @@ module output
   use inputs, only: Test_Run, freq, RunName, FullRestart, IVERB, write_every, CompressedOutput, HDF5Output
   use inputs, only: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz
   use globe_data, only: Temp_p,Temp_pp, heat, heated_volume, logname
+#ifdef USE_HDF5
   use output_hdf5, only: write_hdf5_data, finalize_hdf5
+#endif
   implicit none
   
 contains
@@ -134,8 +136,13 @@ contains
     if (.not. Test_run) then
        if (mod(itime, write_every) .eq. 0) then
           if (HDF5Output) then
+#ifdef USE_HDF5
              write(*, *) 'Writing Temperature (HDF5) to file'
              call write_hdf5_data(itime, Temp_cur)
+#else
+             write(*,*) ' [Error] HDF5 output requested but not compiled with USE_HDF5=1'
+             stop 1
+#endif
           elseif (CompressedOutput) then
              write(*, *) 'Writing Temperature (Compressed) to file'
              open(logunit,file=logname, status='unknown', access='stream', position='append')
@@ -182,7 +189,11 @@ contains
     !---------------------------------------
     if (itime .eq. ntime) then
        if (.not.Test_run) close(logunit)
-       if (HDF5Output) call finalize_hdf5()
+       if (HDF5Output) then
+#ifdef USE_HDF5
+          call finalize_hdf5()
+#endif
+       end if
        CALL final_print()
     end if
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

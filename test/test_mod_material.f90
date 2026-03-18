@@ -6,6 +6,7 @@ program test_mod_material
 
     integer(int12) :: imaterial_type
     real(real12) :: kappa, kappa3D, h_conv, heat_capacity, rho, sound_speed, tau, em
+    real(real12), dimension(3) :: vel
     logical :: test_passed
     integer :: unit, reason, i
     logical :: file_exists
@@ -14,9 +15,10 @@ program test_mod_material
 
     test_mats = [100, 3001, 3002, 3003, 3004, 9001, 9002, 9003, 310, 320, 330, 340, 350]
     call getcwd(cwdstring)
+    vel = 0.0_real12
     ! Test case 1: Silicon (140)
     imaterial_type = 140
-    call material(imaterial_type, kappa, kappa3D, h_conv, heat_capacity, rho, sound_speed, tau, em)
+    call material(imaterial_type, kappa, kappa3D, h_conv, heat_capacity, rho, sound_speed, tau, em, vel)
     
     test_passed = abs(kappa - 130.0_real12) < 1e-6 .and. &
                                 abs(kappa3D - 130.0_real12) < 1e-6 .and. &
@@ -37,8 +39,7 @@ program test_mod_material
     ! Test case 2: All materials
     do i = 1, size(test_mats)
         imaterial_type = test_mats(i)
-        call material(imaterial_type, kappa, kappa3D, h_conv, heat_capacity, rho, sound_speed, tau, em)
-        ! Program should exit with error message
+        call material(imaterial_type, kappa, kappa3D, h_conv, heat_capacity, rho, sound_speed, tau, em, vel)
     end do
 
 
@@ -70,5 +71,5 @@ program test_mod_material
         ! Test case 4: Invalid material type
     imaterial_type = -1
     write(*,*) "Testing invalid material type (-1)..."
-    call material(imaterial_type, kappa, kappa3D, h_conv, heat_capacity, rho, sound_speed, tau, em)
+    call material(imaterial_type, kappa, kappa3D, h_conv, heat_capacity, rho, sound_speed, tau, em, vel)
 end program test_mod_material

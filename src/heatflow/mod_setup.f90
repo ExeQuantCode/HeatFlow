@@ -225,7 +225,20 @@ module setup
       deallocate(row_vals, row_cols)
       write(*,'(A,I12,A)') " CSR matrix built successfully. Actual nonzeros: ", count, ""
 
-      ! ---- DEBUG: Material properties and cell geometry ----
+      ! Populate ra (sprs2_dp format) from CSR for the linbcg solver
+      allocate(ra%val(count))
+      allocate(ra%irow(count))
+      allocate(ra%jcol(count))
+      do row = 1, NA
+         do k = ia(row), ia(row+1)-1
+            ra%irow(k) = row
+            ra%jcol(k) = ja(k)
+            ra%val(k) = acsr(k)
+         end do
+      end do
+
+      ! ---- DEBUG: Material properties and cell geometry (guarded for grid size) ----
+      if (IVERB .gt. 3 .and. ny .ge. 16) then
       write(*,*) ''
       write(*,*) '=== SETUP DEBUG: Grid properties ==='
       write(*,*) 'nx=', nx, ' ny=', ny, ' nz=', nz
@@ -294,6 +307,7 @@ module setup
       end do
       write(*,*) '=== END SETUP DEBUG ==='
       write(*,*) ''
+      end if ! IVERB .gt. 3 .and. ny .ge. 16
       ! ---- END DEBUG ----
    end subroutine sparse_Hmatrix
 !!!#################################################################################################

@@ -59,9 +59,11 @@ set(LIB_FILES
     mod_global.f90
     mod_Sparse.f90
     mod_inputs.f90
+    mod_output_hdf5.f90
     mod_material.f90
     mod_hmatrix.f90
     mod_init_evolve.f90
+    mod_petsc_solver.f90
     mod_setup.f90
     mod_boundary.f90
     mod_heating.f90

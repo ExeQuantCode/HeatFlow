@@ -32,15 +32,19 @@ module evolution
   use boundary_vector, only: boundary
   use cattaneo, only: S_catS
 !   use tempdep, only: ChangeProp 
+#ifdef USE_PETSC
    use petsc_solver, only: solve_petsc_csr
+#endif
 
   implicit none
 
   private
   public :: simulate
   
+#ifdef USE_PETSC
   ! Module-level variables for PETSc (persist across time steps)
   integer, allocatable, save :: ia32(:), ja32(:)   ! 32-bit copies for PETSc
+#endif
 
 contains
 
@@ -53,10 +57,12 @@ contains
     integer(int12), intent(in) :: itime
     real(real12), dimension(NA) :: S, Q, Qdens, S_CAT, B
     real(real12), dimension(:), allocatable :: x
-    integer:: ncg, itol, itmax !, iss
-    integer :: iter
+    integer(int12):: ncg, itol, itmax !, iss
+    integer(int12) :: iter
     real(real12) :: e, err, tol
+#ifdef USE_PETSC
     integer :: NA32
+#endif
 
     !----------------------
     ! Initialize vectors
@@ -120,7 +126,7 @@ contains
     !---------------------------------------------
 
     ! COMPREHENSIVE DEBUG: Dump all quantities for radial cross-section at iy=16
-    if (itime .le. 2) then
+    if (itime .le. 2 .and. ny .ge. 32) then
        block
          integer(int12) :: dbg_ix, dbg_idx, dbg_k
          real(real12) :: dbg_Ax, dbg_rowsum
@@ -235,15 +241,16 @@ contains
    
    ! Debug: Print initial guess statistics
    if (IVERB .gt. 3) then
-      write(*,*) "========== PETSc Solver Diagnostics =========="
+      write(*,*) "========== Solver Diagnostics =========="
       write(*,*) "Time step:", itime
       write(*,*) "Initial guess x: min=", minval(x), " max=", maxval(x), " avg=", sum(x)/size(x)
       write(*,*) "RHS S: min=", minval(S), " max=", maxval(S), " avg=", sum(S)/size(S)
       write(*,*) "Temp_p: min=", minval(Temp_p), " max=", maxval(Temp_p), " avg=", sum(Temp_p)/size(Temp_p)
       write(*,*) "Matrix acsr: min=", minval(acsr), " max=", maxval(acsr), " avg=", sum(acsr)/size(acsr)
-      write(*,*) "Matrix size: n=", NA32, " nnz=", size(acsr)
+      write(*,*) "Matrix size: nnz=", size(acsr)
    end if
    
+#ifdef USE_PETSC
    ! Convert to 32-bit integers for PETSc (only on first call)
    if (.not. allocated(ia32)) then
       allocate(ia32(size(ia)), ja32(size(ja)))
@@ -253,47 +260,11 @@ contains
    NA32 = int(NA, kind=kind(NA32))
    
    call solve_petsc_csr(NA32, ia32, ja32, acsr, S, x, tol, itmax)
-   
-   ! POST-SOLVE DEBUG: Show solution and residual for radial cross-section
-   if (itime .le. 2) then
-      block
-        integer(int12) :: dbg_ix, dbg_idx, dbg_k
-        real(real12) :: dbg_Ax, dbg_resid
-        write(*,*) ''
-        write(*,*) '--- POST-SOLVE: Solution at iy=16, iz=1 ---'
-        write(*,'(A6,A14,A14,A14,A14)') &
-             'ix', 'Temp_p(old)', 'x(new)', 'deltaT', 'residual'
-        do dbg_ix = 1, nx
-           dbg_idx = dbg_ix + (16-1)*nx
-           ! Compute H*x for this row (should equal S)
-           dbg_Ax = 0.0_real12
-           do dbg_k = ia(dbg_idx), ia(dbg_idx+1)-1
-              dbg_Ax = dbg_Ax + acsr(dbg_k) * x(ja(dbg_k))
-           end do
-           dbg_resid = dbg_Ax - S(dbg_idx)
-           write(*,'(I6,ES14.6,ES14.6,ES14.6,ES14.6)') &
-                dbg_ix, Temp_p(dbg_idx), x(dbg_idx), &
-                x(dbg_idx) - Temp_p(dbg_idx), dbg_resid
-        end do
-        write(*,*) ''
-        write(*,*) '--- POST-SOLVE: Heater region iy=32 ---'
-        write(*,'(A6,A14,A14,A14)') 'ix', 'Temp_p(old)', 'x(new)', 'deltaT'
-        do dbg_ix = 1, min(10, nx)
-           dbg_idx = dbg_ix + (32-1)*nx
-           write(*,'(I6,ES14.6,ES14.6,ES14.6)') &
-                dbg_ix, Temp_p(dbg_idx), x(dbg_idx), &
-                x(dbg_idx) - Temp_p(dbg_idx)
-        end do
-        write(*,*) '=========================================================='
-      end block
-   end if
-   
-   ! Note: Don't deallocate ia32, ja32 - keep them for next time step
-
-
-   ! CALL solve_pardiso(acsr, S, ia, ja, x)
-   !  CALL linbcg(S,x,itol=int(itol,I4B),tol=tol, itmax=int(itmax,I4B), iter=iter, &
-         ! err=E)
+#else
+   ! Use built-in linbcg solver when PETSc is not available
+   CALL linbcg(S,x,itol=int(itol,I4B),tol=tol, itmax=int(itmax,I4B), iter=iter, &
+        err=E)
+#endif
          
    !
     if (any(isnan(x(:)))) then
@@ -315,21 +286,7 @@ contains
     Temp_pp = Temp_p
     Temp_p = x
 
-    ! DEBUG: Verify Temp_p after assignment
-    if (itime .le. 2) then
-       block
-         integer(int12) :: dbg_ix2, dbg_idx2
-         write(*,*) ''
-         write(*,'(A,I6)') ' === VERIFY Temp_p AFTER ASSIGNMENT, itime=', itime
-         write(*,'(A6,A14,A14)') 'ix', 'Temp_p(1D)', 'x(1D)'
-         do dbg_ix2 = 1, nx
-            dbg_idx2 = dbg_ix2 + (16-1)*nx
-            write(*,'(I6,ES14.6,ES14.6)') &
-                 dbg_ix2, Temp_p(dbg_idx2), x(dbg_idx2)
-         end do
-         write(*,*) '=== END VERIFY ==='
-       end block
-    end if
+
 
    !  if (TempDepProp .eq. 1) then
    !    CALL ChangeProp()
