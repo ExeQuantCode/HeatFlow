@@ -16,6 +16,7 @@
 !!!#################################################################################################
 module setup
   use constants, only: real12, int12, TINY
+   use mpi
   use inputs, only: nx, ny, nz, NA, grid, time_step, kappaBoundx1, kappaBoundy1, kappaBoundz1 
   use inputs, only: Check_Sparse_Full, Check_Stability, ntime,IVERB, Periodicx, Periodicy
   use inputs, only: Periodicz ! 
@@ -36,8 +37,13 @@ module setup
 !!!#################################################################################################
    subroutine set_global_variables()
       integer(int12) :: ix,iy,iz,index
+      integer :: ierr, comm_rank
+      logical :: is_root
       real(real12) :: kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau, em
       real(real12), dimension(3) :: vel
+
+      call MPI_Comm_rank(MPI_COMM_WORLD, comm_rank, ierr)
+      is_root = (comm_rank == 0)
 
       allocate(Temp_cur(nx, ny, nz))
       allocate(Temp_p(NA))
@@ -52,12 +58,14 @@ module setup
       ! can be expanded to include more properties at a 
       ! later date
       !---------------------------------------------------
-      write(*,*) "Setting up material properties"
-      write(*,'(A,I10,A)') " Processing ", NA, " grid cells..."
+      if (is_root) then
+         write(*,*) "Setting up material properties"
+         write(*,'(A,I10,A)') " Processing ", NA, " grid cells..."
+      end if
       index = 0
       do iz = 1, nz
          ! Progress reporting every 10% for large grids
-         if (mod(iz-1, max(1,nz/10)) == 0 .and. iz > 1) then
+         if (is_root .and. mod(iz-1, max(1,nz/10)) == 0 .and. iz > 1) then
             write(*,'(A,I3,A)') "   Progress: ", int(100.0*real(iz)/real(nz)), "%"
          end if
          do iy = 1, ny
@@ -81,7 +89,7 @@ module setup
       !---------------------------------------------------
       ! Check if the sparse matrix matches the full matrix
       !---------------------------------------------------
-      write(*,*) "Building sparse H matrix..."
+      if (is_root) write(*,*) "Building sparse H matrix..."
       if (Check_Sparse_Full) then
          print*, "CHECK SPARSE FULL"
          CALL build_Hmatrix()
@@ -89,7 +97,7 @@ module setup
          ! Build CSR format directly (acsr, ja, ia are allocated inside sparse_Hmatrix)
          CALL sparse_Hmatrix()
          ! No need for COO->CSR conversion anymore, it's already in CSR format!
-         write(*,*) "Sparse matrix setup complete."
+         if (is_root) write(*,*) "Sparse matrix setup complete."
       end if
       !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -103,6 +111,8 @@ module setup
 !!!#################################################################################################
    subroutine sparse_Hmatrix()
      implicit none
+      integer :: ierr, comm_rank
+      logical :: is_root
       real(real12) :: H0 ! Holds the value of the H matrix
       integer(int12) :: i, j, count, k, row ! i and j are the row and column of the H matrix
       integer(int12) :: nnz_estimate
@@ -112,20 +122,30 @@ module setup
       real(real12), allocatable, dimension(:) :: row_vals
       integer(int12), allocatable, dimension(:) :: row_cols
       integer(int12) :: row_count, max_row_size
+
+      call MPI_Comm_rank(MPI_COMM_WORLD, comm_rank, ierr)
+      is_root = (comm_rank == 0)
       
       ra%n = NA ! The number of rows in the H matrix
-      ra%len = len ! The number of non-zero elements in the H matrix
-      ! Allocate the arrays to hold the H matrix in sparse storage
-      allocate(ra%val(len), ra%irow(len), ra%jcol(len))
-      ra%val(:)=0
-      ra%irow(:)=-2
-      ra%jcol(:)=-1
+      ra%len = 0
       addit = [1] ! The values to add to the row to get the column
       if (Periodicx) addit = [addit, (nx-1)]
       if (ny .gt. 1) addit = [addit, nx] ! Add the values to add to the row to get the column
       if ((Periodicy).and.(ny .gt. 1)) addit = [addit, (ny-1)*nx]
       if (nz .gt. 1) addit = [addit, nx*ny]  ! Add the values to add to the row to get the column
       if ((Periodicz).and.(nz .gt. 1)) addit = [addit, (nz-1)*ny*nx]
+
+      max_row_size = 1 + 2*size(addit,1)
+      nnz_estimate = NA * max_row_size
+
+      if (allocated(acsr)) deallocate(acsr)
+      if (allocated(ja)) deallocate(ja)
+      if (allocated(ia)) deallocate(ia)
+      allocate(acsr(nnz_estimate), ja(nnz_estimate), ia(NA+1))
+      allocate(row_vals(max_row_size), row_cols(max_row_size))
+      acsr = 0.0_real12
+      ja = 0
+      ia = 0
 
       
       !write(6,*) NA, nx,ny,nz
@@ -138,10 +158,10 @@ module setup
       ia(1) = 1 ! CSR row pointer (1-based for Fortran)
       
       ! Build CSR format row-by-row
-      write(*,'(A)') " Building CSR matrix row-by-row..."
+      if (is_root) write(*,'(A)') " Building CSR matrix row-by-row..."
       parent_loop: do row = 1, NA
          ! Progress reporting every 10%
-         if (mod(row-1, max(1,NA/10)) == 0 .and. row > 1) then
+         if (is_root .and. mod(row-1, max(1,NA/10)) == 0 .and. row > 1) then
             write(*,'(A,I3,A,I12,A)') "   Progress: ", int(100.0*real(row)/real(NA)), &
                  "%, nnz=", count, ""
          end if
@@ -200,12 +220,12 @@ module setup
       
       ! Trim arrays to actual size if we over-estimated
       if (count < size(acsr)) then
-         write(*,'(A,I12,A,I12)') " Trimming arrays from ", size(acsr), " to ", count
+         if (is_root) write(*,'(A,I12,A,I12)') " Trimming arrays from ", size(acsr), " to ", count
          call trim_csr_arrays(acsr, ja, count)
       end if
       
-      deallocate(row_vals, row_cols)
-      write(*,'(A,I12,A)') " CSR matrix built successfully. Actual nonzeros: ", count, ""
+      deallocate(addit, row_vals, row_cols)
+      if (is_root) write(*,'(A,I12,A)') " CSR matrix built successfully. Actual nonzeros: ", count, ""
    end subroutine sparse_Hmatrix
 !!!#################################################################################################
 

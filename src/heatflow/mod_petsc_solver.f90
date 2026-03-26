@@ -2,17 +2,17 @@ module petsc_solver
 #include "petsc/finclude/petscsys.h"
 #include "petsc/finclude/petscksp.h"
   use petscksp
-  use iso_c_binding
+  use mpi
   implicit none
   private
-  public :: petsc_init, petsc_finalize, solve_petsc_csr, petsc_cleanup
+  public :: petsc_init, petsc_finalize, solve_petsc_csr, petsc_cleanup, petsc_is_root, petsc_world_size
 
   ! ===== PRECONDITIONER SELECTION =====
   ! Change this to switch between preconditioners:
   ! 'GAMG' = Algebraic Multigrid (best for elliptic PDEs, 10-20x faster)
   ! 'ILU'  = Incomplete LU (good general purpose, robust)
   ! 'LU'   = Direct solver (most robust, uses more memory)
-  character(len=10), parameter :: PRECONDITIONER = 'ILU'  ! <-- Change here!
+  character(len=10), parameter :: PRECONDITIONER = 'GAMG'
   ! ====================================
 
   ! Persistent PETSc objects (reused across timesteps for memory efficiency)
@@ -22,13 +22,32 @@ module petsc_solver
   KSP, save :: ksp_saved = PETSC_NULL_KSP
   logical, save :: initialized = .false.
   integer, save :: n_saved = 0
+  integer, save :: comm_rank_saved = 0
+  integer, save :: comm_size_saved = 1
+  integer, save :: row_start_saved = 1
+  integer, save :: row_end_saved = 0
+  PetscInt, allocatable, save :: ia_saved(:), ja_saved(:)
+  PetscScalar, allocatable, save :: aval_saved(:)
+  PetscInt, allocatable, save :: diag_nnz_saved(:), offdiag_nnz_saved(:)
+  integer, allocatable, save :: recvcounts_saved(:), displs_saved(:)
+  real(8), allocatable, save :: b_local_saved(:), x_local_saved(:)
 
 contains
 
   subroutine petsc_init()
     integer :: ierr
     call PetscInitialize(PETSC_NULL_CHARACTER, ierr)
+    call MPI_Comm_rank(PETSC_COMM_WORLD, comm_rank_saved, ierr)
+    call MPI_Comm_size(PETSC_COMM_WORLD, comm_size_saved, ierr)
   end subroutine petsc_init
+
+  logical function petsc_is_root()
+    petsc_is_root = (comm_rank_saved == 0)
+  end function petsc_is_root
+
+  integer function petsc_world_size()
+    petsc_world_size = comm_size_saved
+  end function petsc_world_size
 
   subroutine petsc_finalize()
     integer :: ierr
@@ -37,226 +56,273 @@ contains
   end subroutine petsc_finalize
 
   subroutine petsc_cleanup()
-    ! Clean up persistent PETSc objects
     integer :: ierr
+
     if (A_saved /= PETSC_NULL_MAT) call MatDestroy(A_saved, ierr)
     if (bb_saved /= PETSC_NULL_VEC) call VecDestroy(bb_saved, ierr)
     if (xx_saved /= PETSC_NULL_VEC) call VecDestroy(xx_saved, ierr)
     if (ksp_saved /= PETSC_NULL_KSP) call KSPDestroy(ksp_saved, ierr)
+    if (allocated(ia_saved)) deallocate(ia_saved)
+    if (allocated(ja_saved)) deallocate(ja_saved)
+    if (allocated(aval_saved)) deallocate(aval_saved)
+    if (allocated(diag_nnz_saved)) deallocate(diag_nnz_saved)
+    if (allocated(offdiag_nnz_saved)) deallocate(offdiag_nnz_saved)
+    if (allocated(recvcounts_saved)) deallocate(recvcounts_saved)
+    if (allocated(displs_saved)) deallocate(displs_saved)
+    if (allocated(b_local_saved)) deallocate(b_local_saved)
+    if (allocated(x_local_saved)) deallocate(x_local_saved)
+
     A_saved = PETSC_NULL_MAT
     bb_saved = PETSC_NULL_VEC
     xx_saved = PETSC_NULL_VEC
     ksp_saved = PETSC_NULL_KSP
     initialized = .false.
     n_saved = 0
+    row_start_saved = 1
+    row_end_saved = 0
   end subroutine petsc_cleanup
 
+  subroutine compute_partition(n, rank, nproc, row_start, row_end)
+    integer, intent(in) :: n, rank, nproc
+    integer, intent(out) :: row_start, row_end
+    integer :: base_rows, remainder_rows, local_rows
+
+    base_rows = n / nproc
+    remainder_rows = mod(n, nproc)
+    local_rows = base_rows
+    if (rank < remainder_rows) local_rows = local_rows + 1
+
+    row_start = rank * base_rows + min(rank, remainder_rows) + 1
+    row_end = row_start + local_rows - 1
+  end subroutine compute_partition
+
+  subroutine preallocate_local_rows(n, ia, ja)
+    integer, intent(in) :: n
+    integer, intent(in) :: ia(:), ja(:)
+    integer :: local_row, global_row, entry_idx, nlocal
+    integer :: diag_begin, diag_end
+
+    nlocal = max(0, row_end_saved - row_start_saved + 1)
+    allocate(diag_nnz_saved(nlocal), offdiag_nnz_saved(nlocal))
+    diag_nnz_saved = 0
+    offdiag_nnz_saved = 0
+
+    diag_begin = row_start_saved
+    diag_end = row_end_saved
+    do local_row = 1, nlocal
+      global_row = row_start_saved + local_row - 1
+      do entry_idx = ia(global_row), ia(global_row + 1) - 1
+        if (ja(entry_idx) >= diag_begin .and. ja(entry_idx) <= diag_end) then
+          diag_nnz_saved(local_row) = diag_nnz_saved(local_row) + 1
+        else
+          offdiag_nnz_saved(local_row) = offdiag_nnz_saved(local_row) + 1
+        end if
+      end do
+    end do
+  end subroutine preallocate_local_rows
+
+  subroutine build_distributed_matrix(n, ia, ja, aval)
+    integer, intent(in) :: n
+    integer, intent(in) :: ia(:), ja(:)
+    real(8), intent(in) :: aval(:)
+
+    PetscInt :: row_idx(1)
+    PetscInt, allocatable :: cols0(:)
+    PetscScalar, allocatable :: vals0(:)
+    integer :: ierr, global_row, local_row, nlocal, row_nnz, max_row_nnz
+
+    call preallocate_local_rows(n, ia, ja)
+    nlocal = max(0, row_end_saved - row_start_saved + 1)
+    max_row_nnz = max(1, maxval(ia(2:n + 1) - ia(1:n)))
+
+    call MatCreate(PETSC_COMM_WORLD, A_saved, ierr)
+    call MatSetSizes(A_saved, nlocal, nlocal, n, n, ierr)
+    call MatSetType(A_saved, MATAIJ, ierr)
+    call MatSeqAIJSetPreallocation(A_saved, 0, diag_nnz_saved, ierr)
+    call MatMPIAIJSetPreallocation(A_saved, 0, diag_nnz_saved, 0, offdiag_nnz_saved, ierr)
+
+    allocate(cols0(max_row_nnz), vals0(max_row_nnz))
+    do local_row = 1, nlocal
+      global_row = row_start_saved + local_row - 1
+      row_nnz = ia(global_row + 1) - ia(global_row)
+      if (row_nnz <= 0) cycle
+
+      row_idx(1) = global_row - 1
+      cols0(1:row_nnz) = ja(ia(global_row):ia(global_row + 1) - 1) - 1
+      vals0(1:row_nnz) = aval(ia(global_row):ia(global_row + 1) - 1)
+      call MatSetValues(A_saved, 1, row_idx, row_nnz, cols0, vals0, INSERT_VALUES, ierr)
+    end do
+    deallocate(cols0, vals0)
+
+    call MatAssemblyBegin(A_saved, MAT_FINAL_ASSEMBLY, ierr)
+    call MatAssemblyEnd(A_saved, MAT_FINAL_ASSEMBLY, ierr)
+  end subroutine build_distributed_matrix
+
+  subroutine update_distributed_matrix(n, ia, ja, aval)
+    integer, intent(in) :: n
+    integer, intent(in) :: ia(:), ja(:)
+    real(8), intent(in) :: aval(:)
+
+    PetscInt :: row_idx(1)
+    PetscInt, allocatable :: cols0(:)
+    PetscScalar, allocatable :: vals0(:)
+    integer :: ierr, global_row, local_row, nlocal, row_nnz, max_row_nnz
+
+    nlocal = max(0, row_end_saved - row_start_saved + 1)
+    max_row_nnz = max(1, maxval(ia(2:n + 1) - ia(1:n)))
+    allocate(cols0(max_row_nnz), vals0(max_row_nnz))
+
+    call MatZeroEntries(A_saved, ierr)
+    do local_row = 1, nlocal
+      global_row = row_start_saved + local_row - 1
+      row_nnz = ia(global_row + 1) - ia(global_row)
+      if (row_nnz <= 0) cycle
+
+      row_idx(1) = global_row - 1
+      cols0(1:row_nnz) = ja(ia(global_row):ia(global_row + 1) - 1) - 1
+      vals0(1:row_nnz) = aval(ia(global_row):ia(global_row + 1) - 1)
+      call MatSetValues(A_saved, 1, row_idx, row_nnz, cols0, vals0, INSERT_VALUES, ierr)
+    end do
+    deallocate(cols0, vals0)
+
+    call MatAssemblyBegin(A_saved, MAT_FINAL_ASSEMBLY, ierr)
+    call MatAssemblyEnd(A_saved, MAT_FINAL_ASSEMBLY, ierr)
+  end subroutine update_distributed_matrix
+
   subroutine solve_petsc_csr(n, ia, ja, aval, b, x, rtol, maxit)
-    integer,  intent(in) :: n
-    integer,  intent(in) :: ia(:), ja(:)
-    real(8),  intent(in) :: aval(:), b(:)
-    real(8),  intent(inout) :: x(:)
-    real(8),  intent(in) :: rtol
-    integer,  intent(in) :: maxit
-    
-    PC  :: pc
-    integer :: ierr, i, row_nz, start_k, its
-    integer, allocatable :: cols0(:), idx(:), d_nnz(:)
-    PetscInt :: idx_array(1)
-    PetscScalar :: val_array(1)
-    real(8), allocatable :: vals(:)
+    integer, intent(in) :: n
+    integer, intent(in) :: ia(:), ja(:)
+    real(8), intent(in) :: aval(:), b(:)
+    real(8), intent(inout) :: x(:)
+    real(8), intent(in) :: rtol
+    integer, intent(in) :: maxit
+
+    PC :: pc
+    integer :: ierr, its
     real(8) :: rnorm
     logical :: rebuild_needed
+    PetscScalar, pointer :: vec_array(:)
+    integer :: nlocal, rank_idx
 
-    ! write(*,'(A,I0)') ' [DEBUG] Entered solve_petsc_csr, n=', n
-    ! call flush(6)
-    
-    if (size(ia) /= n+1) stop 'solve_petsc_csr: ia size mismatch'
+    if (size(ia) /= n + 1) stop 'solve_petsc_csr: ia size mismatch'
     if (size(b) /= n .or. size(x) /= n) stop 'solve_petsc_csr: vector size mismatch'
 
-    ! write(*,'(A)') ' [DEBUG] Size checks passed'
-    ! call flush(6)
-
-    ! Determine if we need to rebuild the matrix structure
     rebuild_needed = .false.
     if (.not. initialized) rebuild_needed = .true.
     if (n /= n_saved) rebuild_needed = .true.
-    
-    ! write(*,'(A,L1)') ' [DEBUG] rebuild_needed=', rebuild_needed
-    ! call flush(6)
-    
-    ! Create PETSc objects on first call or if size changed
-    if (rebuild_needed) then
-      ! write(*,'(A)') ' [DEBUG] Starting PETSc object creation...'
-      ! call flush(6)
-      
-      ! Clean up old objects if they exist
-      if (initialized) call petsc_cleanup()
-      
-      ! write(*,'(A)') ' [DEBUG] Preallocating matrix...'
-      ! call flush(6)
-      
-      ! Preallocate matrix with exact nonzeros per row (saves memory)
-      allocate(d_nnz(n))
-      do i = 1, n
-        d_nnz(i) = ia(i+1) - ia(i)
-      end do
-      
-      ! write(*,'(A,I0,A,I0)') ' [DEBUG] Creating matrix: n=', n, ', max_nnz/row=', maxval(d_nnz)
-      ! call flush(6)
-      
-      ! Create matrix with exact preallocation (most memory-efficient)
-      call MatCreateSeqAIJ(PETSC_COMM_SELF, n, n, 0, d_nnz, A_saved, ierr)
-      if (ierr /= 0) then
-        write(0,*) "ERROR: MatCreateSeqAIJ failed with ierr=", ierr
-        write(0,*) "  Matrix size may exceed system limits"
-        write(0,*) "  n=", n, ", nnz=", sum(int(d_nnz,8)), ", max_nnz/row=", maxval(d_nnz)
-        stop
+
+    if (.not. rebuild_needed .and. allocated(ia_saved)) then
+      if (size(ia_saved) /= size(ia) .or. size(ja_saved) /= size(ja) .or. size(aval_saved) /= size(aval)) then
+        rebuild_needed = .true.
+      else if (.not. all(ia_saved == ia - 1) .or. .not. all(ja_saved == ja - 1)) then
+        rebuild_needed = .true.
       end if
-      
-      deallocate(d_nnz)
-      
-      ! Create persistent vectors
-      call VecCreateSeq(PETSC_COMM_SELF, n, bb_saved, ierr)
-      call VecCreateSeq(PETSC_COMM_SELF, n, xx_saved, ierr)
-      
-      ! Create and configure KSP solver (persistent across timesteps)
-      call KSPCreate(PETSC_COMM_SELF, ksp_saved, ierr)
+    end if
+
+    if (rebuild_needed) then
+      if (initialized) call petsc_cleanup()
+
+      call compute_partition(n, comm_rank_saved, comm_size_saved, row_start_saved, row_end_saved)
+      nlocal = max(0, row_end_saved - row_start_saved + 1)
+
+      allocate(ia_saved(size(ia)), ja_saved(size(ja)), aval_saved(size(aval)))
+      ia_saved = ia - 1
+      ja_saved = ja - 1
+      aval_saved = aval
+
+      call build_distributed_matrix(n, ia, ja, aval)
+
+      allocate(recvcounts_saved(comm_size_saved), displs_saved(comm_size_saved))
+      do rank_idx = 0, comm_size_saved - 1
+        call compute_partition(n, rank_idx, comm_size_saved, ierr, its)
+        recvcounts_saved(rank_idx + 1) = max(0, its - ierr + 1)
+        displs_saved(rank_idx + 1) = ierr - 1
+      end do
+
+      allocate(b_local_saved(max(1, nlocal)), x_local_saved(max(1, nlocal)))
+
+      call VecCreateMPI(PETSC_COMM_WORLD, nlocal, n, bb_saved, ierr)
+      call VecDuplicate(bb_saved, xx_saved, ierr)
+
+      call KSPCreate(PETSC_COMM_WORLD, ksp_saved, ierr)
       call KSPSetOperators(ksp_saved, A_saved, A_saved, ierr)
+      call KSPSetInitialGuessNonzero(ksp_saved, PETSC_TRUE, ierr)
       call KSPGetPC(ksp_saved, pc, ierr)
-      
-      ! Select preconditioner based on parameter at top of module
+
       select case (trim(PRECONDITIONER))
         case ('GAMG')
-          ! Algebraic Multigrid - Best for elliptic PDEs with varying coefficients
-          ! Optimal O(1) iterations, 10-20x faster than ILU for large problems
           call PCSetType(pc, PCGAMG, ierr)
-          call KSPSetType(ksp_saved, KSPGMRES, ierr)  ! GMRES works well with AMG
-          write(*,'(A)') ' [Solver] Using GAMG (Algebraic Multigrid) preconditioner with GMRES'
-          
+          call KSPSetType(ksp_saved, KSPGMRES, ierr)
+          if (petsc_is_root()) then
+            write(*,'(A,I0,A)') ' [Solver] Using GAMG (Algebraic Multigrid) with GMRES across ', &
+                 comm_size_saved, ' MPI ranks'
+          end if
+
         case ('ILU')
-          ! Incomplete LU - Good general purpose, robust
           call PCSetType(pc, PCILU, ierr)
-          call KSPSetType(ksp_saved, KSPBCGS, ierr)   ! BiCGSTAB works well with ILU
-          write(*,'(A)') ' [Solver] Using ILU preconditioner with BiCGSTAB'
-          
+          call KSPSetType(ksp_saved, KSPBCGS, ierr)
+          if (petsc_is_root()) then
+            write(*,'(A,I0,A)') ' [Solver] Using ILU preconditioner with BiCGSTAB across ', &
+                 comm_size_saved, ' MPI ranks'
+          end if
+
         case ('LU')
-          ! Direct LU - Most robust, more memory intensive
           call PCSetType(pc, PCLU, ierr)
-          call KSPSetType(ksp_saved, KSPPREONLY, ierr) ! Direct solve
-          write(*,'(A)') ' [Solver] Using direct LU solver'
-          
+          call KSPSetType(ksp_saved, KSPPREONLY, ierr)
+          if (petsc_is_root()) then
+            write(*,'(A,I0,A)') ' [Solver] Using direct LU solver across ', comm_size_saved, ' MPI ranks'
+          end if
+
         case default
-          write(*,'(A,A)') ' [Warning] Unknown preconditioner: ', trim(PRECONDITIONER)
-          write(*,'(A)') '           Defaulting to ILU'
+          if (petsc_is_root()) then
+            write(*,'(A,A)') ' [Warning] Unknown preconditioner: ', trim(PRECONDITIONER)
+            write(*,'(A)') '           Defaulting to ILU'
+          end if
           call PCSetType(pc, PCILU, ierr)
           call KSPSetType(ksp_saved, KSPBCGS, ierr)
       end select
-      
-      call KSPSetTolerances(ksp_saved, rtol, PETSC_DEFAULT_REAL, &
-                           PETSC_DEFAULT_REAL, maxit, ierr)
+
+      call KSPSetTolerances(ksp_saved, rtol, PETSC_DEFAULT_REAL, PETSC_DEFAULT_REAL, maxit, ierr)
       call KSPSetNormType(ksp_saved, KSP_NORM_UNPRECONDITIONED, ierr)
       call KSPSetFromOptions(ksp_saved, ierr)
-      
+
       initialized = .true.
       n_saved = n
+    else
+      if (any(aval_saved /= aval)) then
+        aval_saved = aval
+        call update_distributed_matrix(n, ia, ja, aval)
+      end if
     end if
 
-    ! Update matrix values (always needed each timestep)
-    call MatZeroEntries(A_saved, ierr)
-    do i = 1, n
-       row_nz = ia(i+1) - ia(i)
-       if (row_nz > 0) then
-          start_k = ia(i)
-          allocate(cols0(row_nz), vals(row_nz))
-          ! Convert column indices from 1-based to 0-based for PETSc
-          cols0 = ja(start_k:start_k+row_nz-1) - 1
-          vals  = aval(start_k:start_k+row_nz-1)
-          
-          ! Set row i-1 (0-based) with column indices cols0 (0-based)
-          call MatSetValues(A_saved, 1, (/i-1/), row_nz, cols0, vals, INSERT_VALUES, ierr)
-          deallocate(cols0, vals)
-       end if
-    end do
-    call MatAssemblyBegin(A_saved, MAT_FINAL_ASSEMBLY, ierr)
-    call MatAssemblyEnd(A_saved, MAT_FINAL_ASSEMBLY, ierr)
-    
-    ! Optional: Verify matrix assembly (uncomment for debugging)
-    ! call MatView(A_saved, PETSC_VIEWER_STDOUT_SELF, ierr)
+    nlocal = max(0, row_end_saved - row_start_saved + 1)
+    if (nlocal > 0) then
+      b_local_saved(1:nlocal) = b(row_start_saved:row_end_saved)
+      x_local_saved(1:nlocal) = x(row_start_saved:row_end_saved)
+    end if
 
-    ! Update RHS vector in batches to avoid memory issues with huge systems
-    block
-      integer, parameter :: VEC_CHUNK = 1000000
-      integer :: vec_start, vec_end, vec_len, k
-      integer, allocatable :: idx_vec(:)
-      
-      do vec_start = 1, n, VEC_CHUNK
-        vec_end = min(vec_start + VEC_CHUNK - 1, n)
-        vec_len = vec_end - vec_start + 1
-        
-        allocate(idx_vec(vec_len))
-        idx_vec = [(vec_start + k - 2, k=1,vec_len)]  ! 0-based indices
-        
-        call VecSetValues(bb_saved, vec_len, idx_vec, b(vec_start:vec_end), INSERT_VALUES, ierr)
-        deallocate(idx_vec)
-      end do
-    end block
-    call VecAssemblyBegin(bb_saved,ierr); call VecAssemblyEnd(bb_saved,ierr)
+    call VecGetArrayF90(bb_saved, vec_array, ierr)
+    if (nlocal > 0) vec_array(1:nlocal) = b_local_saved(1:nlocal)
+    call VecRestoreArrayF90(bb_saved, vec_array, ierr)
 
-    ! Update initial guess in batches
-    block
-      integer, parameter :: VEC_CHUNK = 1000000
-      integer :: vec_start, vec_end, vec_len, k
-      integer, allocatable :: idx_vec(:)
-      
-      do vec_start = 1, n, VEC_CHUNK
-        vec_end = min(vec_start + VEC_CHUNK - 1, n)
-        vec_len = vec_end - vec_start + 1
-        
-        allocate(idx_vec(vec_len))
-        idx_vec = [(vec_start + k - 2, k=1,vec_len)]  ! 0-based indices
-        
-        call VecSetValues(xx_saved, vec_len, idx_vec, x(vec_start:vec_end), INSERT_VALUES, ierr)
-        deallocate(idx_vec)
-      end do
-    end block
-    call VecAssemblyBegin(xx_saved,ierr); call VecAssemblyEnd(xx_saved,ierr)
+    call VecGetArrayF90(xx_saved, vec_array, ierr)
+    if (nlocal > 0) vec_array(1:nlocal) = x_local_saved(1:nlocal)
+    call VecRestoreArrayF90(xx_saved, vec_array, ierr)
 
-    ! Solve the system
     call KSPSolve(ksp_saved, bb_saved, xx_saved, ierr)
-    
     if (ierr /= 0) then
-       write(0,*) "ERROR: KSPSolve failed with error code:", ierr
-       stop
+      write(0,*) 'ERROR: KSPSolve failed with error code:', ierr
+      stop
     end if
-    
+
     call KSPGetIterationNumber(ksp_saved, its, ierr)
     call KSPGetResidualNorm(ksp_saved, rnorm, ierr)
 
-    ! Extract solution vector using batched VecGetValues
-    block
-      integer, parameter :: CHUNK_SIZE = 100000
-      PetscInt, allocatable :: idx_batch(:)
-      PetscScalar, allocatable :: val_batch(:)
-      integer :: i_start, i_end, chunk_len, j
-      
-      do i_start = 1, n, CHUNK_SIZE
-        i_end = min(i_start + CHUNK_SIZE - 1, n)
-        chunk_len = i_end - i_start + 1
-        
-        allocate(idx_batch(chunk_len), val_batch(chunk_len))
-        
-        do j = 1, chunk_len
-          idx_batch(j) = i_start + j - 2
-        end do
-        
-        call VecGetValues(xx_saved, chunk_len, idx_batch, val_batch, ierr)
-        x(i_start:i_end) = val_batch(1:chunk_len)
-        
-        deallocate(idx_batch, val_batch)
-      end do
-    end block
+    call VecGetArrayF90(xx_saved, vec_array, ierr)
+    if (nlocal > 0) x_local_saved(1:nlocal) = vec_array(1:nlocal)
+    call VecRestoreArrayF90(xx_saved, vec_array, ierr)
 
+    call MPI_Allgatherv(x_local_saved, nlocal, MPI_DOUBLE_PRECISION, x, recvcounts_saved, displs_saved, &
+         MPI_DOUBLE_PRECISION, PETSC_COMM_WORLD, ierr)
   end subroutine solve_petsc_csr
-
 end module petsc_solver

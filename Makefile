@@ -9,8 +9,17 @@ SRC_DIR      := ./src
 BUILD_DIR    := ./obj
 BIN_DIR      := ./bin
 
-# Compiler (gfortran with OpenMP for threading)
-FC           := gfortran
+# Compiler (prefer system MPI wrapper for PETSc builds, allow user override)
+SYSTEM_PATH := PATH=/usr/bin:/bin
+ifeq ($(origin FC), default)
+ifneq ($(wildcard /usr/bin/mpifort),)
+FC := env $(SYSTEM_PATH) /usr/bin/mpifort
+else ifneq ($(wildcard /usr/bin/gfortran),)
+FC := env $(SYSTEM_PATH) /usr/bin/gfortran
+else
+FC := gfortran
+endif
+endif
 
 # Core count
 NCORES       := $(shell nproc)
@@ -19,7 +28,11 @@ NCORES       := $(shell nproc)
 CONDA_PREFIX ?= $(shell conda info --base 2>/dev/null || echo /home/hm556/miniforge3)
 
 # PETSc (discover dynamically when possible)
-PKG_CONFIG ?= pkg-config
+ifneq ($(wildcard /usr/bin/pkg-config),)
+PKG_CONFIG := env $(SYSTEM_PATH) /usr/bin/pkg-config
+else
+PKG_CONFIG := pkg-config
+endif
 PETSC_PKG_CFLAGS := $(shell $(PKG_CONFIG) --cflags petsc 2>/dev/null || $(PKG_CONFIG) --cflags PETSc 2>/dev/null)
 PETSC_PKG_LIBS   := $(shell $(PKG_CONFIG) --libs petsc 2>/dev/null || $(PKG_CONFIG) --libs PETSc 2>/dev/null)
 
@@ -47,8 +60,22 @@ PETSC_LIB  := -L/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/lib -lpetsc -W
 PETSC_NOTE := (legacy PETSc 3.15 fallback)
 endif
 
-# Use OpenBLAS for multi-threaded BLAS/LAPACK (better than reference BLAS/ATLAS)
-BLAS_FLAGS := -lopenblas -lgomp -lpthread -lm
+# BLAS/LAPACK backend
+OPENBLAS_LIBS := $(shell $(PKG_CONFIG) --libs openblas 2>/dev/null)
+CONDA_BLAS_LIB := $(firstword $(wildcard $(CONDA_PREFIX)/lib/libblas.so.3 $(CONDA_PREFIX)/lib/libblas.so))
+CONDA_LAPACK_LIB := $(firstword $(wildcard $(CONDA_PREFIX)/lib/liblapack.so.3 $(CONDA_PREFIX)/lib/liblapack.so))
+ifeq ($(strip $(OPENBLAS_LIBS)),)
+ifneq ($(strip $(CONDA_BLAS_LIB)$(CONDA_LAPACK_LIB)),)
+BLAS_FLAGS := -Wl,--disable-new-dtags -Wl,-rpath,$(CONDA_PREFIX)/lib -Wl,--no-as-needed $(CONDA_BLAS_LIB) $(CONDA_LAPACK_LIB) -Wl,--as-needed -lpthread -lm
+BLAS_NOTE := (OpenBLAS from CONDA_PREFIX)
+else
+BLAS_FLAGS := -lblas -llapack -lpthread -lm
+BLAS_NOTE := (system BLAS/LAPACK fallback)
+endif
+else
+BLAS_FLAGS := $(OPENBLAS_LIBS) -lpthread -lm
+BLAS_NOTE := (OpenBLAS via pkg-config)
+endif
 
 # Flags
 OPTFLAGS    := -O3
@@ -86,12 +113,14 @@ SRCS := \
 
 OBJS := $(addprefix $(BUILD_DIR)/,$(notdir $(SRCS:.f90=.o)))
 
+.NOTPARALLEL:
+
 .PHONY: all debug clean distclean run help show
 
 all: show $(TARGET)
 
 show:
-	@printf 'Building %s %s\n' '$(NAME)' '$(PETSC_NOTE)'
+	@printf 'Building %s %s %s\n' '$(NAME)' '$(PETSC_NOTE)' '$(BLAS_NOTE)'
 
 $(BIN_DIR) $(BUILD_DIR):
 	mkdir -p $@
@@ -112,8 +141,9 @@ debug: FFLAGS = $(DEBUGFLAGS)
 debug: clean show $(TARGET)
 
 run: $(TARGET)
-	OMP_NUM_THREADS=$(NCORES) \
-	OPENBLAS_NUM_THREADS=$(NCORES) \
+	mpiexec -n $(NCORES) \
+	OMP_NUM_THREADS=1 \
+	OPENBLAS_NUM_THREADS=1 \
 	OMP_PROC_BIND=spread \
 	OMP_PLACES=cores \
 	$< $(RUN_ARGS)
@@ -130,7 +160,7 @@ help:
 	@echo "Targets:"
 	@echo "  make / make all    - build optimized"
 	@echo "  make debug         - debug build"
-	@echo "  make run           - run with all cores"
+	@echo "  make run           - run distributed across all cores via MPI"
 	@echo "  make clean         - remove objects/modules"
 	@echo "  make distclean     - remove executable"
 	@echo "Variables:"

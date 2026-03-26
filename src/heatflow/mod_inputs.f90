@@ -75,6 +75,7 @@
 module inputs
   use constants, only: real12, int12
   use constructions, only: heatblock, material
+  use mpi
   implicit none
 
   integer :: unit, newunit
@@ -367,18 +368,24 @@ contains
 !!!#################################################################################################
   subroutine check_param(readvar,n)
     implicit none
-    integer::n,i
+     integer::n,i,ierr,comm_rank
     integer,dimension(n)::readvar
+     logical :: is_root
     ! Not currently in use
 
+     call MPI_Comm_rank(MPI_COMM_WORLD, comm_rank, ierr)
+     is_root = (comm_rank == 0)
+
     if(any(readvar.gt.1)) then
-       write(6,*)
-       write(6,'(A43)') '###############################'
-       write(6,'(A43)') '##########   ERROR   ##########'
-       write(6,'(A43)') '###############################'
-       write(6,*)
-       write(6,'(A)') ' ---       Error in subroutine "check_param"      ---'
-       write(6,'(A)') ' --- ERROR: same KEYWORD apears more than once    ---'
+       if (is_root) then
+         write(6,*)
+         write(6,'(A43)') '###############################'
+         write(6,'(A43)') '##########   ERROR   ##########'
+         write(6,'(A43)') '###############################'
+         write(6,*)
+         write(6,'(A)') ' ---       Error in subroutine "check_param"      ---'
+         write(6,'(A)') ' --- ERROR: same KEYWORD apears more than once    ---'
+       end if
        stop
     end if
 
@@ -389,13 +396,15 @@ contains
        !------------------------------------------------------------------------------------
        ErrKB:if (((any(readvar(9:11).eq.0)) .or. any(readvar(29:31).eq.0)) &
             .and. (readvar(28) .eq. 0) )then
-          write(6,*)
-          write(6,'(A43)') '###############################'
-          write(6,'(A43)') '##########   ERORR   ##########'
-          write(6,'(A43)') '###############################'
-          write(6,*)
-          write(6,'(A)')   ' ---            Error in subroutine "check_param"            ---'
-          write(6,'(A)')   ' --- ERROR: KappaBoundx,y,z and KappaBound are not set       ---'
+         if (is_root) then
+           write(6,*)
+           write(6,'(A43)') '###############################'
+           write(6,'(A43)') '##########   ERORR   ##########'
+           write(6,'(A43)') '###############################'
+           write(6,*)
+           write(6,'(A)')   ' ---            Error in subroutine "check_param"            ---'
+           write(6,'(A)')   ' --- ERROR: KappaBoundx,y,z and KappaBound are not set       ---'
+         end if
           stop
        end if ErrKB
        !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -405,13 +414,15 @@ contains
 
         WarKBO:if (((all(readvar(9:11).eq.1)) .or. all(readvar(29:31).eq.1)) &
             .and. (readvar(28) .eq. 0) )then
-          write(6,*)
-          write(6,'(A43)') '###############################'
-          write(6,'(A43)') '##########   Warning   ##########'
-          write(6,'(A43)') '###############################'
-          write(6,*)
-          write(6,'(A)')   ' ---            Warning in subroutine "check_param"            ---'
-          write(6,'(A)')   ' --- Warning:  KappaBound is not set       ---'
+          if (is_root) then
+             write(6,*)
+             write(6,'(A43)') '###############################'
+             write(6,'(A43)') '##########   Warning   ##########'
+             write(6,'(A43)') '###############################'
+             write(6,*)
+             write(6,'(A)')   ' ---            Warning in subroutine "check_param"            ---'
+             write(6,'(A)')   ' --- Warning:  KappaBound is not set       ---'
+          end if
           readvar(28) = 1
           
        end if WarKBO
@@ -421,13 +432,15 @@ contains
        !------------------------------------------------------------------------------------
        WarKB:if (((any(readvar(9:11).eq.0)) .or. any(readvar(29:31).eq.0)) &
             .and. (readvar(28) .eq. 1) )then
-          write(6,*)
-          write(6,'(A43)') '###############################'
-          write(6,'(A43)') '##########  WARNING  ##########'
-          write(6,'(A43)') '###############################'
-          write(6,*)
-          write(6,'(A)')   ' ---           Warning in subroutine "check_param"           ---'
-          write(6,'(A)')   ' --- WARNING: KappaBoundx,y,z not set, using KappaBound      ---'
+         if (is_root) then
+           write(6,*)
+           write(6,'(A43)') '###############################'
+           write(6,'(A43)') '##########  WARNING  ##########'
+           write(6,'(A43)') '###############################'
+           write(6,*)
+           write(6,'(A)')   ' ---           Warning in subroutine "check_param"           ---'
+           write(6,'(A)')   ' --- WARNING: KappaBoundx,y,z not set, using KappaBound      ---'
+         end if
           kappaBoundx1 = KappaBound
           kappaBoundy1 = KappaBound
           kappaBoundz1 = KappaBound
@@ -438,39 +451,45 @@ contains
        !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     elseif (((any(readvar(9:11).eq.0)) .or. any(readvar(29:31).eq.0)) &
          .or. (readvar(28) .gt. 0) ) then
-       write(6,*)
-       write(6,'(A43)') '###############################'
-       write(6,'(A43)') '##########  WARNING  ##########'
-       write(6,'(A43)') '###############################'
-       write(6,*)
-       write(6,'(A)')   ' ---            Warning in subroutine "check_param"             ---'
-       write(6,'(A)')   ' --- WARNING: Periodic Boundry set, set Kappa are ignored       ---'
+       if (is_root) then
+         write(6,*)
+         write(6,'(A43)') '###############################'
+         write(6,'(A43)') '##########  WARNING  ##########'
+         write(6,'(A43)') '###############################'
+         write(6,*)
+         write(6,'(A)')   ' ---            Warning in subroutine "check_param"             ---'
+         write(6,'(A)')   ' --- WARNING: Periodic Boundry set, set Kappa are ignored       ---'
+       end if
     end if PB
 
     !------------------------------------------------------------------------------------
     ! warning about missing bath temps. reassine to T_Bath
     !------------------------------------------------------------------------------------
     if ((readvar(42) .eq. 1) .and. (T_BathCG .gt. 0)) then
-      write(6,*)
-      write(6,'(A43)') '###############################'
-      write(6,'(A43)') '##########  WARNING  ##########'
-      write(6,'(A43)') '###############################'
-      write(6,*)
-      write(6,'(A)')   ' ---            Warning in subroutine "check_param"             ---'
-      write(6,'(A)')   ' --- WARNING: T_BathCG set T_Bath/ T_Bath x,y,z will not be used          ---'
+      if (is_root) then
+         write(6,*)
+         write(6,'(A43)') '###############################'
+         write(6,'(A43)') '##########  WARNING  ##########'
+         write(6,'(A43)') '###############################'
+         write(6,*)
+         write(6,'(A)')   ' ---            Warning in subroutine "check_param"             ---'
+         write(6,'(A)')   ' --- WARNING: T_BathCG set T_Bath/ T_Bath x,y,z will not be used          ---'
+      end if
       !set all T_Bath value checks to 1
       readvar(20:25) = 1 
       readvar(27) = 1
 
     end if
     WarBath:if ( any(readvar(20:25).eq.0) ) then
-       write(6,*)
-       write(6,'(A43)') '###############################'
-       write(6,'(A43)') '##########  WARNING  ##########'
-       write(6,'(A43)') '###############################'
-       write(6,*)
-       write(6,'(A)')   ' ---            Warning in subroutine "check_param"             ---'
-       write(6,'(A)')   ' --- WARNING: T_Bath x,y,z not set T_Bath will be used          ---'
+       if (is_root) then
+         write(6,*)
+         write(6,'(A43)') '###############################'
+         write(6,'(A43)') '##########  WARNING  ##########'
+         write(6,'(A43)') '###############################'
+         write(6,*)
+         write(6,'(A)')   ' ---            Warning in subroutine "check_param"             ---'
+         write(6,'(A)')   ' --- WARNING: T_Bath x,y,z not set T_Bath will be used          ---'
+       end if
        T_Bathx1 = T_Bath
        T_Bathx2 = T_Bath
        T_Bathy1 = T_Bath
@@ -481,13 +500,15 @@ contains
     
     !Check if T_BathCG less than 0
     if ((readvar(42) .eq. 1) .and. (T_BathCG .lt. 0.0_real12)) then
-      write(6,*)
-      write(6,'(A43)') '###############################'
-      write(6,'(A43)') '##########  WARNING  ##########'
-      write(6,'(A43)') '###############################'
-      write(6,*)
-      write(6,'(A)')   ' ---            Warning in subroutine "check_param"             ---'
-      write(6,'(A)')   ' --- WARNING: T_BathCG is negative, are you sure you?          ---'
+      if (is_root) then
+         write(6,*)
+         write(6,'(A43)') '###############################'
+         write(6,'(A43)') '##########  WARNING  ##########'
+         write(6,'(A43)') '###############################'
+         write(6,*)
+         write(6,'(A)')   ' ---            Warning in subroutine "check_param"             ---'
+         write(6,'(A)')   ' --- WARNING: T_BathCG is negative, are you sure you?          ---'
+      end if
     end if
     if (readvar(42) .eq. 0) then
       T_BathCG = 0
@@ -500,25 +521,29 @@ contains
     ! Further warnings
     !------------------------------------------------------------------------------------
     if (any(readvar(32:37).eq.0)) then
-       write(6,*)
-       write(6,'(A43)') '###############################'
-       write(6,'(A43)') '##########  WARNING  ##########'
-       write(6,'(A43)') '###############################'
-       write(6,*)
-       write(6,'(A)') ' ---       WARNING in subroutine "check_param"       ---'
-       write(6,'(A)') ' --- WARNING: Some or All output write cells paramters are not defined ---'
-       write(6,*) ' --- USING: ', 'Start_ix = ', start_ix, ', end_ix = ', end_ix, ', start_iy = ', &
+       if (is_root) then
+         write(6,*)
+         write(6,'(A43)') '###############################'
+         write(6,'(A43)') '##########  WARNING  ##########'
+         write(6,'(A43)') '###############################'
+         write(6,*)
+         write(6,'(A)') ' ---       WARNING in subroutine "check_param"       ---'
+         write(6,'(A)') ' --- WARNING: Some or All output write cells paramters are not defined ---'
+         write(6,*) ' --- USING: ', 'Start_ix = ', start_ix, ', end_ix = ', end_ix, ', start_iy = ', &
             start_iy,', end_iy = ', end_iy, ', start_iz = ', start_iz, ', end_iz = ', end_iz
+       end if
     end if
 
     if (readvar(39) .eq. 0) then
-       write(6,*)
-       write(6,'(A43)') '###############################'
-       write(6,'(A43)') '##########  WARNING  ##########'
-       write(6,'(A43)') '###############################'
-       write(6,*)
-       write(6,'(A)') ' ---       WARNING in subroutine "check_param"       ---'
-       write(6,'(A)') ' --- WARNING: TempDepProp not set, no action needed ---'
+       if (is_root) then
+         write(6,*)
+         write(6,'(A43)') '###############################'
+         write(6,'(A43)') '##########  WARNING  ##########'
+         write(6,'(A43)') '###############################'
+         write(6,*)
+         write(6,'(A)') ' ---       WARNING in subroutine "check_param"       ---'
+         write(6,'(A)') ' --- WARNING: TempDepProp not set, no action needed ---'
+       end if
        readvar(39) = 1
     end if
 
@@ -527,20 +552,21 @@ contains
     end if
 
     if (any(readvar.eq.0)) then
-       write(6,*)
-       write(6,'(A43)') '###############################'
-       write(6,'(A43)') '##########  WARNING  ##########'
-       write(6,'(A43)') '###############################'
-       write(6,*)
-       write(6,'(A)') ' ---       WARNING in subroutine "check_param"       ---'
-       write(6,'(A)') ' --- WARNING: Essential parameters missing    ---'
-       ! Print all indices of readvar that are 0
-       do i = 1, size(readvar)
-          if (readvar(i) == 0) then
+       if (is_root) then
+         write(6,*)
+         write(6,'(A43)') '###############################'
+         write(6,'(A43)') '##########  WARNING  ##########'
+         write(6,'(A43)') '###############################'
+         write(6,*)
+         write(6,'(A)') ' ---       WARNING in subroutine "check_param"       ---'
+         write(6,'(A)') ' --- WARNING: Essential parameters missing    ---'
+         do i = 1, size(readvar)
+           if (readvar(i) == 0) then
              write(6, '(A,I3)') 'Index ', i, ' of readvar is 0'
-          end if
-       end do
-       write(6,*)
+           end if
+         end do
+         write(6,*)
+       end if
     end if
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -548,7 +574,7 @@ contains
     !------------------------------------------------------------------------------------
     ! verbos to check for errors
     !------------------------------------------------------------------------------------
-    if(IVERB .ge. 1) then
+    if(is_root .and. IVERB .ge. 1) then
        write(6,'(A)')           ' vebose printing option'
        write(6,'(A)')           ' running calculation with :'
        write(6,'(A35,I6)')      '   IVERB             = ', IVERB
