@@ -18,10 +18,34 @@ NCORES       := $(shell nproc)
 # Detect conda environment for BLAS/LAPACK (fallback if no system libs)
 CONDA_PREFIX ?= $(shell conda info --base 2>/dev/null || echo /home/hm556/miniforge3)
 
-# PETSc (system installation)
+# PETSc (discover dynamically when possible)
+PKG_CONFIG ?= pkg-config
+PETSC_PKG_CFLAGS := $(shell $(PKG_CONFIG) --cflags petsc 2>/dev/null || $(PKG_CONFIG) --cflags PETSc 2>/dev/null)
+PETSC_PKG_LIBS   := $(shell $(PKG_CONFIG) --libs petsc 2>/dev/null || $(PKG_CONFIG) --libs PETSc 2>/dev/null)
+
+ifdef PETSC_DIR
+PETSC_DIR_INC := -I$(PETSC_DIR)/include
+ifdef PETSC_ARCH
+PETSC_DIR_INC += -I$(PETSC_DIR)/$(PETSC_ARCH)/include
+PETSC_DIR_LIB := -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -Wl,-rpath,$(PETSC_DIR)/$(PETSC_ARCH)/lib
+endif
+endif
+
+ifeq ($(strip $(PETSC_PKG_CFLAGS)),)
+PETSC_INC  := $(PETSC_DIR_INC)
+PETSC_LIB  := $(PETSC_DIR_LIB) -lpetsc
+PETSC_NOTE := (PETSc from PETSC_DIR/PETSC_ARCH)
+else
+PETSC_INC  := $(PETSC_PKG_CFLAGS)
+PETSC_LIB  := $(PETSC_PKG_LIBS)
+PETSC_NOTE := (PETSc via pkg-config)
+endif
+
+ifeq ($(strip $(PETSC_INC)),)
 PETSC_INC  := -I/usr/share/petsc/3.15/include -I/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/include
 PETSC_LIB  := -L/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/lib -lpetsc -Wl,-rpath,/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/lib
-PETSC_NOTE := (system PETSc 3.15)
+PETSC_NOTE := (legacy PETSc 3.15 fallback)
+endif
 
 # Use OpenBLAS for multi-threaded BLAS/LAPACK (better than reference BLAS/ATLAS)
 BLAS_FLAGS := -lopenblas -lgomp -lpthread -lm
