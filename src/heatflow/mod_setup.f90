@@ -114,30 +114,12 @@ module setup
       integer(int12) :: row_count, max_row_size
       
       ra%n = NA ! The number of rows in the H matrix
-      
-      ! Estimate nonzeros (7 per interior cell, less at boundaries)
-      nnz_estimate = 7*nx*ny*nz - 2*(nx*ny + ny*nz + nz*nx)
-      if (Periodicx) nnz_estimate = nnz_estimate + 2*ny*nz
-      if (Periodicy) nnz_estimate = nnz_estimate + 2*nz*nx
-      if (Periodicz) nnz_estimate = nnz_estimate + 2*nx*ny
-      
-      ! Allocate CSR arrays with initial estimate (will grow if needed)
-      ! For 451^3: ~640M entries = 10GB, so allocate conservatively
-      write(*,'(A,I12,A)') " Estimated nonzeros: ", nnz_estimate, ""
-      allocate(acsr(nnz_estimate), ja(nnz_estimate))
-      allocate(ia(NA+1))
-      
-      ! Setup neighbor offsets
-      addit = [1] 
-      if (Periodicx) addit = [addit, (nx-1)]
-      if (ny .gt. 1) addit = [addit, nx]
-      if ((Periodicy).and.(ny .gt. 1)) addit = [addit, (ny-1)*nx]
-      if (nz .gt. 1) addit = [addit, nx*ny]
-      if ((Periodicz).and.(nz .gt. 1)) addit = [addit, (nz-1)*ny*nx]
-      
-      ! Allocate temporary row storage (max ~13 entries per row for 3D)
-      max_row_size = 2*size(addit,1) + 1
-      allocate(row_vals(max_row_size), row_cols(max_row_size))
+      ra%len = len ! The number of non-zero elements in the H matrix
+      ! Allocate the arrays to hold the H matrix in sparse storage
+      allocate(ra%val(len), ra%irow(len), ra%jcol(len))
+      ra%val(:)=0
+      ra%irow(:)=-2
+      ra%jcol(:)=-1
       addit = [1] ! The values to add to the row to get the column
       if (Periodicx) addit = [addit, (nx-1)]
       if (ny .gt. 1) addit = [addit, nx] ! Add the values to add to the row to get the column
