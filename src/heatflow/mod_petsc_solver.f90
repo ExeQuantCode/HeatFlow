@@ -27,6 +27,7 @@ module petsc_solver
   integer, save :: row_start_saved = 1
   integer, save :: row_end_saved = 0
   PetscInt, allocatable, save :: ia_saved(:), ja_saved(:)
+  PetscInt, allocatable, save :: local_indices_saved(:)
   PetscScalar, allocatable, save :: aval_saved(:)
   PetscInt, allocatable, save :: diag_nnz_saved(:), offdiag_nnz_saved(:)
   integer, allocatable, save :: recvcounts_saved(:), displs_saved(:)
@@ -64,6 +65,7 @@ contains
     if (ksp_saved /= PETSC_NULL_KSP) call KSPDestroy(ksp_saved, ierr)
     if (allocated(ia_saved)) deallocate(ia_saved)
     if (allocated(ja_saved)) deallocate(ja_saved)
+    if (allocated(local_indices_saved)) deallocate(local_indices_saved)
     if (allocated(aval_saved)) deallocate(aval_saved)
     if (allocated(diag_nnz_saved)) deallocate(diag_nnz_saved)
     if (allocated(offdiag_nnz_saved)) deallocate(offdiag_nnz_saved)
@@ -201,8 +203,7 @@ contains
     integer :: ierr, its
     real(8) :: rnorm
     logical :: rebuild_needed
-    PetscScalar, pointer :: vec_array(:)
-    integer :: nlocal, rank_idx
+    integer :: nlocal, rank_idx, local_row
 
     if (size(ia) /= n + 1) stop 'solve_petsc_csr: ia size mismatch'
     if (size(b) /= n .or. size(x) /= n) stop 'solve_petsc_csr: vector size mismatch'
@@ -229,6 +230,13 @@ contains
       ia_saved = ia - 1
       ja_saved = ja - 1
       aval_saved = aval
+
+      allocate(local_indices_saved(max(1, nlocal)))
+      if (nlocal > 0) then
+        do local_row = 1, nlocal
+          local_indices_saved(local_row) = row_start_saved + local_row - 2
+        end do
+      end if
 
       call build_distributed_matrix(n, ia, ja, aval)
 
@@ -301,13 +309,16 @@ contains
       x_local_saved(1:nlocal) = x(row_start_saved:row_end_saved)
     end if
 
-    call VecGetArrayF90(bb_saved, vec_array, ierr)
-    if (nlocal > 0) vec_array(1:nlocal) = b_local_saved(1:nlocal)
-    call VecRestoreArrayF90(bb_saved, vec_array, ierr)
-
-    call VecGetArrayF90(xx_saved, vec_array, ierr)
-    if (nlocal > 0) vec_array(1:nlocal) = x_local_saved(1:nlocal)
-    call VecRestoreArrayF90(xx_saved, vec_array, ierr)
+    call VecSet(bb_saved, 0.0d0, ierr)
+    call VecSet(xx_saved, 0.0d0, ierr)
+    if (nlocal > 0) then
+      call VecSetValues(bb_saved, nlocal, local_indices_saved, b_local_saved, INSERT_VALUES, ierr)
+      call VecSetValues(xx_saved, nlocal, local_indices_saved, x_local_saved, INSERT_VALUES, ierr)
+    end if
+    call VecAssemblyBegin(bb_saved, ierr)
+    call VecAssemblyEnd(bb_saved, ierr)
+    call VecAssemblyBegin(xx_saved, ierr)
+    call VecAssemblyEnd(xx_saved, ierr)
 
     call KSPSolve(ksp_saved, bb_saved, xx_saved, ierr)
     if (ierr /= 0) then
@@ -318,9 +329,7 @@ contains
     call KSPGetIterationNumber(ksp_saved, its, ierr)
     call KSPGetResidualNorm(ksp_saved, rnorm, ierr)
 
-    call VecGetArrayF90(xx_saved, vec_array, ierr)
-    if (nlocal > 0) x_local_saved(1:nlocal) = vec_array(1:nlocal)
-    call VecRestoreArrayF90(xx_saved, vec_array, ierr)
+    if (nlocal > 0) call VecGetValues(xx_saved, nlocal, local_indices_saved, x_local_saved, ierr)
 
     call MPI_Allgatherv(x_local_saved, nlocal, MPI_DOUBLE_PRECISION, x, recvcounts_saved, displs_saved, &
          MPI_DOUBLE_PRECISION, PETSC_COMM_WORLD, ierr)
