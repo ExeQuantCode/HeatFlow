@@ -44,9 +44,9 @@
 module output
   use constants, only: real12, int12, TINY, fields
   use inputs, only: nx,ny,nz, time_step, grid, NA, Check_Steady_State, ntime, WriteToTxt
-  use inputs, only: Test_Run, freq, RunName, FullRestart, IVERB, write_every
+  use inputs, only: Test_Run, freq, RunName, FullRestart, IVERB, write_every, CompressedOutput
   use inputs, only: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz
-  use globe_data, only: Temp_p,Temp_pp, heat, heated_volume
+  use globe_data, only: Temp_p,Temp_pp, heat, heated_volume, logname
   implicit none
   
 contains
@@ -54,9 +54,11 @@ contains
     implicit none
     integer(int12), intent(in) :: itime
     real(real12), dimension(nx,ny,nz) :: CT, Temp_cur
-    integer(int12) :: ix, iy, iz, indexA, logunit
-    character(len=1024) :: file_prefix, file_extension, outdir, logname
+    integer(int12) :: ix, iy, iz, indexA
+    character(len=1024) :: file_prefix, file_extension, outdir
+    integer :: logunit
     
+    logunit = 20
     file_prefix = 'Temperture_'
     outdir='./outputs/'
     file_extension = '.out'
@@ -90,9 +92,18 @@ contains
           ! find most recent log file and open it
           !---------------------------------------
           CALL last_log(logname,outdir)
-          open(newunit=logunit,file=logname)
-          write(logunit,*) real((itime-1)*(time_step)), &
-               (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
+          if (CompressedOutput) then
+             open(logunit,file=logname, status='unknown', access='stream', position='append')
+             write(logunit) real((itime-1)*(time_step), kind=real12)
+             write(logunit) (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
+          else
+             open(logunit,file=logname)
+            !  print*, logunit
+            !  print*, logname
+             write(logunit,*) real((itime-1)*(time_step)), &
+                  (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
+          end if
+          close(logunit)
           !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
        end if
     end if
@@ -105,13 +116,23 @@ contains
     ! write out to log file
     !---------------------------------------
     if (.not. Test_run) then
-      if (WriteToTxt) then
-         if (mod(itime, write_every) .eq. 0) then
-            write(*, *) 'Writing Temperature difference to file'
-            write(logunit,*) real((itime-1)*(time_step)), &
-               (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
-         end if
-      endif
+       if (mod(itime, write_every) .eq. 0) then
+          if (CompressedOutput) then
+             write(*, *) 'Writing Temperature (Compressed) to file'
+             open(logunit,file=logname, status='unknown', access='stream', position='append')
+             write(logunit) real((itime-1)*(time_step), kind=real12)
+             write(logunit) (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
+             close(logunit)
+          elseif (WriteToTxt) then
+             write(*, *) 'Writing Temperature difference to file'
+             ! print*, logunit
+             ! print*, logname
+             open(logunit,file=logname, status='old', position='append')
+             write(logunit,*) real((itime-1)*(time_step)), &
+                (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
+             close(logunit)
+          end if
+       end if
     end if
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -193,8 +214,13 @@ contains
    i = 0
    flag=.true.
    do while (flag)
-      write(logname, '(A,A,I2.2)') trim(adjustl(outdir)) // 'output_' // &
-           trim(adjustl(RunName)),'_',  i
+      if (CompressedOutput) then
+         write(logname, '(A,A,I2.2,A)') trim(adjustl(outdir)) // 'output_' // &
+              trim(adjustl(RunName)),'_',  i, '.bin'
+      else
+         write(logname, '(A,A,I2.2)') trim(adjustl(outdir)) // 'output_' // &
+              trim(adjustl(RunName)),'_',  i
+      endif
       inquire(file=logname, exist=flag)
       i = i+1
    end do

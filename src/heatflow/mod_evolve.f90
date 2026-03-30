@@ -26,14 +26,20 @@ module evolution
   use sptype, only: I4B
   use solver, only: linbcg
   use globe_data, only: Temp_p, Temp_pp, inverse_time, heat, lin_rhoc
+  use globe_data, only: acsr, ja, ia
   use heating, only: heater
   use boundary_vector, only: boundary
   use cattaneo, only: S_catS
-  use tempdep, only: ChangeProp
+!   use tempdep, only: ChangeProp 
+   use petsc_solver, only: solve_petsc_csr
+
   implicit none
 
   private
   public :: simulate
+  
+  ! Module-level variables for PETSc (persist across time steps)
+  integer, allocatable, save :: ia32(:), ja32(:)   ! 32-bit copies for PETSc
 
 contains
 
@@ -44,11 +50,13 @@ contains
 !!!#################################################################################################
   subroutine simulate(itime)
     integer(int12), intent(in) :: itime
-    real(real12), dimension(NA) :: S, x, Q, Qdens, S_CAT, B
-    integer(int12) :: ncg, itol, itmax !, iss
-    integer(I4B) :: iter
+    real(real12), dimension(NA) :: S, Q, Qdens, S_CAT, B
+    real(real12), dimension(:), allocatable :: x
+    integer:: ncg, itol, itmax !, iss
+    integer :: iter
     real(real12) :: e, err, tol
-    
+    integer :: NA32
+
     !----------------------
     ! Initialize vectors
     !----------------------
@@ -111,6 +119,16 @@ contains
     !---------------------------------------------
     if ( iSteady .eq. 0 ) then
        S = - inverse_time * Temp_p * lin_rhoc - Qdens - B
+       if (IVERB .gt. 3) then
+          write(*,*) "S construction diagnostics:"
+          write(*,*) "  inverse_time =", inverse_time
+          write(*,*) "  Temp_p avg =", sum(Temp_p)/size(Temp_p)
+          write(*,*) "  lin_rhoc avg =", sum(lin_rhoc)/size(lin_rhoc)
+          write(*,*) "  Qdens avg =", sum(Qdens)/size(Qdens)
+          write(*,*) "  B avg =", sum(B)/size(B)
+          write(*,*) "  -inverse_time*Temp_p*lin_rhoc avg =", sum(-inverse_time*Temp_p*lin_rhoc)/size(Temp_p)
+          write(*,*) "  S before S_CAT avg =", sum(S)/size(S)
+       end if
        if ( iCAttaneo  .eq. 1) then
           S = S + S_CAT
        end if
@@ -137,19 +155,59 @@ contains
    ! iter:  Output - gives the number of the final iteration.
    ! err:   Output - records the error of the final iteration.
    ! iss:   Input - sets the Sparse Storage type (1=SRS, 2=SDS).
-    x=Temp_p+(Temp_p-Temp_pp) 
-    if (any(x-Temp_p .lt. TINY)) x=x+TINY !avoid nan solver issue
+   !  x=Temp_p+(Temp_p-Temp_pp)
+   !  if (any(x-Temp_p .lt. TINY)) x=x+TINY !avoid nan solver issue
     itol=1
     tol=1.e-32_real12
-    itmax=50000
+    itmax=500000
     ncg = 0
-    iter=ncg
+    iter= 0
     err=E
 
+   !  call bicgstab(acsr, ia, ja, S, itmax, Temp_p, x, iter)
+   
+   ! Allocate and initialize x with a good initial guess
+   allocate(x(NA))
+   x = Temp_p + (Temp_p - Temp_pp)
+   if (any(x - Temp_p .lt. TINY)) x = x + TINY ! avoid nan solver issue
+   
+   ! Debug: Print initial guess statistics
+   if (IVERB .gt. 3) then
+      write(*,*) "========== PETSc Solver Diagnostics =========="
+      write(*,*) "Time step:", itime
+      write(*,*) "Initial guess x: min=", minval(x), " max=", maxval(x), " avg=", sum(x)/size(x)
+      write(*,*) "RHS S: min=", minval(S), " max=", maxval(S), " avg=", sum(S)/size(S)
+      write(*,*) "Temp_p: min=", minval(Temp_p), " max=", maxval(Temp_p), " avg=", sum(Temp_p)/size(Temp_p)
+      write(*,*) "Matrix acsr: min=", minval(acsr), " max=", maxval(acsr), " avg=", sum(acsr)/size(acsr)
+      write(*,*) "Matrix size: n=", NA32, " nnz=", size(acsr)
+   end if
+   
+   ! Convert to 32-bit integers for PETSc (only on first call)
+   if (.not. allocated(ia32)) then
+      allocate(ia32(size(ia)), ja32(size(ja)))
+      ia32 = int(ia, kind=kind(ia32))
+      ja32 = int(ja, kind=kind(ja32))
+   end if
+   NA32 = int(NA, kind=kind(NA32))
+   
+   call solve_petsc_csr(NA32, ia32, ja32, acsr, S, x, tol, itmax)
+   
+   ! Debug: Print solution statistics and verify solution
+   if (IVERB .gt. 3) then
+      write(*,*) "Solution x after PETSc: min=", minval(x), " max=", maxval(x), " avg=", sum(x)/size(x)
+      write(*,*) "Temperature change: avg(x-Temp_p)=", sum(x-Temp_p)/size(x)
+      write(*,*) "Max temperature change: ", maxval(abs(x-Temp_p))
+      write(*,*) "=============================================="
+   end if
+   
+   ! Note: Don't deallocate ia32, ja32 - keep them for next time step
 
-    CALL linbcg(S,x,itol=int(itol,I4B),tol=tol, itmax=int(itmax,I4B), iter=iter, &
-         err=E)
+
+   ! CALL solve_pardiso(acsr, S, ia, ja, x)
+   !  CALL linbcg(S,x,itol=int(itol,I4B),tol=tol, itmax=int(itmax,I4B), iter=iter, &
+         ! err=E)
          
+   !
     if (any(isnan(x(:)))) then
        write(0,*) "fatal error: NAN in x tempurature vector"
        write(0,*) 'time step ', itime, "      T   ", sum(Temp_p)/size(Temp_p), E ,iter
@@ -169,9 +227,9 @@ contains
     Temp_pp = Temp_p
     Temp_p = x
 
-    if (TempDepProp .eq. 1) then
-      CALL ChangeProp()
-    end if
+   !  if (TempDepProp .eq. 1) then
+   !    CALL ChangeProp()
+   !  end if
    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
   end subroutine simulate

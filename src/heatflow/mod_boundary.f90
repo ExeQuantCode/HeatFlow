@@ -84,7 +84,7 @@ contains
                             kappaHarm = (2*kappa*kappaBoundx1/(kappa+kappaBoundx1)) / &
                             (grid(ix, iy, iz)%Length(1)**2)
                             if (kappa .ne. kappaBoundx1) kappaHarm = kappaHarm*BR
-                            B(I) = B(I) + (kappaHarm) * T_Bathx1
+                            B(I) = B(I) + (kappaHarm) * T_Bathx1 !+ boundray_term_vel(1_int12,iy,iz,T_Bathx1)
                         end if
                     end if
                     if (ix .eq. nx) then
@@ -94,7 +94,7 @@ contains
                             kappaHarm = (2*kappa*kappaBoundNx/(kappa+kappaBoundNx)) / &
                             (grid(ix, iy, iz)%Length(1)**2)
                             if (kappa .ne. kappaBoundNx) kappaHarm = kappaHarm*BR
-                            B(I) = B(I) + (kappaHarm) * T_Bathx2
+                            B(I) = B(I) + (kappaHarm) * T_Bathx2 !+ boundray_term_vel(nx,iy,iz,T_Bathx2)
                         end if
                     end if
                 end if
@@ -107,7 +107,7 @@ contains
                             kappaHarm = (2*kappa*kappaBoundy1/(kappa+kappaBoundy1)) / &
                             (grid(ix, iy, iz)%Length(2)**2)
                             if (kappa .ne. kappaBoundy1) kappaHarm = kappaHarm*BR
-                            B(I) = B(I) + (kappaHarm) * T_Bathy1
+                            B(I) = B(I) + (kappaHarm) * T_Bathy1 !+ boundray_term_vel(ix,1_int12,iz,T_Bathy1)
                         end if
                     end if
                     if (iy .eq. ny) then
@@ -117,7 +117,7 @@ contains
                             kappaHarm = (2*kappa*kappaBoundNy/(kappa+kappaBoundNy)) / &
                             (grid(ix, iy, iz)%Length(2)**2)
                             if (kappa .ne. kappaBoundNy) kappaHarm = kappaHarm*BR
-                            B(I) = B(I) + (kappaHarm) * T_Bathy2
+                            B(I) = B(I) + (kappaHarm) * T_Bathy2 !+ boundray_term_vel(ix,ny,iz,T_Bathy2)
                         end if
                     end if
                 end if
@@ -130,7 +130,7 @@ contains
                             kappaHarm = (2*kappa*kappaBoundz1/(kappa+kappaBoundz1)) / &
                             (grid(ix, iy, iz)%Length(3)**2)
                             if (kappa .ne. kappaBoundz1) kappaHarm = kappaHarm*BR
-                            B(I) = B(I) + (kappaHarm) * T_Bathz1
+                            B(I) = B(I) + (kappaHarm) * T_Bathz1 !+ boundray_term_vel(ix,iy,1_int12,T_Bathz1)
                         end if
                     end if
                     if (iz .eq. nz) then
@@ -140,7 +140,7 @@ contains
                             kappaHarm = (2*kappa*kappaBoundNz/(kappa+kappaBoundNz)) / &
                             (grid(ix, iy, iz)%Length(3)**2)
                             if (kappa .ne. kappaBoundNz) kappaHarm = kappaHarm*BR
-                            B(I) = B(I) + (kappaHarm) * T_Bathz2
+                            B(I) = B(I) + (kappaHarm) * T_Bathz2 !+ boundray_term_vel(ix,iy,nz,T_Bathz2)
                         end if
                     end if
                 end if
@@ -180,5 +180,49 @@ contains
     ! so we need to add T_BathCG to the temperature at the boundary 
   end function constantboundarytempgrad
   !!!###############################################################################################
+
+     !!!########################################################################
+   !!! This subroutine calculates the value of the convective term of the H matrix...
+   !!! ...at the boundary.
+   !!!########################################################################
+  function boundray_term_vel(x_b, y_b, z_b, TB) result(vel_conv)
+    integer(int12), intent(in) :: x_b, y_b, z_b
+    real(real12) :: vel_conv
+    real(real12) :: rho, CV, TB
+    real(real12), dimension(3) :: vel_in, vel_out 
+
+    !------------------------------------------------------------
+    ! The boundary term is calculated of the boundary grid point.
+    !------------------------------------------------------------
+
+    
+    rho = grid(x_b,y_b,z_b)%rho
+    CV = grid(x_b,y_b,z_b)%heat_capacity
+    vel_in = grid(x_b,y_b,z_b)%vel
+    vel_out = grid(x_b,y_b,z_b)%vel
+
+    if (x_b .eq. 1_int12) then
+        vel_conv = vel_in(1)*rho*CV*(1.0_real12/(2.0_real12*grid(x_b,y_b,z_b)%Length(1)))
+        vel_conv = -vel_conv
+    else if (x_b .eq. nx) then
+        vel_conv = vel_in(1)*rho*CV*(1.0_real12/(2.0_real12*grid(x_b,y_b,z_b)%Length(1)))
+    
+    else if (y_b .eq. 1_int12) then
+        vel_conv = vel_in(2)*rho*CV*(1.0_real12/(2.0_real12*grid(x_b,y_b,z_b)%Length(2)))
+        vel_conv = -vel_conv
+    else if (y_b .eq. ny) then
+        vel_conv = vel_in(2)*rho*CV*(1.0_real12/(2.0_real12*grid(x_b,y_b,z_b)%Length(2)))
+    else if (z_b .eq. 1_int12) then
+        vel_conv = vel_in(3)*rho*CV*(1.0_real12/(2.0_real12*grid(x_b,y_b,z_b)%Length(3)))
+        vel_conv = -vel_conv
+    else if (z_b .eq. nz) then
+        vel_conv = vel_in(3)*rho*CV*(1.0_real12/(2.0_real12*grid(x_b,y_b,z_b)%Length(3)))
+    else
+        vel_conv = 0.0_real12
+    end if
+    vel_conv = vel_conv*TB
+    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    end function boundray_term_vel
+    !!!########################################################################
   
 end module boundary_vector

@@ -12,6 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 ### Security
 
+##[2.0.0] - 2026-03-26
+## Added
+-Add Petsc solver
+-Add new constant gradient boundary conditions
+-Add new compressed output flag
+
+
+
+
 ##[1.0.0] - 2025-07-28
 ## Added
 -Additional boundary conditions

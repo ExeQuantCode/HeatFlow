@@ -28,10 +28,17 @@ program HEATFLOW_V0_3
   use evolution, only: simulate
   use setup, only: set_global_variables
   use INITIAL, only: initial_evolve
+   use petsc_solver, only: petsc_init, petsc_finalize, petsc_is_root
 
   implicit none
    real(real12) :: cpustart, cpuend, cpustart2, progress
    integer(int12) :: itime
+
+   !-------------------------------------------------------------!
+   ! Initialize PETSc FIRST (before any other operations)       !
+   !-------------------------------------------------------------!
+   CALL petsc_init()
+   !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
 
    !-------------------------------------------------------------!
    ! calculate the time to run full simulation                   !
@@ -40,7 +47,7 @@ program HEATFLOW_V0_3
    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
 
    ! give feedback to user that code has begun
-   write(*,*) 'Setup initialising' 
+   if (petsc_is_root()) write(*,*) 'Setup initialising'
    
    !-------------------------------------------------------------!
    ! Read parameters from input file and set global variables ...!
@@ -59,14 +66,15 @@ program HEATFLOW_V0_3
 
 
    ! give feedback to user that main simulation is begining
-   write(*,*) 'Setup complete, running simulation' 
+   if (petsc_is_root()) write(*,*) 'Setup complete, running simulation'
 
    !-------------------------------------------------------------!
    ! run simulation for 'ntime' time steps                       !
    !-------------------------------------------------------------!
+
    do itime=1,ntime 
 
-      if (iverb.eq.0) then
+      if (petsc_is_root() .and. iverb.eq.0) then
          if (Lpercentage) then 
             progress = real(itime)/real(ntime)*100.0
             write(*,'(A,A,F12.4,A)', advance = 'no') achar(13)&
@@ -79,26 +87,29 @@ program HEATFLOW_V0_3
       ! CALL initial_evolve to set systems initial Temperature conditions      
       if (itime .eq. 1) CALL initial_evolve                      
       
-      ! run the time evolution                                   
+      ! run the time evolution  
       CALL simulate(itime)
+
                                                 
                              
       ! Write results                           
-      CALL data_write(itime) 
-      if (IVERB.ge.3) CALL final_print                           
+      if (petsc_is_root()) CALL data_write(itime)
+      if (petsc_is_root() .and. IVERB.ge.3) CALL final_print
                                                                  
-   end do                                                        
+   end do  
+   CALL petsc_finalize()
+                                                      
    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
 
    !-------------------------------------------------------------!
    ! calculate end time and print to user                        !
    !-------------------------------------------------------------!
-   CALL cpu_time(cpuend)                                          
-   write(*,'(A,F12.6)') ' time=', cpuend-cpustart                 
+   CALL cpu_time(cpuend)
+   if (petsc_is_root()) write(*,'(A,F12.6)') ' time=', cpuend-cpustart
    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
 
    ! give feedback to user that code has ended
-   write(*,*) 'all done'
+   if (petsc_is_root()) write(*,*) 'all done'
 
 end program HEATFLOW_V0_3
 

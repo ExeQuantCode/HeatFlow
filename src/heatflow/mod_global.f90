@@ -4,7 +4,7 @@
 !!!#################################################################################################
 module globe_data
   use sptype, only: sprs2_dp, diag_sprs_dp
-  use constants, only: real12
+  use constants, only: real12, int12
   implicit none
   real(real12), dimension(:,:,:), allocatable :: Temp_cur ! Current temperature
   real(real12), dimension(:), allocatable :: Temp_p, Temp_pp ! Previous and previous previous temperature
@@ -13,6 +13,10 @@ module globe_data
   real(real12), dimension(:), allocatable :: lin_rhoc ! 1D array for HeatCapacity*Rho
   TYPE(sprs2_dp) :: ra !Techniqually rH
   TYPE(diag_sprs_dp) :: da !Techniqually dH
+  real(real12), dimension(:), allocatable :: acsr
+  integer(kind=8), dimension(:), allocatable :: ja
+  integer(kind=8), dimension(:), allocatable :: ia
+  character(len=1024) :: logname ! Log file name
    
 end module globe_data
  

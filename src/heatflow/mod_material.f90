@@ -51,12 +51,13 @@ contains
 !!!  - em, the emissivity of the material.
 !!!#########################################################################
 
-subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau, em)
+subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau, em, vel)
   
    integer(int12), intent(in) ::imaterial_type
    integer(int12) :: i, tmp
    real(real12), intent(inout) :: kappa3D, kappa, h_conv, heat_capacity, sound_speed, rho, tau
    real(real12), intent(inout) :: em
+   real(real12), dimension(3), intent(inout) :: vel
    logical :: found
 
 !!!=============================================
@@ -90,12 +91,15 @@ subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_
          if (tmp .eq. imaterial_type) then
             found = .true.
             heat_capacity = input_materials(i)%heat_capacity
-            h_conv        = input_materials(i)%h_conv
+            ! h_conv        = input_materials(i)%h_conv
             kappa         = input_materials(i)%kappa
-            kappa3D       = input_materials(i)%kappa3D
+            ! kappa3D       = input_materials(i)%kappa3D
             rho           = input_materials(i)%rho
-            sound_speed   = input_materials(i)%sound_speed
+            ! sound_speed   = input_materials(i)%sound_speed
             tau           = input_materials(i)%tau
+            vel(1)        = input_materials(i)%vel(1)
+            vel(2)        = input_materials(i)%vel(2)
+            vel(3)        = input_materials(i)%vel(3)
             em   = input_materials(i)%em
 
             exit mat_loop
