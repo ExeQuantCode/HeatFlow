@@ -166,44 +166,136 @@ Each line in the file (after header) corresponds to one row (X-direction).
 - `1:0` means Material ID 1, Heater ID 0 (no heater).
 - `1:1` means Material ID 1, Heater ID 1 (active heater).
 
+
 ---
 
 ## Cylindrical Grid Mode
 
-HeatFlow supports an axisymmetric cylindrical coordinate system, enabled by setting `_CylindricalGrid = T` in `param.in`. In this mode the standard Cartesian grid is reinterpreted as a 2D radial–axial (r–y) domain:
+HeatFlow supports an **axisymmetric cylindrical** coordinate system. This mode solves the heat equation on a 2-D radial-axial (r-y) cross-section of a cylinder, assuming full rotational symmetry about the central axis (r = 0). It is enabled by setting `_CylindricalGrid = T` in `param.in`.
+
+### Coordinate mapping
+
+The standard Cartesian grid indices are reinterpreted as follows:
 
 | Grid axis | Physical meaning | Notes |
 | :--- | :--- | :--- |
-| **x** | Radial direction (r) | `x=1` is at the centre of the cylinder, increasing outward. |
-| **y** | Axial direction (down the cylinder) | Same as Cartesian y. |
-| **z** | Azimuthal (unused) | Must be set to `nz = 1`. |
+| **x** (radial, r) | Radial direction | `ix = 1` is the innermost shell (centred at r = dr/2); radial distance increases outward. |
+| **y** | Axial direction | Identical to Cartesian y. |
+| **z** | Azimuthal (unused) | **Must** be set to `nz = 1`. The code will stop with an error if nz is not 1. |
 
-### How it works
+The total cylinder radius is R = Lx and the axial length is Ly, where Lx and Ly are the physical dimensions given in `system.in`.
 
-The simulation grid in `system.in` is defined as a standard 2D array (`nx × ny`, `nz = 1`). The physical dimensions `Lx` and `Ly` represent the cylinder radius and axial length respectively. Internally, the code makes two adjustments:
+### Governing equation
 
-1.  **Cell volumes** — Each radial shell at index `ix` (with `dr = Lx/nx`) has volume:
+In cylindrical coordinates with azimuthal symmetry the heat equation becomes:
 
-    `V = π (r_out² − r_in²) × dy × dz`
+    rho * Cv * dT/dt = (1/r) d/dr (r * kappa * dT/dr) + d/dy (kappa * dT/dy) + q
 
-    where `r_in = (ix−1)·dr` and `r_out = ix·dr`.
+where q is the volumetric heat-source density. The extra 1/r factor in the radial term is what distinguishes cylindrical from Cartesian diffusion; it means that interface areas and cell volumes depend on the radius.
 
-2.  **Heat-matrix conductivities** — The discretised radial heat equation in cylindrical coordinates is `(1/r) ∂/∂r (r κ ∂T/∂r)`. The interface area between adjacent radial shells scales with the interface radius. The code applies correction factors to the radial conductivity terms:
+### How the code implements cylindrical symmetry
 
-    - Inner neighbour: factor = `(ix − 1) / (ix − 0.5)`
-    - Outer neighbour: factor = `ix / (ix − 0.5)`
+Internally the code makes three adjustments compared with the Cartesian solver. All other parts of the time-stepping, solver, output, etc. remain the same.
 
-    Axial (y) conductivities are unchanged.
+#### 1. Cell volumes
+
+Each cell is a cylindrical **annular shell**. For a cell at radial index `ix` with uniform radial spacing dr = Lx / nx:
+
+    r_in  = (ix - 1) * dr
+    r_out = ix * dr
+    V(ix) = pi * (r_out^2 - r_in^2) * dy
+
+Note that the innermost cell (`ix = 1`) is a solid disk (r_in = 0), while all other cells are annular rings whose volume grows with radius. These volumes are used when converting total power into volumetric power density: the heater routine divides the input power by the summed `heated_volume` (which is the sum of cylindrical volumes of all heated cells).
+
+#### 2. Heat-matrix (H-matrix) conductivity corrections
+
+The finite-difference discretisation of the radial term `(1/r) d/dr (r * kappa * dT/dr)` produces interface fluxes that scale with the interface radius rather than being uniform. The code multiplies the standard Cartesian conductivity entries by geometric correction factors:
+
+| Neighbour | Interface radius | Correction factor |
+| :--- | :--- | :--- |
+| Inner (ix - 1) | r_inner = (ix - 1) * dr | (ix - 1) / (ix - 0.5) |
+| Outer (ix + 1) | r_outer = ix * dr | ix / (ix - 0.5) |
+
+Here `(ix - 0.5) * dr` is the cell-centre radius. These factors arise because the heat flux through a cylindrical surface of radius r and height dy is proportional to `2 * pi * r * dy`, and the ratio of the interface area to the cell-centre area gives the correction.
+
+**Axial (y) conductivities are unchanged** -- the axial term has the same form as in Cartesian coordinates.
+
+**Z-direction terms are zeroed out** -- since nz = 1, the code explicitly sets the z-neighbour conductivities F and G to zero in the H-matrix.
+
+#### 3. Boundary-vector corrections
+
+The boundary contribution at the outer radius (`ix = nx`) also receives the cylindrical area correction. The boundary conductivity term is multiplied by `r_outer / r_centre = ix / (ix - 0.5)` to account for the larger outer interface area. This ensures the fixed-temperature bath condition at r = R is applied with the correct radial geometry.
+
+### `system.in` format in cylindrical mode
+
+The grid dimensions line still reads three integers (`nx ny nz`), but `nz` **must** be `1`.
+
+The physical dimensions line reads **only two** values:
+```
+Lx  Ly
+```
+where `Lx` is the cylinder radius and `Ly` is the axial length. The code internally sets Lz = 1.0 (a dummy value).
+
+The rest of the file (material/heater grid) is written identically to Cartesian mode -- one row of `nx` entries per y-index.
+
+**Example** -- 10-cell radial x 5-cell axial cylinder, radius 0.005 m, length 0.01 m:
+```
+10 5 1
+0.005 0.01
+
+! Z=1, Y=1 Row (top)
+1:1 1:1 1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0
+! Z=1, Y=2 Row
+1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0
+! Z=1, Y=3 Row
+1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0
+! Z=1, Y=4 Row
+1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0
+! Z=1, Y=5 Row (bottom)
+1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0
+```
+Here `ix = 1,2` at `iy = 1` are heated (the central core at the top of the cylinder).
 
 ### Boundary conditions
 
-| Boundary | Behaviour |
-| :--- | :--- |
-| **r = 0** (centre, `ix = 1` inner face) | Symmetry boundary — zero radial heat flux. Automatic, no user input needed. |
-| **r = R** (outer radius, `ix = nx` outer face) | Controlled by `kappaBoundNr` and `T_BathNr` in `param.in`. |
-| **y = 0** and **y = Ly** (top/bottom) | Standard Cartesian boundaries (`kappaBoundy1`/`kappaBoundNy`, `T_Bathy1`/`T_Bathy2`). |
+| Boundary | Behaviour | Keywords |
+| :--- | :--- | :--- |
+| **r = 0** (centre, inner face of `ix = 1`) | **Symmetry** -- zero radial heat flux. Applied automatically; no user input needed. | -- |
+| **r = R** (outer radius, outer face of `ix = nx`) | Fixed-temperature bath with a finite boundary conductivity. | `kappaBoundNr`, `T_BathNr` |
+| **y = 0** (top, `iy = 1`) | Standard axial boundary. | `kappaBoundy1`, `T_Bathy1` |
+| **y = Ly** (bottom, `iy = ny`) | Standard axial boundary. | `kappaBoundNy`, `T_Bathy2` |
 
-> **Note:** In cylindrical mode the Cartesian x and z boundary keywords (`kappaBoundx1`, `kappaBoundNx`, `kappaBoundz1`, `kappaBoundNz`) are not used. Set `kappaBoundNr` and `T_BathNr` instead.
+> **Important:** In cylindrical mode the Cartesian x-boundary and z-boundary keywords (`kappaBoundx1`, `kappaBoundNx`, `kappaBoundz1`, `kappaBoundNz`, `T_Bathx1`, `T_Bathx2`, `T_Bathz1`, `T_Bathz2`) are **not used** and are overridden internally. Use `kappaBoundNr` and `T_BathNr` for the outer radial boundary.
+
+If only the global `kappaBound` keyword is set (without an explicit `kappaBoundNr`), the code will issue a warning and use the global value for all cylindrical boundaries.
+
+### Heating in cylindrical mode
+
+Power input works the same as in Cartesian mode: cells are tagged with a heater ID in `system.in`, and the `power_in` value from `param.in` is distributed over all heated cells.
+
+The key difference is that the **heated volume** is now the sum of cylindrical annular shell volumes rather than rectangular brick volumes. The heater routine computes:
+
+    V_heated = SUM over heated cells of: pi * (r_out^2 - r_in^2) * dy
+
+and the volumetric power density applied to each heated cell is:
+
+    q = power_in / V_heated
+
+This means that if the heater covers the inner two radial cells (`ix = 1,2`), the heated volume is `pi * (2*dr)^2 * dy`, not `2 * dr * dy` as it would be in Cartesian mode. All heating types (constant, pulsed, AC, etc.) listed in the [Heating Types](#heating-types) table are available in cylindrical mode.
+
+### Analytical steady-state solution (verification)
+
+For a uniformly heated disk of radius R_H inside a cylinder of outer radius R_B with a fixed boundary temperature T_bath, the steady-state radial temperature profile is:
+
+**Inside the heater (r <= R_H):**
+
+    T(r) = T_bath + (q * R_H^2) / (2 * lambda) * ln(R_B / R_H) + q / (4 * lambda) * (R_H^2 - r^2)
+
+**Outside the heater (r > R_H):**
+
+    T(r) = T_bath + (q * R_H^2) / (2 * lambda) * ln(R_B / r)
+
+where `lambda = rho * Cv * kappa` is the thermal conductivity and q is the volumetric heating rate inside the disk. Inside the heater the profile is parabolic; outside it follows a logarithmic decay. This solution can be used to verify cylindrical-mode simulations against theory.
 
 ### Example `param.in` (cylindrical)
 ```
@@ -222,24 +314,15 @@ T_BathNr = 300.0
 _WriteToTxt = T
 ```
 
-### Example `system.in` (cylindrical)
-A 10-cell radial × 5-cell axial cylinder, radius 0.005 m, length 0.01 m:
-```
-10 5 1
-0.005 0.01 0.001
+### Checklist for setting up a cylindrical simulation
 
-! Z=1, Y=1 Row (top)
-1:1 1:1 1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0
-! Z=1, Y=2 Row
-1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0
-! Z=1, Y=3 Row
-1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0
-! Z=1, Y=4 Row
-1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0
-! Z=1, Y=5 Row (bottom)
-1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0 1:0
-```
-Here `x=1,2` at `y=1` are heated (the central core at the top of the cylinder).
+1. Set `_CylindricalGrid = T` in `param.in`.
+2. Set `nz = 1` in `system.in`.
+3. Provide **two** physical dimensions (`Lx Ly`) on the second line of `system.in` -- `Lx` is the outer radius, `Ly` is the axial length.
+4. Set `kappaBoundNr` and `T_BathNr` for the outer radial boundary.
+5. Set `kappaBoundy1`/`kappaBoundNy` and `T_Bathy1`/`T_Bathy2` for the axial boundaries (or set them to zero for insulating/mirror boundaries).
+6. Do **not** set `kappaBoundx1`, `kappaBoundNx`, `kappaBoundz1`, or `kappaBoundNz` -- they are overridden.
+7. Tag heated cells in `system.in` as usual (`MaterialID:HeaterID`). Remember that heated volume is now cylindrical.
 
 ---
 
