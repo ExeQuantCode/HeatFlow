@@ -242,7 +242,7 @@ contains
       write(*,*) "Temp_p: min=", minval(Temp_p), " max=", maxval(Temp_p), " avg=", sum(Temp_p)/size(Temp_p)
       write(*,*) "Matrix acsr: min=", minval(acsr), " max=", maxval(acsr), " avg=", sum(acsr)/size(acsr)
       write(*,*) "Matrix size: n=", NA32, " nnz=", size(acsr)
-   end if
+   end if 
    
    ! Convert to 32-bit integers for PETSc (only on first call)
    if (.not. allocated(ia32)) then
