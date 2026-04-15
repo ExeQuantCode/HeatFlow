@@ -47,11 +47,9 @@ module setup
       Q_P(:) = 0.0_real12
       heat = 0.0_real12
       inverse_time = 1.0_real12/time_step
-      !---------------------------------------------------
       ! A Sign material properties to the grid construction
       ! can be expanded to include more properties at a 
       ! later date
-      !---------------------------------------------------
       write(*,*) "Setting up material properties"
       write(*,'(A,I10,A)') " Processing ", NA, " grid cells..."
       index = 0
@@ -76,11 +74,8 @@ module setup
             end do               
          end do
       end do
-      !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-      !---------------------------------------------------
       ! Check if the sparse matrix matches the full matrix
-      !---------------------------------------------------
       write(*,*) "Building sparse H matrix..."
       if (Check_Sparse_Full) then
          print*, "CHECK SPARSE FULL"
@@ -91,7 +86,6 @@ module setup
          ! No need for COO->CSR conversion anymore, it's already in CSR format!
          write(*,*) "Sparse matrix setup complete."
       end if
-      !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
    end subroutine set_global_variables
@@ -146,10 +140,6 @@ module setup
       if ((Periodicz).and.(nz .gt. 1)) addit = [addit, (nz-1)*ny*nx]
 
       
-      !write(6,*) NA, nx,ny,nz
-      !write(6,*) addit,size(addit,1)
-      !write(6,*) NA
-      !write(6,*) "========================================="
 
       
       count = 0 ! Total nonzeros counter
@@ -225,7 +215,6 @@ module setup
       deallocate(row_vals, row_cols)
       write(*,'(A,I12,A)') " CSR matrix built successfully. Actual nonzeros: ", count, ""
 
-      ! ---- DEBUG: Material properties and cell geometry ----
       write(*,*) ''
       write(*,*) '=== SETUP DEBUG: Grid properties ==='
       write(*,*) 'nx=', nx, ' ny=', ny, ' nz=', nz
@@ -245,7 +234,6 @@ module setup
       end do
       write(*,*) ''
       
-      ! ---- DEBUG: H-matrix rows for radial cross-section ----
       write(*,*) '=== H-MATRIX ROW DUMP (iy=16, iz=1) ==='
       do i = 1, nx
          row = i + (16-1)*nx
@@ -271,7 +259,6 @@ module setup
       end do
       write(*,*) ''
       
-      ! ---- DEBUG: Verify row sums ----
       write(*,*) '--- Row sums (should be negative = -alpha for interior) ---'
       write(*,'(A6,A16,A16,A16)') 'ix', 'row_sum', 'diag', 'sum_offdiag'
       do i = 1, nx
@@ -294,7 +281,6 @@ module setup
       end do
       write(*,*) '=== END SETUP DEBUG ==='
       write(*,*) ''
-      ! ---- END DEBUG ----
    end subroutine sparse_Hmatrix
 !!!#################################################################################################
 
@@ -356,9 +342,7 @@ module setup
       real(real12) :: kappa, rho, heat_capacity, var_stability
       real(real12) :: alpha
 
-      !---------------------------------------------------
       ! Check stability condition
-      !---------------------------------------------------
 
       alpha = kappa/(rho*heat_capacity)
       var_stability =( time_step * alpha * &
@@ -390,7 +374,6 @@ module setup
             stop
          end if
       end if
-      !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    end subroutine stability
 !!!#################################################################################################
 
@@ -400,9 +383,7 @@ module setup
    subroutine build_Hmatrix()
       integer(int12) :: i,j, BCount
       real(real12) :: H(NA,NA),HT(NA,NA), H0
-      !---------------------------------------------------
       ! Set up the full H matrix
-      !---------------------------------------------------
       H=0.0_real12
       BCount = 0
       do j=1,na
@@ -420,7 +401,6 @@ module setup
       else
          write(*,*) "H and HT are not the same"
       end if
-      !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    end subroutine build_Hmatrix
 !!!#################################################################################################
 
@@ -433,9 +413,7 @@ subroutine SparseToReal(HT)
    integer(int12) :: i, j, k
    integer(int12), dimension(3) :: addit
 
-   !---------------------------------------------------
    ! Set up the full H matrix
-   !---------------------------------------------------
    addit(1) = 1
    addit(2) = nx
    addit(3) = nx*ny
@@ -457,7 +435,6 @@ subroutine SparseToReal(HT)
       end do neighbour_loop
   end do parent_loop
    write(*, '(3F15.4)') HT
-   !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 end subroutine SparseToReal
 !!!#################################################################################################
 

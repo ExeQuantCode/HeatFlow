@@ -72,7 +72,6 @@ subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_
 !!! 9002 - epidermis !values provided by A. Ghita
 !!! 9003 - fat !values provided by A. Ghita
 !!!=============================================
-   !print*, grid%imaterial_type
    ! Error for unsutable imaterial_type
    if (imaterial_type .le. 0) then
       write(6,*) 'Error: imaterial_type not recognized:', imaterial_type
@@ -81,9 +80,7 @@ subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_
    end if
 
       
-   !-------------------------------------------------
    ! an if to test if material 
-   !-------------------------------------------------
    mat: if (imaterial_type .le. 99) then
       found = .false.
       mat_loop: do i=1, size(input_materials%index)
@@ -111,12 +108,9 @@ subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_
          call exit
       end if
    end if mat
-   !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^-
 
       
-   !-------------------------------------------------
    ! if to test if material is a default
-   !-------------------------------------------------
    if (imaterial_type .gt. 99) then
       select case(imaterial_type)
 !!!air
@@ -133,7 +127,6 @@ subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_
          !!1001-2000 are for liquids,
          !!2001-3000 are for gases
          !!3001+ are for miscelanneous
-   !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 !!!Solids
 !!! 140 - silicon

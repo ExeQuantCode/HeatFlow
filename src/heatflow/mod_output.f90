@@ -64,9 +64,7 @@ contains
     outdir='./outputs/'
     file_extension = '.out'
     
-    !---------------------------------------
     !  make a 3d array
-    !---------------------------------------
     indexA=1
     do iz = 1, nz
        do iy = 1, ny
@@ -76,9 +74,7 @@ contains
           end do
        end do
     end do
-    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    ! DEBUG: Verify 1D-to-3D mapping at iy=16
     if (itime .le. 2) then
        write(*,*) ''
        write(*,'(A,I6)') ' === DATA_WRITE DEBUG: itime=', itime
@@ -97,16 +93,11 @@ contains
       if (itime .eq. 1) then
       ! Needs logica testing does not make sense
          if(Test_run) then
-            !---------------------------------------
             ! open test output files                
-            !---------------------------------------
             open(unit=33,file='./outputs/Power.txt')
             open(unit=30, file='./outputs/Test.txt')
-            !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           elseif (.not. HDF5Output) then
-            !---------------------------------------
             ! find most recent log file and open it
-            !---------------------------------------
             CALL last_log(logname,outdir)
             if (CompressedOutput) then
                open(logunit,file=logname, status='unknown', access='stream', position='append')
@@ -114,13 +105,10 @@ contains
                write(logunit) (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
             else
                open(logunit,file=logname)
-               !  print*, logunit
-               !  print*, logname
                write(logunit,*) real((itime-1)*(time_step)), &
                      (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
             end if
             close(logunit)
-            !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
          end if
       end if
 
@@ -128,9 +116,7 @@ contains
 
 
 
-    !---------------------------------------
     ! write out to log file
-    !---------------------------------------
     if (.not. Test_run) then
        if (mod(itime, write_every) .eq. 0) then
           if (HDF5Output) then
@@ -144,8 +130,6 @@ contains
              close(logunit)
           elseif (WriteToTxt) then
              write(*, *) 'Writing Temperature difference to file'
-             ! print*, logunit
-             ! print*, logname
              open(logunit,file=logname, status='old', position='append')
              write(logunit,*) real((itime-1)*(time_step)), &
                 (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
@@ -153,13 +137,8 @@ contains
           end if
        end if
     end if
-    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    !---------------------------------------
     ! Test steady state 
-    !---------------------------------------
-    ! write(*,*) 'Writing Temperature to file'
-    !write(30,*) REAL(itime)*time_step, ((T_matrix(i)-T_Bath),i=1,e)
     if (Check_Steady_State) then
        if (itime.gt.1) then
           write(*,*) 'Checking for steady state'
@@ -175,20 +154,15 @@ contains
           end if
        end if
     end if
-    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     
-    !---------------------------------------
     ! final step print and closes
-    !---------------------------------------
     if (itime .eq. ntime) then
        if (.not.Test_run) close(logunit)
        if (HDF5Output) call finalize_hdf5()
        CALL final_print()
     end if
-    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
   
-  ! call PlotdeltaT(itime)
 
  end subroutine data_write
 !!!########################################################################

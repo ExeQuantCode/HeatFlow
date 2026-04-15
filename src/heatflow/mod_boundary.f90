@@ -38,9 +38,7 @@ contains
     !for example, the ix-axis has a left and right boundary,
     !these correspond to  Bound_Term(1,1) and Bound_Term(1,2)
     
-    !-----------------------------------------------------------------------
     ! This is the boundary von nuemann power density
-    !-----------------------------------------------------------------------
     ! This assumes all cells are the same size
     if (CG_z_m) then
         z1_edge_vol = grid(1,1,1)%volume * real(nx,real12) * real(ny,real12)
@@ -66,11 +64,8 @@ contains
         xn_edge_vol = grid(nx,1,1)%volume * real(ny,real12) * real(nz,real12)
         xn_power_dens = T_BathCG / xn_edge_vol
     end if
-    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    !-----------------------------------------------------------------------------------------------
     !The boundary term is calculated for each grid point in the domain.
-    !-----------------------------------------------------------------------------------------------
     I = 0
     do iz = 1, nz
         do iy = 1, ny
@@ -80,11 +75,9 @@ contains
     
                 if (.not. Periodicx) then
                    clyBC:if (CylindricalGrid) then
-                      !-------------------------------------------------------
                       ! Cylindrical radial boundaries:
                       !  ix=1: center symmetry -> zero flux, no bath term
                       !  ix=nx: outer radius -> use kappaBoundNr, T_BathNr
-                      !-------------------------------------------------------
                       if (ix .eq. 1) then
                          ! Symmetry at r=0: no boundary flux contribution
                          B(I) = 0.0_real12
@@ -172,7 +165,6 @@ contains
             end do
         end do
     end do
-    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   end subroutine boundary
   !!!###############################################################################################
 
@@ -215,9 +207,7 @@ contains
     real(real12) :: rho, CV, TB
     real(real12), dimension(3) :: vel_in, vel_out 
 
-    !------------------------------------------------------------
     ! The boundary term is calculated of the boundary grid point.
-    !------------------------------------------------------------
 
     
     rho = grid(x_b,y_b,z_b)%rho
@@ -245,7 +235,6 @@ contains
         vel_conv = 0.0_real12
     end if
     vel_conv = vel_conv*TB
-    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     end function boundray_term_vel
     !!!########################################################################
   

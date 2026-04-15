@@ -58,19 +58,14 @@ contains
     real(real12) :: e, err, tol
     integer :: NA32
 
-    !----------------------
     ! Initialize vectors
-    !----------------------
     B = 0.0_real12
     Q = 0.0_real12
     Qdens = 0.0_real12
     S_CAT = 0.0_real12
     S = 0.0_real12
-    !^^^^^^^^^^^^^^^^^^^^^
     
-    !--------------------------------
     ! Calculate boundary Vector
-    !--------------------------------
     
     CALL boundary(B)
     if (IVERB .gt. 3) write(*,*) "B average", sum(B)/size(B)
@@ -80,11 +75,8 @@ contains
        write(0,*) "fatal error: NAN in B vector"
        stop 1
     end if
-    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    !--------------------------------
     ! Calculate heat
-    !--------------------------------
     if (any(grid%iheater .gt. 0)) then
        CALL heater(itime, Q, Qdens)
 
@@ -99,11 +91,8 @@ contains
     end if
     
     if (IVERB .gt. 3) heat = heat + sum(Q(:))
-    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    !------------------------------------------
     ! Calculate Cattaneo correction
-    !------------------------------------------
     if ( iCAttaneo .eq. 1) then
        CALL S_catS(S_CAT)
        if (IVERB .gt. 3) write(*,*) "S_CAT average", sum(S_CAT)/size(S_CAT)
@@ -113,13 +102,9 @@ contains
             stop 1
          end if
     end if
-    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    !---------------------------------------------
     ! Construct S vector 
-    !---------------------------------------------
 
-    ! COMPREHENSIVE DEBUG: Dump all quantities for radial cross-section at iy=16
     if (itime .le. 2) then
        block
          integer(int12) :: dbg_ix, dbg_idx, dbg_k
@@ -197,7 +182,6 @@ contains
     else
        S = -Qdens - B
     end if
-    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     if (IVERB .gt.3) write(*,*) "S average", sum(S)/size(S)
     if (IVERB .gt.4) write(*,*) "S", S
     
@@ -206,9 +190,6 @@ contains
        stop 1
     end if
     
-   !----------------------------------------------------
-   ! Call the CG method to solve the equation Ax=b.
-   !---------------------------------------------------
    ! b/S:     Input - the b vector.
    ! x:     Input/Output - initial guess for x, overwritten with the final solution.
    ! itol:  Input - sets the tolerance method used to calculate error.
@@ -218,7 +199,6 @@ contains
    ! err:   Output - records the error of the final iteration.
    ! iss:   Input - sets the Sparse Storage type (1=SRS, 2=SDS).
    !  x=Temp_p+(Temp_p-Temp_pp)
-   !  if (any(x-Temp_p .lt. TINY)) x=x+TINY !avoid nan solver issue
     itol=1
     tol=1.e-32_real12
     itmax=500000
@@ -226,14 +206,12 @@ contains
     iter= 0
     err=E
 
-   !  call bicgstab(acsr, ia, ja, S, itmax, Temp_p, x, iter)
    
    ! Allocate and initialize x with a good initial guess
    allocate(x(NA))
    x = Temp_p + (Temp_p - Temp_pp)
    if (any(x - Temp_p .lt. TINY)) x = x + TINY ! avoid nan solver issue
    
-   ! Debug: Print initial guess statistics
    if (IVERB .gt. 3) then
       write(*,*) "========== PETSc Solver Diagnostics =========="
       write(*,*) "Time step:", itime
@@ -254,7 +232,6 @@ contains
    
    call solve_petsc_csr(NA32, ia32, ja32, acsr, S, x, tol, itmax)
    
-   ! POST-SOLVE DEBUG: Show solution and residual for radial cross-section
    if (itime .le. 2) then
       block
         integer(int12) :: dbg_ix, dbg_idx, dbg_k
@@ -291,8 +268,6 @@ contains
    ! Note: Don't deallocate ia32, ja32 - keep them for next time step
 
 
-   ! CALL solve_pardiso(acsr, S, ia, ja, x)
-   !  CALL linbcg(S,x,itol=int(itol,I4B),tol=tol, itmax=int(itmax,I4B), iter=iter, &
          ! err=E)
          
    !
@@ -302,10 +277,7 @@ contains
        write(0,*) 'time step ',itime, "      x   ", sum(x)/size(x), E ,iter
        stop 1
     end if
-   !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   !------------------------------------------------------------------------------------------------
    ! Update the temperature vector and properties if the temperature dependent properties are used.
-   !------------------------------------------------------------------------------------------------
     if (IVERB .gt. 4) then !print out the average temperature and energy
       write(*,*) 
       write(*,*) 'time step ', itime, "      T   ", sum(Temp_p)/size(Temp_p), E ,iter
@@ -315,7 +287,6 @@ contains
     Temp_pp = Temp_p
     Temp_p = x
 
-    ! DEBUG: Verify Temp_p after assignment
     if (itime .le. 2) then
        block
          integer(int12) :: dbg_ix2, dbg_idx2
@@ -331,10 +302,6 @@ contains
        end block
     end if
 
-   !  if (TempDepProp .eq. 1) then
-   !    CALL ChangeProp()
-   !  end if
-   !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
   end subroutine simulate
 
