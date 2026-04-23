@@ -22,9 +22,10 @@ program HEATFLOW_V0_3
   
   use constants, only: real12, int12
   use constructions, only: heatblock
-  use output, only: data_write, final_print
-  use inputs, only: read_all_files, iverb, ntime, LPercentage
-  use inputs, only: IVERB
+   use output, only: data_write, final_print
+   use inputs, only: read_all_files, iverb, ntime, LPercentage
+   use inputs, only: IVERB, input_directory, output_directory, restart_directory
+   use inputs, only: set_io_directories, join_path
   use evolution, only: simulate
   use setup, only: set_global_variables
   use INITIAL, only: initial_evolve
@@ -52,9 +53,7 @@ program HEATFLOW_V0_3
    !-------------------------------------------------------------!
    ! handle command line arguments on master/root node only      !
    !-------------------------------------------------------------!
-   if(petsc_is_root())then
-      call handle_command_line_arguments()
-   end if
+   call handle_command_line_arguments()
 
    !-------------------------------------------------------------!
    ! Read parameters from input file and set global variables ...!
@@ -127,49 +126,93 @@ contains
    !-------------------------------------------------------------!
    subroutine handle_command_line_arguments()
      implicit none
-     integer :: nargs, i, stat
-     character(len=1024) :: arg, directory
+     integer :: nargs, i
+     character(len=1024) :: arg, directory, cli_input_directory, cli_output_directory
      logical :: dir_exists
      character(len=*), parameter :: directory_flag = '--directory'
      character(len=*), parameter :: directory_prefix = '--directory='
+     character(len=*), parameter :: input_directory_flag = '--input-directory'
+     character(len=*), parameter :: input_directory_prefix = '--input-directory='
+     character(len=*), parameter :: output_directory_flag = '--output-directory'
+     character(len=*), parameter :: output_directory_prefix = '--output-directory='
       
      nargs = command_argument_count()
      directory = ''
+     cli_input_directory = ''
+     cli_output_directory = ''
       
-     write(*,*) 'Number of command line arguments: ', nargs
-     do i = 1, nargs
+     if (petsc_is_root()) write(*,*) 'Number of command line arguments: ', nargs
+     i = 1
+     do while (i .le. nargs)
         call get_command_argument(i, arg)
-        write(*,*) 'Received command line argument: ', trim(arg)
+        if (petsc_is_root()) write(*,*) 'Received command line argument: ', trim(arg)
         if (trim(arg) .eq. directory_flag) then
-           if (i .eq. nargs) then
-              if (petsc_is_root()) write(*,*) 'Error: Missing value for --directory'
-              call exit(1)
-           end if
-           call get_command_argument(i + 1, directory)
-           exit
+           call require_argument_value(i, nargs, directory_flag, directory)
+           i = i + 2
+           cycle
         else if (index(trim(arg), directory_prefix) .eq. 1) then
            directory = trim(arg(len(directory_prefix) + 1:))
-           exit
+        else if (trim(arg) .eq. input_directory_flag) then
+           call require_argument_value(i, nargs, input_directory_flag, cli_input_directory)
+           i = i + 2
+           cycle
+        else if (index(trim(arg), input_directory_prefix) .eq. 1) then
+           cli_input_directory = trim(arg(len(input_directory_prefix) + 1:))
+        else if (trim(arg) .eq. output_directory_flag) then
+           call require_argument_value(i, nargs, output_directory_flag, cli_output_directory)
+           i = i + 2
+           cycle
+        else if (index(trim(arg), output_directory_prefix) .eq. 1) then
+           cli_output_directory = trim(arg(len(output_directory_prefix) + 1:))
         end if
+        i = i + 1
      end do
-      
-        write(*,*) 'Changing directory to: ', trim(directory)
+
      if(len_trim(directory) .gt. 0) then
         inquire(file=trim(directory)//'/.' , exist=dir_exists)
         if(.not. dir_exists) then
            if (petsc_is_root()) write(*,*) 'Error: Directory does not exist: ', trim(directory)
            call exit(1)
         end if
-        call chdir(trim(directory), stat)
-        if(stat .ne. 0) then
-           if(petsc_is_root()) write(*,*) 'Error: Failed to change directory to: ', trim(directory)
+        call set_io_directories(input_dir=join_path(directory, 'inputs'), &
+             output_dir=join_path(directory, 'outputs'), restart_dir=join_path(directory, 'restart'))
+     end if
+
+     if(len_trim(cli_input_directory) .gt. 0) then
+        inquire(file=trim(cli_input_directory)//'/.' , exist=dir_exists)
+        if(.not. dir_exists) then
+           if (petsc_is_root()) write(*,*) 'Error: Input directory does not exist: ', trim(cli_input_directory)
            call exit(1)
         end if
-        if(petsc_is_root()) write(*,*) 'Changed directory to: ', trim(directory)
+        call set_io_directories(input_dir=cli_input_directory)
+     end if
+
+     if(len_trim(cli_output_directory) .gt. 0) then
+        call set_io_directories(output_dir=cli_output_directory)
+     end if
+
+     if (petsc_is_root()) then
+        write(*,*) 'Input directory: ', trim(input_directory)
+        write(*,*) 'Output directory: ', trim(output_directory)
+        write(*,*) 'Restart directory: ', trim(restart_directory)
      end if
 
    end subroutine handle_command_line_arguments
    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
+
+     subroutine require_argument_value(index, count, flag_name, value)
+       implicit none
+       integer, intent(in) :: index, count
+       character(len=*), intent(in) :: flag_name
+       character(len=*), intent(out) :: value
+
+       if (index .eq. count) then
+          if (petsc_is_root()) write(*,*) 'Error: Missing value for ', trim(flag_name)
+          call exit(1)
+       end if
+
+       call get_command_argument(index + 1, value)
+     end subroutine require_argument_value
 
 end program HEATFLOW_V0_3
 

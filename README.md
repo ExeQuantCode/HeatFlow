@@ -165,6 +165,20 @@ export PATH="${PATH}:${HOME}/.local/HeatFlow/bin"
 HeatFlow
 ```
 
+Optional directory flags:
+
+```bash
+HeatFlow --input-directory /path/to/run/inputs --output-directory /path/to/run/outputs
+```
+
+Compatibility alias for the legacy run-layout:
+
+```bash
+HeatFlow --directory /path/to/run
+```
+
+The legacy alias maps to `/path/to/run/inputs`, `/path/to/run/outputs`, and `/path/to/run/restart`.
+
 ---
 
 ### Using pkg-config (recommended)

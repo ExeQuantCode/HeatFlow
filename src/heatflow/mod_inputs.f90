@@ -97,6 +97,9 @@ module inputs
 
   ! Name of simiulation run
   character(1024) :: RunName
+  character(1024) :: input_directory = './inputs'
+  character(1024) :: output_directory = './outputs'
+  character(1024) :: restart_directory = './restart'
   character(12)::Periodic
   ! Essentially it is the system that is being simulated
   type(heatblock), dimension(:,:,:), allocatable :: grid 
@@ -112,12 +115,93 @@ module inputs
 
 contains
 !!!#################################################################################################
+!!! configure the directories used for inputs, outputs, and restart files
+!!!#################################################################################################
+  subroutine set_io_directories(input_dir, output_dir, restart_dir)
+   implicit none
+   character(len=*), intent(in), optional :: input_dir, output_dir, restart_dir
+
+   if (present(input_dir)) then
+     if (len_trim(input_dir) .gt. 0) then
+       input_directory = normalize_directory(input_dir)
+       call derive_restart_directory_from_input()
+     end if
+   end if
+
+   if (present(output_dir)) then
+     if (len_trim(output_dir) .gt. 0) output_directory = normalize_directory(output_dir)
+   end if
+
+   if (present(restart_dir)) then
+     if (len_trim(restart_dir) .gt. 0) restart_directory = normalize_directory(restart_dir)
+   end if
+  end subroutine set_io_directories
+!!!#################################################################################################
+
+!!!#################################################################################################
+!!! build a filesystem path from a directory and file name
+!!!#################################################################################################
+  function join_path(directory, name) result(path)
+   implicit none
+   character(len=*), intent(in) :: directory, name
+   character(len=1024) :: path
+
+   if (len_trim(directory) .eq. 0) then
+     path = trim(name)
+   else if (len_trim(name) .eq. 0) then
+     path = trim(directory)
+   else
+     path = trim(normalize_directory(directory)) // '/' // trim(name)
+   end if
+  end function join_path
+!!!#################################################################################################
+
+!!!#################################################################################################
+!!! remove trailing slashes so path joins stay consistent
+!!!#################################################################################################
+  function normalize_directory(dirname) result(normalized)
+   implicit none
+   character(len=*), intent(in) :: dirname
+   character(len=1024) :: normalized
+   integer :: last_char
+
+   normalized = trim(adjustl(dirname))
+   last_char = len_trim(normalized)
+
+   do while (last_char .gt. 1 .and. normalized(last_char:last_char) .eq. '/')
+     last_char = last_char - 1
+   end do
+
+   normalized = normalized(:last_char)
+  end function normalize_directory
+!!!#################################################################################################
+
+!!!#################################################################################################
+!!! keep restart files beside an inputs directory when possible
+!!!#################################################################################################
+  subroutine derive_restart_directory_from_input()
+   implicit none
+   integer :: dir_length
+
+   dir_length = len_trim(input_directory)
+
+   if (trim(input_directory) .eq. 'inputs') then
+     restart_directory = 'restart'
+   else if (dir_length .gt. 7) then
+     if (input_directory(dir_length-6:dir_length) .eq. '/inputs') then
+       restart_directory = trim(input_directory(:dir_length-7)) // '/restart'
+     end if
+   end if
+  end subroutine derive_restart_directory_from_input
+!!!#################################################################################################
+
+!!!#################################################################################################
 !!! read_all_files will call the routines to read each input file
 !!!#################################################################################################
   subroutine read_all_files()
     implicit none
     integer :: unit, reason ! file unit and reason
-    character(64) :: param_infile, mat_infile, mesh_infile ! file names
+   character(1024) :: param_infile, mat_infile, mesh_infile ! file names
     logical :: file_exists ! check if file exists
 
 
@@ -125,7 +209,7 @@ contains
     ! get data from param.in
     !-----------------------------------------------
     ! name infile
-    param_infile = "./inputs/param.in" ! file name
+    param_infile = join_path(input_directory, 'param.in') ! file name
 
     ! check if file is there
     inquire(file=param_infile, exist=file_exists) ! check if file exists
@@ -150,7 +234,7 @@ contains
     !-----------------------------------------------
     ! name infile
 
-    mat_infile = "./inputs/mat.in" ! file name
+    mat_infile = join_path(input_directory, 'mat.in') ! file name
 
     ! check if file is there
     inquire(file=mat_infile, exist=file_exists)
@@ -173,7 +257,7 @@ contains
     !-----------------------------------------------
     ! name infile
 
-    mesh_infile = "./inputs/system.in" ! file name
+    mesh_infile = join_path(input_directory, 'system.in') ! file name
 
     ! check if file is there
     inquire(file=mesh_infile, exist=file_exists)
