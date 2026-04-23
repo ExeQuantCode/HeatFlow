@@ -21,6 +21,7 @@
 module initial
    use constants, only: real12, int12, fields
    use inputs, only: NA, nx, ny, nz, InputTempDis, FullRestart, T_System
+   use inputs, only: restart_directory, join_path
    use globe_data, only: Temp_p,Temp_pp
    implicit none
 
@@ -38,10 +39,10 @@ contains
       !------------------------------------------------------------------------------
 
       if (FullRestart) then
-         CALL read_temp_file('./restart/TempDis.dat',Temp_p)
-         CALL read_temp_file('./restart/TempDisTPD.dat',Temp_pp)
+         CALL read_temp_file(join_path(restart_directory, 'TempDis.dat'),Temp_p)
+         CALL read_temp_file(join_path(restart_directory, 'TempDisTPD.dat'),Temp_pp)
       else if (InputTempDis) then
-         CALL read_temp_file('./restart/TempDis.dat',Temp_p)
+         CALL read_temp_file(join_path(restart_directory, 'TempDis.dat'),Temp_p)
          Temp_pp = Temp_p
       else
          Temp_p = T_System

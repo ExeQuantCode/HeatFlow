@@ -42,10 +42,11 @@
 !!! Author: Harry Mclean, Frank Davies, Steven Hepplestone
 !!!#################################################################################################
 module output
-  use constants, only: real12, int12, TINY, fields
-  use inputs, only: nx,ny,nz, time_step, grid, NA, Check_Steady_State, ntime, WriteToTxt
-  use inputs, only: Test_Run, freq, RunName, FullRestart, IVERB, write_every, CompressedOutput
-  use inputs, only: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz
+   use constants, only: real12, int12, TINY, fields
+   use inputs, only: nx,ny,nz, time_step, grid, NA, Check_Steady_State, ntime, WriteToTxt
+   use inputs, only: Test_Run, freq, RunName, FullRestart, IVERB, write_every, CompressedOutput
+   use inputs, only: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz
+   use inputs, only: output_directory, join_path
   use globe_data, only: Temp_p,Temp_pp, heat, heated_volume, logname
   implicit none
   
@@ -60,8 +61,9 @@ contains
     
     logunit = 20
     file_prefix = 'Temperture_'
-    outdir='./outputs/'
+   outdir = output_directory
     file_extension = '.out'
+   call ensure_directory(outdir)
     
     !---------------------------------------
     !  make a 3d array
@@ -84,8 +86,8 @@ contains
           !---------------------------------------
           ! open test output files                
           !---------------------------------------
-          open(unit=33,file='./outputs/Power.txt')
-          open(unit=30, file='./outputs/Test.txt')
+          open(unit=33,file=join_path(outdir, 'Power.txt'))
+          open(unit=30, file=join_path(outdir, 'Test.txt'))
           !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
        else
           !---------------------------------------
@@ -173,6 +175,17 @@ contains
  end subroutine data_write
 !!!########################################################################
 
+!!!########################################################################
+ subroutine ensure_directory(dirname)
+    character(len=*), intent(in) :: dirname
+    logical :: exists
+
+   inquire(file=trim(dirname), exist=exists)
+   if (.not. exists) call execute_command_line('mkdir -p "' // trim(dirname) // '"')
+ end subroutine ensure_directory
+
+!!!########################################################################
+
 
  
 !!!########################################################################
@@ -195,7 +208,7 @@ contains
       end do
    end do
    if (itime .eq. 1) then
-      open(unit=31,file='./outputs/DTemperature.txt')
+      open(unit=31,file=join_path(output_directory, 'DTemperature.txt'))
    end if
    
 
@@ -210,17 +223,17 @@ contains
    character(len=1024), intent(in) :: outdir
    logical :: flag
    integer(int12) :: i
+    character(len=1024) :: basename
    
    i = 0
    flag=.true.
    do while (flag)
       if (CompressedOutput) then
-         write(logname, '(A,A,I2.2,A)') trim(adjustl(outdir)) // 'output_' // &
-              trim(adjustl(RunName)),'_',  i, '.bin'
+         write(basename, '(A,I2.2,A)') 'output_' // trim(adjustl(RunName)) // '_', i, '.bin'
       else
-         write(logname, '(A,A,I2.2)') trim(adjustl(outdir)) // 'output_' // &
-              trim(adjustl(RunName)),'_',  i
+         write(basename, '(A,I2.2)') 'output_' // trim(adjustl(RunName)) // '_', i
       endif
+      logname = join_path(outdir, trim(adjustl(basename)))
       inquire(file=logname, exist=flag)
       i = i+1
    end do
@@ -234,6 +247,8 @@ contains
    real(real12) :: TotalPower, totaltime, vol
    integer(int12) :: unit
    character(len=64) :: form
+
+   call ensure_directory(output_directory)
    
    if (IVERB .gt. 3) then 
       TotalPower=heat
@@ -248,14 +263,14 @@ contains
    
    end if 
 
-    open(newunit=unit,file='./outputs/TempDis.dat')
+   open(newunit=unit,file=join_path(output_directory, 'TempDis.dat'))
     write(form,'(A,I0,A)') '(',fields,'(ES16.8,1X))'
     write(unit,form) Temp_p(:)
     write(unit,*)
     write(unit,*)
     close(unit)
     
-    open(newunit=unit,file='./outputs/TempDisTPD.dat')
+   open(newunit=unit,file=join_path(output_directory, 'TempDisTPD.dat'))
     write(form,'(A,I0,A)') '(',fields,'(ES16.8,1X))'
     write(unit,form) Temp_pp(:)
     write(unit,*)

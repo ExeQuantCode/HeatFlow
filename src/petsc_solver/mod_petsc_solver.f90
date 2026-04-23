@@ -16,10 +16,10 @@ module petsc_solver
   ! ====================================
 
   ! Persistent PETSc objects (reused across timesteps for memory efficiency)
-  Mat, save :: A_saved = PETSC_NULL_MAT
-  Vec, save :: bb_saved = PETSC_NULL_VEC
-  Vec, save :: xx_saved = PETSC_NULL_VEC
-  KSP, save :: ksp_saved = PETSC_NULL_KSP
+  Mat, save :: A_saved
+  Vec, save :: bb_saved
+  Vec, save :: xx_saved
+  KSP, save :: ksp_saved
   logical, save :: initialized = .false.
   integer, save :: n_saved = 0
   integer, save :: comm_rank_saved = 0
@@ -38,6 +38,10 @@ contains
   subroutine petsc_init()
     integer :: ierr
     call PetscInitialize(PETSC_NULL_CHARACTER, ierr)
+    PetscObjectNullify(A_saved)
+    PetscObjectNullify(bb_saved)
+    PetscObjectNullify(xx_saved)
+    PetscObjectNullify(ksp_saved)
     call MPI_Comm_rank(PETSC_COMM_WORLD, comm_rank_saved, ierr)
     call MPI_Comm_size(PETSC_COMM_WORLD, comm_size_saved, ierr)
   end subroutine petsc_init
@@ -59,10 +63,22 @@ contains
   subroutine petsc_cleanup()
     integer :: ierr
 
-    if (A_saved /= PETSC_NULL_MAT) call MatDestroy(A_saved, ierr)
-    if (bb_saved /= PETSC_NULL_VEC) call VecDestroy(bb_saved, ierr)
-    if (xx_saved /= PETSC_NULL_VEC) call VecDestroy(xx_saved, ierr)
-    if (ksp_saved /= PETSC_NULL_KSP) call KSPDestroy(ksp_saved, ierr)
+    if (.not. PetscObjectIsNull(A_saved)) then
+      call MatDestroy(A_saved, ierr)
+      PetscObjectNullify(A_saved)
+    end if
+    if (.not. PetscObjectIsNull(bb_saved)) then
+      call VecDestroy(bb_saved, ierr)
+      PetscObjectNullify(bb_saved)
+    end if
+    if (.not. PetscObjectIsNull(xx_saved)) then
+      call VecDestroy(xx_saved, ierr)
+      PetscObjectNullify(xx_saved)
+    end if
+    if (.not. PetscObjectIsNull(ksp_saved)) then
+      call KSPDestroy(ksp_saved, ierr)
+      PetscObjectNullify(ksp_saved)
+    end if
     if (allocated(ia_saved)) deallocate(ia_saved)
     if (allocated(ja_saved)) deallocate(ja_saved)
     if (allocated(local_indices_saved)) deallocate(local_indices_saved)
@@ -74,10 +90,6 @@ contains
     if (allocated(b_local_saved)) deallocate(b_local_saved)
     if (allocated(x_local_saved)) deallocate(x_local_saved)
 
-    A_saved = PETSC_NULL_MAT
-    bb_saved = PETSC_NULL_VEC
-    xx_saved = PETSC_NULL_VEC
-    ksp_saved = PETSC_NULL_KSP
     initialized = .false.
     n_saved = 0
     row_start_saved = 1

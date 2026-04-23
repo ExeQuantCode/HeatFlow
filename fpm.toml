@@ -15,8 +15,6 @@ mpi = "*"
 [features]
 petsc.build.external-modules = ["petscksp"]
 petsc.build.link = ["petsc"]
-petsc.flags = "-I../petsc/include -I../petsc/arch-darwin-c-debug/include"
-petsc.link-time-flags = "-L../petsc/arch-darwin-c-debug/lib -Wl,-rpath,../petsc/arch-darwin-c-debug/lib"
 
 [profiles]
 default = ["petsc"]
