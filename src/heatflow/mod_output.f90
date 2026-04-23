@@ -62,6 +62,7 @@ contains
     file_prefix = 'Temperture_'
     outdir='./outputs/'
     file_extension = '.out'
+   call ensure_directory(outdir)
     
     !---------------------------------------
     !  make a 3d array
@@ -173,6 +174,17 @@ contains
  end subroutine data_write
 !!!########################################################################
 
+!!!########################################################################
+ subroutine ensure_directory(dirname)
+    character(len=*), intent(in) :: dirname
+    logical :: exists
+
+    inquire(file=trim(dirname), exist=exists)
+    if (.not. exists) call execute_command_line('mkdir -p ' // trim(dirname))
+ end subroutine ensure_directory
+
+!!!########################################################################
+
 
  
 !!!########################################################################
@@ -234,6 +246,8 @@ contains
    real(real12) :: TotalPower, totaltime, vol
    integer(int12) :: unit
    character(len=64) :: form
+
+    call ensure_directory('./outputs/')
    
    if (IVERB .gt. 3) then 
       TotalPower=heat
