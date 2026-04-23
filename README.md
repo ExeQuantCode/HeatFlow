@@ -7,89 +7,194 @@
 
 by Harry Mclean, Francis Huw Davies, Ned Thaddeus Taylor, and Steven Paul Hepplestone
 
-HeatFlow is Fortran-based a software package for modelling dynamical heat transport in systems using finite difference methods.
-The software is primarily designed to utilise the Cattaneo method.
-However, the Fourier method can be used instead.
-
-**IMPORTANT NOTICE: Repository Migration to GitHub**
-
-Dear users and contributors,
-
-This repository has been to be migrated from the University of Exeter GitLab to GitHub to facilitate community interaction and support.
-The latest version, updates, and collaboration now take place on this GitHub repository.
-
-**GitLab Repository (Archived):** https://git.exeter.ac.uk/hepplestone/heatflow-mk2
-
-## Why the Migration?
-
-It was decided that this project should be migrated to allow for better community support (i.e. allowing community users to raise issues).
-All information has been ported over where possible.
-Releases prior to `HeatFlow_CattaneoPaper` have had their history modified to remove history of files over 50MB in size.
-
-## How to Contribute on GitHub?
-
-Thank you for your understanding and continued support!
+HeatFlow is a Fortran-based software package for modelling dynamical heat transport in systems using finite difference methods.
+The software is primarily designed to utilise the Cattaneo method, although the Fourier method can also be used.
 
 ---
 
+## IMPORTANT NOTICE: Repository Migration to GitHub
+
+This repository has been migrated from the University of Exeter GitLab to GitHub to facilitate community interaction and support.
+The latest version, updates, and collaboration now take place here.
+
+**GitLab Repository (Archived):**
+[https://git.exeter.ac.uk/hepplestone/heatflow-mk2](https://git.exeter.ac.uk/hepplestone/heatflow-mk2)
+
+### Why the Migration?
+
+The move enables better community support, including issue tracking and collaboration.
+All information has been ported where possible.
+Releases prior to `HeatFlow_CattaneoPaper` have had their history modified to remove files larger than 50 MB.
+
+---
 
 ## Requirements
 
-- Fortran compiler supporting Fortran 2003 standard or later
-- fpm or CMake
+* Fortran compiler supporting Fortran 2003 or later
+* fpm or CMake
+* PETSc
+* MPI
 
-The software bas been developed and tested using the following Fortran compilers:
-- gfortran -- gcc 13.2.0
-- gfortran -- gcc 14.1.0
+Tested with:
+
+* gfortran (GCC 13.2.0)
+* gfortran (GCC 14.1.0)
+
+---
 
 ## Installation
 
-To install HeatFlow, the source must be obtained from the git repository. Use the following commands to get started:
-```
- git clone https://github.com/ExeQuantCode/HeatFlow.git
- cd HeatFlow
-```
+First obtain the source:
 
-### fpm
-
-To install using fpm, run the following command in the repository root directory:
-
-```
-fpm build --profile=release
+```bash
+git clone https://github.com/ExeQuantCode/HeatFlow.git
+cd HeatFlow
 ```
 
-To execute the code, use
+---
 
-```
-fpm run HeatFlow --profile release -- [ALL PROGRAM OPTIONS]
-```
+## Building with fpm
 
-### cmake
+PETSc is configured at build time (not hard-coded), making the build portable across systems.
 
-For cmake installation, start within the repository root directory, run the following commands:
+### 1. Set PETSc environment variables
 
-```
-mkdir build
-cd build
-cmake [-DCMAKE_BUILD_TYPE=Release] ..
-make install
+```bash
+export PETSC_DIR=/path/to/petsc
+export PETSC_ARCH=arch-your-build
 ```
 
-This will build and install the executable in the following directory:
+These are standard variables provided by PETSc.
+
+---
+
+### 2. Build
+
+```bash
+fpm build \
+  --flag "-I${PETSC_DIR}/include -I${PETSC_DIR}/${PETSC_ARCH}/include" \
+  --link-flag "-L${PETSC_DIR}/${PETSC_ARCH}/lib -Wl,-rpath,${PETSC_DIR}/${PETSC_ARCH}/lib"
 ```
+
+---
+
+### 3. Run
+
+```bash
+fpm run --profile petsc -- [ALL PROGRAM OPTIONS]
+```
+
+---
+
+### Alternative: pkg-config
+
+If PETSc provides pkg-config:
+
+```bash
+fpm build \
+  --flag "$(pkg-config --cflags petsc)" \
+  --link-flag "$(pkg-config --libs petsc)"
+```
+
+---
+
+### Notes (fpm)
+
+* No PETSc paths are stored in `fpm.toml`
+* All system-specific configuration is provided at build time
+* Works well on clusters, macOS, and CI environments
+
+---
+
+## Building with CMake
+
+CMake provides automatic detection of MPI and PETSc.
+
+### 1. Configure PETSc
+
+If PETSc is not installed system-wide:
+
+```bash
+export PETSC_DIR=/path/to/petsc
+export PETSC_ARCH=arch-your-build
+```
+
+---
+
+### 2. Configure and build
+
+```bash
+cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+```
+
+Or explicitly:
+
+```bash
+cmake -B build -S . \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DPETSC_DIR=$PETSC_DIR \
+  -DPETSC_ARCH=$PETSC_ARCH
+```
+
+---
+
+### 3. Install
+
+```bash
+cmake --install build
+```
+
+This installs the executable to:
+
+```bash
 ${HOME}/.local/HeatFlow/bin/HeatFlow
 ```
 
-This executable can now be called to run the HeatFlow software package and simulate heat transport.
-If the `${HOME}/.local/HeatFlow/bin` is added to your `PATH` environment variable, then the program can be called as a terminal command.
-This can be done with the following command (works on a per-terminal basis, if you want to update it for all, include this in your source shell file):
+Add to your `PATH` if desired:
 
-```
+```bash
 export PATH="${PATH}:${HOME}/.local/HeatFlow/bin"
 ```
 
-To execute the program, use the following command:
+---
 
-```
+### 4. Run
+
+```bash
 HeatFlow
 ```
+
+---
+
+### Using pkg-config (recommended)
+
+If PETSc supports pkg-config, it will be detected automatically:
+
+```bash
+cmake -B build -S .
+cmake --build build
+```
+
+---
+
+### Notes (CMake)
+
+* PETSc detection order:
+
+  1. pkg-config
+  2. `PETSC_DIR` / `PETSC_ARCH`
+  3. Local `../petsc` fallback
+
+* MPI is detected automatically
+
+* Configuration fails with a clear error if PETSc is not found
+
+---
+
+## Summary
+
+* **fpm**: lightweight and flexible, ideal for development
+* **CMake**: robust and portable, suited for deployment
+
+In both cases, PETSc is configured at build time rather than hard-coded, ensuring portability across systems.
