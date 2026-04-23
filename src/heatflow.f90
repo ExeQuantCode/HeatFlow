@@ -35,7 +35,7 @@ program HEATFLOW_V0_3
    integer(int12) :: itime
 
    !-------------------------------------------------------------!
-   ! Initialize PETSc FIRST (before any other operations)       !
+   ! Initialize PETSc FIRST (before any other operations)        !
    !-------------------------------------------------------------!
    CALL petsc_init()
    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
@@ -47,19 +47,28 @@ program HEATFLOW_V0_3
    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
 
    ! give feedback to user that code has begun
-   if (petsc_is_root()) write(*,*) 'Setup initialising'
-   
+   if(petsc_is_root()) write(*,*) 'Setup initialising'
+
+   !-------------------------------------------------------------!
+   ! handle command line arguments on master/root node only      !
+   !-------------------------------------------------------------!
+   if(petsc_is_root())then
+      call handle_command_line_arguments()
+   end if
+
    !-------------------------------------------------------------!
    ! Read parameters from input file and set global variables ...!
    ! ... and arrays                                              !
    !-------------------------------------------------------------!
-   CALL read_all_files()                                         
-   
-   CALL cpu_time(cpustart2)                                      
-   CALL set_global_variables() 
-   CALL cpu_time(cpuend)
-   if (IVERB.ge.1) write(*,'(A,F12.6)') &
-   ' time to complete set_global_variables=', cpuend-cpustart2   
+   if(petsc_is_root())then
+      CALL read_all_files()                                         
+      
+      CALL cpu_time(cpustart2)                                      
+      CALL set_global_variables() 
+      CALL cpu_time(cpuend)
+      if (IVERB.ge.1) write(*,'(A,F12.6)') &
+      ' time to complete set_global_variables=', cpuend-cpustart2   
+   end if
 
  
    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
@@ -110,6 +119,57 @@ program HEATFLOW_V0_3
 
    ! give feedback to user that code has ended
    if (petsc_is_root()) write(*,*) 'all done'
+
+contains
+
+   !-------------------------------------------------------------!
+   ! Handle command line arguments for directory specification   !
+   !-------------------------------------------------------------!
+   subroutine handle_command_line_arguments()
+     implicit none
+     integer :: nargs, i, stat
+     character(len=1024) :: arg, directory
+     logical :: dir_exists
+     character(len=*), parameter :: directory_flag = '--directory'
+     character(len=*), parameter :: directory_prefix = '--directory='
+      
+     nargs = command_argument_count()
+     directory = ''
+      
+     write(*,*) 'Number of command line arguments: ', nargs
+     do i = 1, nargs
+        call get_command_argument(i, arg)
+        write(*,*) 'Received command line argument: ', trim(arg)
+        if (trim(arg) .eq. directory_flag) then
+           if (i .eq. nargs) then
+              if (petsc_is_root()) write(*,*) 'Error: Missing value for --directory'
+              call exit(1)
+           end if
+           call get_command_argument(i + 1, directory)
+           exit
+        else if (index(trim(arg), directory_prefix) .eq. 1) then
+           directory = trim(arg(len(directory_prefix) + 1:))
+           exit
+        end if
+     end do
+      
+        write(*,*) 'Changing directory to: ', trim(directory)
+     if(len_trim(directory) .gt. 0) then
+        inquire(file=trim(directory)//'/.' , exist=dir_exists)
+        if(.not. dir_exists) then
+           if (petsc_is_root()) write(*,*) 'Error: Directory does not exist: ', trim(directory)
+           call exit(1)
+        end if
+        call chdir(trim(directory), stat)
+        if(stat .ne. 0) then
+           if(petsc_is_root()) write(*,*) 'Error: Failed to change directory to: ', trim(directory)
+           call exit(1)
+        end if
+        if(petsc_is_root()) write(*,*) 'Changed directory to: ', trim(directory)
+     end if
+
+   end subroutine handle_command_line_arguments
+   !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
 
 end program HEATFLOW_V0_3
 
