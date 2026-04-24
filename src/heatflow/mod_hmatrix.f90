@@ -94,42 +94,12 @@ contains
     end if
 
 
-    !if ( CG_x_p ) then
-    !  if ( xm .lt. 1 ) A = 0.0_real12
-    !  else
     !     A = calculate_conductivity(xm, y, z, x, y, z)
-    !  end if
-    !end if  
-    !if ( CG_x_m ) then
-    !   if ( xp .gt. nx ) B = 0.0_real12
-    !   else
     !      B = calculate_conductivity(xp, y, z, x, y, z)
-    !   end if
-    !end if
-    !  if ( CG_y_p ) then
-    !     if ( ym .lt. 1 ) D = 0.0_real12
-    !     else
     !        D = calculate_conductivity(x, ym, z, x, y, z)
-    !     end if
-    !  end if
-    !  if ( CG_y_m ) then
-    !     if ( yp .gt. ny ) E = 0.0_real12
-    !     else
     !        E = calculate_conductivity(x, yp, z, x, y, z)
-    !     end if
-    !  end if
-    !  if ( CG_z_p ) then
-    !     if ( zm .lt. 1 ) F = 0.0_real12
-    !     else
     !        F = calculate_conductivity(x, y, zm, x, y, z)
-    !     end if
-    !  end if
-    !  if ( CG_z_m ) then
-    !     if ( zp .gt. nz ) G = 0.0_real12
-    !     else
     !        G = calculate_conductivity(x, y, zp, x, y, z)
-    !     end if
-    !  end if
 
 
     A = calculate_conductivity(xm, y, z, x, y, z)
@@ -139,7 +109,6 @@ contains
     F = calculate_conductivity(x, y, zm, x, y, z) 
     G = calculate_conductivity(x, y, zp, x, y, z)  
 
-    !---------------------------------------------------------------
     ! Cylindrical grid correction:
     ! In cylindrical coordinates, the radial heat equation is:
     !   (1/r) d/dr (r * kappa * dT/dr)
@@ -149,7 +118,6 @@ contains
     ! Factor for inner (A): (x-1) / (x-0.5)
     ! Factor for outer (B): x / (x-0.5)
     ! Y (axial) and Z terms are unchanged.
-    !---------------------------------------------------------------
     if (CylindricalGrid) then
        r_center = real(x,real12) - 0.5_real12
        r_inner  = real(x - 1,real12)
@@ -206,7 +174,6 @@ contains
       if (z.eq. 1) then
         H=0.0_real12
      else
-        !write(*,*) 'F   this is forward (in) z',F
          H = F  ! Z in neighbor (forward cell interaction) !!!Frank had this as G during testing
          !H = H + calculate_convective_conductivity(x, y, zm, x, y, z)
       end if
@@ -216,7 +183,6 @@ contains
       if (z .eq. nz) then
         H=0.0_real12
      else  
-        !write(*,*) 'G   this is backward (out) z?',G
         H = G  ! Z out neighbor (backward cell interaction) !!!Frank Had this as F during testing
         !H = H + calculate_convective_conductivity(x, y, zp, x, y, z)
       end if
@@ -266,7 +232,6 @@ contains
       end if
       if ( (i-j) .eq. (nz-1)*nx*ny ) then
          if (z .eq. nz) then
-            !write(*,*) 'G   this is backward (out) z?',G
             H = G  ! Z in periodic neighbor
          else
             !H=0.0_real12
@@ -358,12 +323,9 @@ contains
 
   function altmod(a,b) result(c)
     integer(int12) :: a, b, c
-    !--------------------------------------------------------------------
     ! Calculate the modulus of a and b, and return b if the modulus is 0
-    !--------------------------------------------------------------------
     c=mod(a,b)
     if(c .eq. 0) c = b
-    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   end function altmod
   !!!#######################################################################
 
@@ -378,19 +340,15 @@ contains
     real(real12) :: kappa, kappa_ab
     real(real12) :: r_center, r_iface  ! cylindrical correction
 
-    !------------------------------------------------------------
     ! The boundary term is calculated of the boundary grid point.
-    !------------------------------------------------------------
     kappa = grid(x,y,z)%kappa
 
     
     if (x_b .ne. x) then
       if (CylindricalGrid) then
-        !---------------------------------------------------------------
         ! Cylindrical boundaries in the radial (x) direction:
         !  x_b < 1 means inner boundary (r=0 center) -> symmetry, zero flux
         !  x_b > nx means outer boundary (r=R) -> use kappaBoundNr
-        !---------------------------------------------------------------
         if (x_b .lt. 1) then
           ! Center symmetry: zero flux at r=0
           kappa_ab = 0.0_real12
@@ -437,7 +395,6 @@ contains
        kappa_ab = kappa_ab
 
     end if
-    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   end subroutine boundry_diag_term
   !!!########################################################################
   
@@ -510,9 +467,7 @@ contains
       real(real12) :: rho, CV
       real(real12), dimension(3) :: vel_in, vel_out 
   
-      !------------------------------------------------------------
       ! The boundary term is calculated of the boundary grid point.
-      !------------------------------------------------------------
   
       
       rho = grid(x,y,z)%rho
@@ -550,7 +505,6 @@ contains
             end if
          end if
       end if
-      !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     end subroutine boundry_diag_term_vel
       !!!########################################################################
 

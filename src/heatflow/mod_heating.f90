@@ -59,82 +59,55 @@ contains
              select case(grid(ix,iy,iz)%iheater)
 
              case(0)
-                !------------------------------
                 ! No heating
-                !------------------------------
                 Q(IA) = 0.0_real12
 
-                !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              case(1)
-                !------------------------------
                 ! Constant heating
-                !------------------------------
                 Q(IA) = POWER
                 
-                !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              case(2)
-                !------------------------------
                  ! Heater on for a time period
-                !------------------------------
                 if ( time .le. time_pulse ) then
                    Q(IA) = POWER
-                  !  print *, "Heating on"
                 else
-                  !  print *, "Heating off"
                    Q(IA) = 0.0_real12
                 end if
 
                if (icattaneo .eq. 1) then
                   if (itime .eq. 1) then
                      Q(IA) = Q(IA) + tau*POWER
-                     ! print *, "Turning on heater at time ", time
                   end if
                   if (itime .eq. (heated_steps + 1)) then
                      Q(IA) = Q(IA) - tau*POWER
-                     ! print *, "Turning off heater at time ", time
                   end if
                end if
                
 
-                !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              case(3)
-                !------------------------------
                 ! AC oscillatory heating
-                !------------------------------
                 x = time * 2.0_real12 * PI * freq
                 x2 = time_step * 2.0_real12 * PI * freq
                 Q(IA) = POWER * 0.5_real12 * &
                   ((x2) - sin(x + x2) * cos(x + x2) + sin(x) * cos(x)) / x2
-                !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              case(4)
-                !------------------------------
                 ! AC oscillatory heating raw, with power correction
-                !------------------------------
                 Q(IA) = POWER * (sin(time * 2.0_real12 * PI * freq)**2.0_real12)
-                !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              case(5)
-                !------------------------------
                 ! AC oscillatory heating raw, with power correction
-                !------------------------------
                 Q(IA) = POWER * (sin(time * 2.0_real12 * PI * freq)**2.0_real12)&
                   +POWER*2.0_real12*PI*freq*tau*sin(2.0_real12*time*2.0_real12*PI*freq)
-                !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              case(6)
-                !------------------------------
                 ! Step one heating
-                !------------------------------
                 if (itime == 1) then
                    Q(IA) = POWER
                 else
                    Q(IA) = 0.0
                 end if
-                !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
             case(7)
-               !---------------------------------------------------------
                ! Heater on for a time period, off for a time period,
                ! then on again (square-wave heating)
-               !---------------------------------------------------------
 
                if (mod(time, 2.0_real12 * time_pulse) .le. time_pulse) then
                   Q(IA) = POWER
@@ -167,49 +140,28 @@ contains
                case(12)
                   Q(IA) = POWER + (tau*(POWER))
              end select
-             !------------------------------
              ! If emissitivity is not zero, then calculate the radiative heating
-             !------------------------------
                ! Q(IA) = Q(IA) - grid(ix,iy,iz)%em * grid(ix,iy,iz)%length(1)*&
                !         grid(ix,iy,iz)%length(2)*StefBoltz &
                !         * ((Temp_p(IA)**4.0_real12) - (T_Bath**4.0_real12)) 
 
-             !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-             !------------------------------
              ! Additional PowerTerm FD
-             !------------------------------
               ! Q(IA) = Q(IA) +(tau/time_step)*(Q(IA)-Q_P(IA))
             
-             !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
             
-             !------------------------------
              ! count heated volume
-             !------------------------------
              if (grid(ix,iy,iz)%iheater .gt. 0) then
                 heated_volume = heated_volume + volume
                 sum_temp = sum_temp + Q(IA) * 1/(rho * heat_capacity)
                 heated_num = heated_num + 1
              end if
-             !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
             
           end do
        end do
     end do
     Q_P = Q
 
-    !write(*,*) ""
-    !write(*,*) "==============================="
-    !write(*,*) "sum(Q(:))=",sum(Q(:))
-    !write(*,*) "sum(Qdens(:))=",sum(Qdens(:))
-    !write(*,*) "power",power_in
-    !write(*,*) "sum(Q(:))/one_cell_volume=",sum(Q(:))/grid(1,1,1)%volume
-    !write(*,*) "one_cell_volume", grid(1,1,1)%volume
-    !write(*,*) "heated_volume", heated_volume
-    !write(*,*) "sum(Q(:))/heated_volume",sum(Q(:))/heated_volume
-    !write(*,*) "sum(Qdens(:))/heated_volume",sum(Qdens(:))/heated_volume
-    !write(*,*) "heated_num = ",heated_num
-    !write(*,*) "==============================="
    
 
     ! Normalize all heat sources by the heated volume

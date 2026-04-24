@@ -13,7 +13,6 @@ module petsc_solver
   ! 'ILU'  = Incomplete LU (good general purpose, robust)
   ! 'LU'   = Direct solver (most robust, uses more memory)
   character(len=10), parameter :: PRECONDITIONER = 'LU'  ! <-- Change here!
-  ! ====================================
 
   ! Persistent PETSc objects (reused across timesteps for memory efficiency)
   Mat, save :: A_saved
@@ -28,11 +27,7 @@ contains
 
   subroutine petsc_init()
     integer :: ierr
-    ! write(*,'(A DEBUG] Calling PetscInitialize...'
-    ! call flush(6)
     call PetscInitialize(PETSC_NULL_CHARACTER, ierr)
-    ! write(*,'(A DEBUG] PetscInitialize returned ierr=', ierr
-    ! call flush(6)
     ! Initialize null objects after PETSc is initialized
     if (.not. petsc_objects_nulled) then
       A_saved = PETSC_NULL_MAT
@@ -82,49 +77,30 @@ contains
     real(8) :: rnorm
     logical :: rebuild_needed
 
-    ! ! write(*,'(A DEBUG] Entered solve_petsc_csr, n=', n
     ! ! call flush(6)
     
-    ! write(*,'(A DEBUG] Entered solve_petsc_csr, n=', n
-    ! call flush(6)
     
-    ! write(*,'(A DEBUG] size(ia)=', size(ia)
-    ! write(*,'(A DEBUG] size(ja)=', size(ja)
-    ! write(*,'(A DEBUG] size(aval)=', size(aval)
-    ! write(*,'(A DEBUG] size(b)=', size(b)
-    ! write(*,'(A DEBUG] size(x)=', size(x)
-    ! call flush(6)
     
     if (size(ia) /= n+1) stop 'solve_petsc_csr: ia size mismatch'
     if (size(b) /= n .or. size(x) /= n) stop 'solve_petsc_csr: vector size mismatch'
 
-    ! write(*,'(A DEBUG] Size checks passed'
-    ! call flush(6)
 
     ! Determine if we need to rebuild the matrix structure
     rebuild_needed = .false.
     if (.not. initialized) rebuild_needed = .true.
     if (n /= n_saved) rebuild_needed = .true.
     
-    ! write(*,'(A DEBUG] rebuild_needed=', rebuild_needed
-    ! call flush(6)
     
     ! Create PETSc objects on first call or if size changed
     if (rebuild_needed) then
-      ! write(*,'(A DEBUG] Starting PETSc object creation...'
-      ! call flush(6)
       
       ! Clean up old objects if they exist
       if (initialized) call petsc_cleanup()
       
-      ! write(*,'(A DEBUG] Preallocating matrix...'
-      ! call flush(6)
       
       ! Preallocate matrix with exact nonzeros per row (saves memory)
       allocate(d_nnz(n))
       
-      ! write(*,'(A DEBUG] d_nnz allocated'
-      ! call flush(6)
       
       np = n
       zerop = 0
@@ -133,49 +109,25 @@ contains
         d_nnz(i) = int(ia(i+1) - ia(i), kind=kind(d_nnz))
       end do
       
-      ! write(*,'(A DEBUG] Creating matrix: n=', n, ', max_nnz/row=', maxval(d_nnz)
-      ! write(*,'(A DEBUG] np=', np
-      ! write(*,'(A DEBUG] zerop=', zerop
-      ! write(*,'(A DEBUG] kind(d_nnz)=', kind(d_nnz)
-      ! write(*,'(A DEBUG] size(d_nnz)=', size(d_nnz)
-      ! call flush(6)
       
       ! Create matrix with exact preallocation (most memory-efficient)
-      ! write(*,'(A DEBUG] Calling MatCreate...'
-      ! call flush(6)
       
       ! Use a temporary local Mat object first, then assign
       block
         Mat :: A_temp
         call MatCreate(PETSC_COMM_SELF, A_temp, ierr)
-        ! write(*,'(A DEBUG] MatCreate returned ierr=', ierr
-        ! call flush(6)
         
         if (ierr == 0) then
-          ! write(*,'(A DEBUG] Calling MatSetSizes...'
-          ! call flush(6)
           call MatSetSizes(A_temp, np, np, np, np, ierr)
-          ! write(*,'(A DEBUG] MatSetSizes returned ierr=', ierr
-          ! call flush(6)
           
-          ! write(*,'(A DEBUG] Calling MatSetType...'
-          ! call flush(6)
           call MatSetType(A_temp, MATSEQAIJ, ierr)
-          ! write(*,'(A DEBUG] MatSetType returned ierr=', ierr
-          ! call flush(6)
           
-          ! write(*,'(A DEBUG] Calling MatSeqAIJSetPreallocation...'
-          ! call flush(6)
           call MatSeqAIJSetPreallocation(A_temp, zerop, d_nnz, ierr)
-          ! write(*,'(A DEBUG] MatSeqAIJSetPreallocation returned ierr=', ierr
-          ! call flush(6)
           
           A_saved = A_temp
         end if
       end block
       
-      ! write(*,'(A DEBUG] Matrix created and assigned'
-      ! call flush(6)
       
       if (ierr /= 0) then
         write(0,*) "ERROR: MatCreateSeqAIJ failed with ierr=", ierr
@@ -186,42 +138,28 @@ contains
       
       deallocate(d_nnz)
       
-      ! write(*,'(A DEBUG] Creating vectors...'
-      ! call flush(6)
       
       ! Create persistent vectors - use local temps like we did for matrix
       block
         Vec :: bb_temp, xx_temp
         call VecCreateSeq(PETSC_COMM_SELF, np, bb_temp, ierr)
-        ! write(*,'(A DEBUG] VecCreateSeq bb returned ierr=', ierr
-        ! call flush(6)
         bb_saved = bb_temp
         
         call VecCreateSeq(PETSC_COMM_SELF, np, xx_temp, ierr)
-        ! write(*,'(A DEBUG] VecCreateSeq xx returned ierr=', ierr
-        ! call flush(6)
         xx_saved = xx_temp
       end block
       
-      ! write(*,'(A DEBUG] Creating KSP...'
-      ! call flush(6)
       
       ! Create and configure KSP solver (persistent across timesteps)
       block
         KSP :: ksp_temp
         call KSPCreate(PETSC_COMM_SELF, ksp_temp, ierr)
-        ! write(*,'(A DEBUG] KSPCreate returned ierr=', ierr
-        ! call flush(6)
         ksp_saved = ksp_temp
       end block
       
       call KSPSetOperators(ksp_saved, A_saved, A_saved, ierr)
-      ! write(*,'(A DEBUG] KSPSetOperators returned ierr=', ierr
-      ! call flush(6)
       
       call KSPGetPC(ksp_saved, pc, ierr)
-      ! write(*,'(A DEBUG] KSPGetPC returned ierr=', ierr
-      ! call flush(6)
       
       ! Select preconditioner based on parameter at top of module
       select case (trim(PRECONDITIONER))
@@ -280,11 +218,8 @@ contains
     call MatAssemblyBegin(A_saved, MAT_FINAL_ASSEMBLY, ierr)
     call MatAssemblyEnd(A_saved, MAT_FINAL_ASSEMBLY, ierr)
     
-    ! write(*,'(A DEBUG] Matrix assembly complete'
-    ! call flush(6)
     
     ! Optional: Verify matrix assembly (uncomment for debugging)
-    ! call MatView(A_saved, PETSC_VIEWER_STDOUT_SELF, ierr)
 
     ! Update RHS vector in batches to avoid memory issues with huge systems
     block
@@ -309,8 +244,6 @@ contains
     end block
     call VecAssemblyBegin(bb_saved,ierr); call VecAssemblyEnd(bb_saved,ierr)
     
-    ! write(*,'(A DEBUG] RHS vector assembly complete'
-    ! call flush(6)
 
     ! Update initial guess in batches
     block
@@ -335,12 +268,8 @@ contains
     end block
     call VecAssemblyBegin(xx_saved,ierr); call VecAssemblyEnd(xx_saved,ierr)
     
-    ! write(*,'(A DEBUG] Initial guess vector assembly complete'
-    ! call flush(6)
 
     ! Solve the system
-    ! write(*,'(A DEBUG] Calling KSPSolve...'
-    ! call flush(6)
     call KSPSolve(ksp_saved, bb_saved, xx_saved, ierr)
     
     if (ierr /= 0) then
@@ -351,8 +280,6 @@ contains
     call KSPGetIterationNumber(ksp_saved, its, ierr)
     call KSPGetResidualNorm(ksp_saved, rnorm, ierr)
     
-    ! write(*,'(A DEBUG] KSPSolve complete, iterations=', its, ', residual=', rnorm
-    ! call flush(6)
 
     ! Extract solution vector using batched VecGetValues
     block

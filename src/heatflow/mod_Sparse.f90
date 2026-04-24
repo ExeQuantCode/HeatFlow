@@ -391,7 +391,6 @@ contains
     r=b-r
     rr=r
     !Uncomment this line to get the “minimum residual” variant of the algorithm.
-    !call atimes(r,rr,0_int12)
     !Calculate norms for use in stopping criterion, and initialize z.
 
     bnrm=sqrt(dot_product(b,b))
@@ -461,7 +460,6 @@ contains
     ! this only needs to be cheacked once accross all time steps and iterations ...
     ! ... and it should be physically imposible. if we want to we can check ...
     ! ... singularaty outside the CG algo.
-    !if (any(abs(x).lt.1.0e-12_real12)) call nrerror('asolve: singular diagonal matrix')
     x=b/x
   END SUBROUTINE asolve
 

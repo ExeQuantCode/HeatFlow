@@ -123,9 +123,7 @@ contains
     logical :: file_exists ! check if file exists
 
 
-    !-----------------------------------------------
     ! get data from param.in
-    !-----------------------------------------------
     ! name infile
     param_infile = "./inputs/param.in" ! file name
 
@@ -144,12 +142,9 @@ contains
     close(unit)
     
 
-    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-    !-----------------------------------------------
     ! get data from mat.in
-    !-----------------------------------------------
     ! name infile
 
     mat_infile = "./inputs/mat.in" ! file name
@@ -167,12 +162,9 @@ contains
     open(newunit=unit, file=mat_infile, iostat=reason)
     CALL read_mat(unit)
     close(unit)
-    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-    !-----------------------------------------------
     ! get data from system.in
-    !-----------------------------------------------
     ! name infile
 
     mesh_infile = "./inputs/system.in" ! file name
@@ -190,7 +182,6 @@ contains
     open(newunit=unit, file=mesh_infile, iostat=reason)
     CALL read_system(unit)
     close(unit)
-    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
   end subroutine read_all_files
@@ -211,9 +202,7 @@ contains
     character(1024)::buffer
 
     readvar(:)=0
-    !------------------------------------------
     ! assign defaults
-    !------------------------------------------
     IVERB = 1
     Check_Sparse_Full = .FALSE.
     Check_Stability = .FALSE.
@@ -273,19 +262,16 @@ contains
     end_iy = Ny
     start_iz = 1
     end_iz = Nz
-    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     do
        read(unit,'(A)',iostat=Reason) buffer
        if(Reason.ne.0) exit
        ! looks for comments in each line of txt file and trims them off
        if(scan(buffer,'!').ne.0) buffer=buffer(:(scan(buffer,'!')-1)) 
        if(trim(buffer).eq.'') cycle ! removes blank spaces
-       !---------------------------------------
        ! assignD works for doubles
        ! assignL for logicals
        ! assignI for integers
        ! assignS for strings
-       !---------------------------------------
        ! looks for all the keywords relating to inputs and defines their variables
        CALL assignI(buffer,"IVERB",IVERB,readvar(1))
        CALL assignI(buffer,"ntime",ntime,readvar(2))           
@@ -337,13 +323,10 @@ contains
        CALL assignL(buffer,"_CylindricalGrid",CylindricalGrid,readvar(48))
        CALL assignD(buffer,"kappaBoundNr",kappaBoundNr,readvar(49))
        CALL assignD(buffer,"T_BathNr",T_BathNr,readvar(50))
-       !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     end do
     
-    !--------------------------------------------------
     ! parse the periodic string
-    !--------------------------------------------------
     Periodicx = .false.
     Periodicy = .false.
     Periodicz = .false.
@@ -351,11 +334,8 @@ contains
     if ((index(Periodic, 'x') .gt. 0 ).or.(index(Periodic, 'X') .gt. 0)) Periodicx = .true.
     if ((index(Periodic, 'y') .gt. 0 ).or.(index(Periodic, 'Y') .gt. 0)) Periodicy = .true.
     if ((index(Periodic, 'z') .gt. 0 ).or.(index(Periodic, 'Z') .gt. 0)) Periodicz = .true.
-    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    !--------------------------------------------------
     ! parse the CG directions
-    !--------------------------------------------------
     ! not yet fixed for case sensitivity
     ! should also be able to provide just x or y or z for both directions
     if (index(CG_dir, '-x') .gt. 0) CG_x_m = .true.
@@ -364,7 +344,6 @@ contains
     if (index(CG_dir, '+y') .gt. 0) CG_y_p = .true.
     if (index(CG_dir, '-z') .gt. 0) CG_z_m = .true.
     if (index(CG_dir, '+z') .gt. 0) CG_z_p = .true.
-    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
     CALL check_param(readvar,size(readvar,1))
@@ -393,10 +372,8 @@ contains
     end if
 
 
-    !------------------------------------------------------------------------------------
     ! Cylindrical grid: only kappaBoundy1, kappaBoundNy, kappaBoundNr are needed.
     ! Map them to the Cartesian variables and mark the others as satisfied.
-    !------------------------------------------------------------------------------------
     if (CylindricalGrid) then
        ! ix=1 is reflection axis -> zero flux (already handled in mod_boundary)
        kappaBoundx1 = 0.0
@@ -422,9 +399,7 @@ contains
     end if
 
     PB:if ((.not. Periodicx).or.(.not. Periodicy).or.(.not. Periodicz)) then
-       !------------------------------------------------------------------------------------
        ! Error about missing kappa bound 
-       !------------------------------------------------------------------------------------
        ErrKB:if (((any(readvar(9:11).eq.0)) .or. any(readvar(29:31).eq.0)) &
             .and. (readvar(28) .eq. 0) )then
           write(6,*)
@@ -436,10 +411,7 @@ contains
           write(6,'(A)')   ' --- ERROR: KappaBoundx,y,z and KappaBound are not set       ---'
           stop
        end if ErrKB
-       !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-       !------------------------------------------------------------------------------------
        ! warning about missing kappa bound. reassine to Kappabound
-       !------------------------------------------------------------------------------------
 
         WarKBO:if (((all(readvar(9:11).eq.1)) .or. all(readvar(29:31).eq.1)) &
             .and. (readvar(28) .eq. 0) )then
@@ -452,10 +424,7 @@ contains
           write(6,'(A)')   ' --- Warning:  KappaBound is not set       ---'
           readvar(28) = 1
        end if WarKBO
-       !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-       !------------------------------------------------------------------------------------
        ! warning about missing kappa bound in cylindrical case. reassine to Kappabound
-       !------------------------------------------------------------------------------------
         if (CylindricalGrid) then
           WarcylKB:if ( (readvar(49).eq.0) .and. (readvar(28) .eq. 1) ) then
             write(6,*)
@@ -474,10 +443,7 @@ contains
             kappaBoundx1 = 0
             kappaBoundNx = 0
         end if WarcylKB
-       !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-       !------------------------------------------------------------------------------------
        ! warning about missing kappa bound. reassine to Kappabound
-       !------------------------------------------------------------------------------------
        else
           WarKB:if (((any(readvar(9:11).eq.0)) .or. any(readvar(29:31).eq.0)) &
               .and. (readvar(28) .eq. 1) )then
@@ -496,7 +462,6 @@ contains
             kappaBoundNz = KappaBound
           end if WarKB
         end if
-       !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     elseif (((any(readvar(9:11).eq.0)) .or. any(readvar(29:31).eq.0)) &
          .or. (readvar(28) .gt. 0) ) then
        write(6,*)
@@ -508,9 +473,7 @@ contains
        write(6,'(A)')   ' --- WARNING: Periodic Boundry set, set Kappa are ignored       ---'
     end if PB
 
-    !------------------------------------------------------------------------------------
     ! warning about missing bath temps. reassine to T_Bath
-    !------------------------------------------------------------------------------------
     if ((readvar(42) .eq. 1) .and. (T_BathCG .gt. 0)) then
       write(6,*)
       write(6,'(A43)') '###############################'
@@ -555,11 +518,8 @@ contains
       readvar(42) = 1
     end if
   
-    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    !------------------------------------------------------------------------------------
     ! Further warnings
-    !------------------------------------------------------------------------------------
     if (any(readvar(32:37).eq.0)) then
        write(6,*)
        write(6,'(A43)') '###############################'
@@ -618,12 +578,9 @@ contains
        end do
        write(6,*)
     end if
-    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-    !------------------------------------------------------------------------------------
     ! verbos to check for errors
-    !------------------------------------------------------------------------------------
     if(IVERB .ge. 1) then
        write(6,'(A)')           ' vebose printing option'
        write(6,'(A)')           ' running calculation with :'
@@ -681,7 +638,6 @@ contains
 
 
     end if
-    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   end subroutine check_param
 !!!#################################################################################################  
 
@@ -717,11 +673,9 @@ contains
     grid(:,:,:)%Length(3)=Lz/real(nz)
     grid(:,:,:)%volume=grid(:,:,:)%Length(1)*grid(:,:,:)%Length(2)*grid(:,:,:)%Length(3)
 
-    !---------------------------------------------------------------
     ! Cylindrical grid: override volume for each radial shell
     ! x = radial (r), y = axial, z = 1 (azimuthally symmetric)
     ! Volume of shell ix = pi*(r_out^2 - r_in^2) * dy * dz
-    !---------------------------------------------------------------
     if (CylindricalGrid) then
        if (nz .ne. 1) then
           write(6,*) 'Error: Cylindrical grid requires nz = 1'
