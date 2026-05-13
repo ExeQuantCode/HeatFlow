@@ -6,13 +6,19 @@ module petsc_solver
   implicit none
   private
   public :: petsc_init, petsc_finalize, solve_petsc_csr, petsc_cleanup
+  public :: petsc_set_solver_profile, petsc_mark_matrix_changed
 
-  ! ===== PRECONDITIONER SELECTION =====
-  ! Change this to switch between preconditioners:
-  ! 'GAMG' = Algebraic Multigrid (best for elliptic PDEs, 10-20x faster)
-  ! 'ILU'  = Incomplete LU (good general purpose, robust)
-  ! 'LU'   = Direct solver (most robust, uses more memory)
-  character(len=10), parameter :: PRECONDITIONER = 'LU'  ! <-- Change here!
+  integer, parameter :: SOLVER_PROFILE_LEN = 32
+
+  ! Solver profiles, ordered roughly from fastest/safest-for-small to lowest-memory:
+  !   LU      : direct solve; very robust but highest memory use.
+  !   GAMG    : algebraic multigrid; good large-problem balance, usually much lower memory than LU.
+  !   ILU     : iterative with incomplete LU; moderate memory, robust for smaller/medium systems.
+  !   GMRES   : GMRES with Jacobi; lower memory than ILU/GAMG, may need more iterations.
+  !   JACOBI  : BiCGSTAB with Jacobi; low memory, often slower.
+  !   NONE    : BiCGSTAB without a preconditioner; lowest memory, slowest/least robust.
+  character(len=SOLVER_PROFILE_LEN), save :: solver_profile = 'GAMG'
+  integer, save :: solver_verbosity = 1
 
   ! Persistent PETSc objects (reused across timesteps for memory efficiency)
   Mat, save :: A_saved
@@ -22,8 +28,118 @@ module petsc_solver
   logical, save :: initialized = .false.
   integer, save :: n_saved = 0
   logical, save :: petsc_objects_nulled = .false.
+  logical, save :: matrix_values_loaded = .false.
 
 contains
+
+  subroutine petsc_set_solver_profile(profile, verbosity)
+    character(len=*), intent(in) :: profile
+    integer, intent(in), optional :: verbosity
+    character(len=SOLVER_PROFILE_LEN) :: requested
+
+    if (present(verbosity)) solver_verbosity = verbosity
+
+    requested = profile
+    call uppercase_inplace(requested)
+    requested = adjustl(requested)
+
+    select case (trim(requested))
+      case ('', 'AUTO', 'BALANCED', 'FAST', 'GAMG')
+        solver_profile = 'GAMG'
+      case ('ILU')
+        solver_profile = 'ILU'
+      case ('LU', 'DIRECT')
+        solver_profile = 'LU'
+      case ('GMRES')
+        solver_profile = 'GMRES'
+      case ('JACOBI', 'LOWMEM', 'LOW_MEMORY', 'MEMORY')
+        solver_profile = 'JACOBI'
+      case ('NONE', 'NOPC', 'NO_PC')
+        solver_profile = 'NONE'
+      case default
+        solver_profile = 'GAMG'
+        write(*,'(A,A,A)') ' [Solver] Unknown _SolverMethod="', trim(profile), '"; using GAMG'
+    end select
+
+    if (initialized) call petsc_cleanup()
+  end subroutine petsc_set_solver_profile
+
+  subroutine petsc_mark_matrix_changed()
+    matrix_values_loaded = .false.
+  end subroutine petsc_mark_matrix_changed
+
+  subroutine uppercase_inplace(text)
+    character(len=*), intent(inout) :: text
+    integer :: i, code
+
+    do i = 1, len_trim(text)
+      code = iachar(text(i:i))
+      if (code >= iachar('a') .and. code <= iachar('z')) text(i:i) = achar(code - 32)
+    end do
+  end subroutine uppercase_inplace
+
+  subroutine print_solver_profile()
+    select case (trim(solver_profile))
+      case ('LU')
+        write(*,'(A)') ' [Solver] LU/direct: most robust for small runs, but highest memory. Avoid for large grids.'
+      case ('GAMG')
+        write(*,'(A)') ' [Solver] GAMG+GMRES: balanced large-run default; medium memory, usually much faster than low-memory methods.'
+      case ('ILU')
+        write(*,'(A)') ' [Solver] ILU+BiCGSTAB: moderate memory and robust, but can still grow too large on big 3D grids.'
+      case ('GMRES')
+        write(*,'(A)') ' [Solver] GMRES+Jacobi: lower memory than ILU/GAMG, often slower because preconditioning is weak.'
+      case ('JACOBI')
+        write(*,'(A)') ' [Solver] Jacobi+BiCGSTAB: low memory, usually slower; useful when LU/ILU/GAMG run out of memory.'
+      case ('NONE')
+        write(*,'(A)') ' [Solver] No preconditioner+BiCGSTAB: lowest memory, slowest and least robust.'
+    end select
+    write(*,'(A)') ' [Solver] PETSc command-line options may still override these choices.'
+  end subroutine print_solver_profile
+
+  subroutine apply_solver_profile(pc, ierr)
+    PC, intent(inout) :: pc
+    integer, intent(out) :: ierr
+
+    ierr = 0
+    select case (trim(solver_profile))
+      case ('LU')
+        call PCSetType(pc, PCLU, ierr)
+        if (ierr /= 0) return
+        call KSPSetType(ksp_saved, KSPPREONLY, ierr)
+
+      case ('GAMG')
+        call PCSetType(pc, PCGAMG, ierr)
+        if (ierr /= 0) return
+        call KSPSetType(ksp_saved, KSPGMRES, ierr)
+
+      case ('ILU')
+        call PCSetType(pc, PCILU, ierr)
+        if (ierr /= 0) return
+        call KSPSetType(ksp_saved, KSPBCGS, ierr)
+
+      case ('GMRES')
+        call PCSetType(pc, PCJACOBI, ierr)
+        if (ierr /= 0) return
+        call KSPSetType(ksp_saved, KSPGMRES, ierr)
+
+      case ('JACOBI')
+        call PCSetType(pc, PCJACOBI, ierr)
+        if (ierr /= 0) return
+        call KSPSetType(ksp_saved, KSPBCGS, ierr)
+
+      case ('NONE')
+        call PCSetType(pc, PCNONE, ierr)
+        if (ierr /= 0) return
+        call KSPSetType(ksp_saved, KSPBCGS, ierr)
+
+      case default
+        call PCSetType(pc, PCGAMG, ierr)
+        if (ierr /= 0) return
+        call KSPSetType(ksp_saved, KSPGMRES, ierr)
+    end select
+
+    if (solver_verbosity >= 1) call print_solver_profile()
+  end subroutine apply_solver_profile
 
   subroutine petsc_init()
     integer :: ierr
@@ -58,6 +174,7 @@ contains
       ksp_saved = PETSC_NULL_KSP
       initialized = .false.
       n_saved = 0
+      matrix_values_loaded = .false.
     end if
   end subroutine petsc_cleanup
 
@@ -161,33 +278,11 @@ contains
       
       call KSPGetPC(ksp_saved, pc, ierr)
       
-      ! Select preconditioner based on parameter at top of module
-      select case (trim(PRECONDITIONER))
-        case ('GAMG')
-          ! Algebraic Multigrid - Best for elliptic PDEs with varying coefficients
-          ! Optimal O(1) iterations, 10-20x faster than ILU for large problems
-          call PCSetType(pc, PCGAMG, ierr)
-          call KSPSetType(ksp_saved, KSPGMRES, ierr)  ! GMRES works well with AMG
-          write(*,'(A)') ' [Solver] Using GAMG (Algebraic Multigrid) preconditioner with GMRES'
-          
-        case ('ILU')
-          ! Incomplete LU - Good general purpose, robust
-          call PCSetType(pc, PCILU, ierr)
-          call KSPSetType(ksp_saved, KSPBCGS, ierr)   ! BiCGSTAB works well with ILU
-          write(*,'(A)') ' [Solver] Using ILU preconditioner with BiCGSTAB'
-          
-        case ('LU')
-          ! Direct LU - Most robust, more memory intensive
-          call PCSetType(pc, PCLU, ierr)
-          call KSPSetType(ksp_saved, KSPPREONLY, ierr) ! Direct solve
-          write(*,'(A)') ' [Solver] Using direct LU solver'
-          
-        case default
-          write(*,'(A,A)') ' [Warning] Unknown preconditioner: ', trim(PRECONDITIONER)
-          write(*,'(A)') '           Defaulting to ILU'
-          call PCSetType(pc, PCILU, ierr)
-          call KSPSetType(ksp_saved, KSPBCGS, ierr)
-      end select
+      call apply_solver_profile(pc, ierr)
+      if (ierr /= 0) then
+        write(0,*) "ERROR: PETSc solver profile setup failed with ierr=", ierr
+        stop
+      end if
       
       call KSPSetTolerances(ksp_saved, rtol, PETSC_DEFAULT_REAL, &
                            PETSC_DEFAULT_REAL, maxit, ierr)
@@ -198,25 +293,30 @@ contains
       n_saved = n
     end if
 
-    ! Update matrix values (always needed each timestep)
-    call MatZeroEntries(A_saved, ierr)
-    do i = 1, n
-       row_nz = ia(i+1) - ia(i)
-       if (row_nz > 0) then
-          start_k = ia(i)
-          allocate(cols0(row_nz), vals(row_nz))
-          ! Convert column indices from 1-based to 0-based for PETSc
-          cols0 = int(ja(start_k:start_k+row_nz-1) - 1, kind=kind(cols0))
-          vals  = aval(start_k:start_k+row_nz-1)
-          
-          ! Set row i-1 (0-based) with column indices cols0 (0-based)
-          row_nzp = row_nz
-          call MatSetValues(A_saved, 1, [PetscInt :: i-1], row_nzp, cols0, vals, INSERT_VALUES, ierr)
-          deallocate(cols0, vals)
-       end if
-    end do
-    call MatAssemblyBegin(A_saved, MAT_FINAL_ASSEMBLY, ierr)
-    call MatAssemblyEnd(A_saved, MAT_FINAL_ASSEMBLY, ierr)
+    ! The H matrix is built once during setup and normally stays fixed across
+    ! timesteps. Reassembling it every solve can force PETSc to rebuild costly
+    ! preconditioners/factorizations and can be a major memory/time penalty.
+    if (.not. matrix_values_loaded) then
+      call MatZeroEntries(A_saved, ierr)
+      do i = 1, n
+         row_nz = ia(i+1) - ia(i)
+         if (row_nz > 0) then
+            start_k = ia(i)
+            allocate(cols0(row_nz), vals(row_nz))
+            ! Convert column indices from 1-based to 0-based for PETSc
+            cols0 = int(ja(start_k:start_k+row_nz-1) - 1, kind=kind(cols0))
+            vals  = aval(start_k:start_k+row_nz-1)
+            
+            ! Set row i-1 (0-based) with column indices cols0 (0-based)
+            row_nzp = row_nz
+            call MatSetValues(A_saved, 1, [PetscInt :: i-1], row_nzp, cols0, vals, INSERT_VALUES, ierr)
+            deallocate(cols0, vals)
+         end if
+      end do
+      call MatAssemblyBegin(A_saved, MAT_FINAL_ASSEMBLY, ierr)
+      call MatAssemblyEnd(A_saved, MAT_FINAL_ASSEMBLY, ierr)
+      matrix_values_loaded = .true.
+    end if
     
     
     ! Optional: Verify matrix assembly (uncomment for debugging)

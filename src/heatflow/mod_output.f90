@@ -75,7 +75,7 @@ contains
        end do
     end do
 
-    if (itime .le. 2) then
+    if ((itime .le. 2) .and. (IVERB .gt. 3)) then
        write(*,*) ''
        write(*,'(A,I6)') ' === DATA_WRITE DEBUG: itime=', itime
        write(*,'(A6,A14,A14,A14)') 'ix', 'Temp_p(1D)', 'Temp_cur(3D)', 'diff'

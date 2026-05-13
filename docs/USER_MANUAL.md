@@ -40,6 +40,7 @@ This file uses a `KEYWORD = VALUE` format. Comments can be added using `!`.
 | `isteady` | Integer | `0` | Steady state switch (`1` = Steady state, `0` = Transient). |
 | `heattime` | Integer | `0` | Number of steps for which heating is applied (case 2). |
 | `TempDepProp`| Integer | `0` | Flag for temperature dependent properties. |
+| `_SolverMethod` | String | `GAMG` | PETSc solver profile. See [Solver Methods](#solver-methods). |
 
 #### Boundary & Conditions
 | Keyword | Type | Default | Description |
@@ -94,6 +95,24 @@ All flags default to `.False.`. Set to `.True.` (or `T`) to enable.
 - `_InputTempDis`: Load initial temperature distribution from file.
 - `_FullRestart`: Perform a full restart.
 - `_CylindricalGrid`: Enable cylindrical (axisymmetric) coordinate system. See [Cylindrical Grid Mode](#cylindrical-grid-mode).
+
+#### Solver Methods
+
+The PETSc solve is configured with `_SolverMethod` in `param.in`. PETSc command-line options still override the profile, so advanced runs can tune with flags such as `-ksp_monitor`, `-ksp_rtol`, `-pc_type`, or `-ksp_type`.
+
+| Method | Memory | Speed | Use when |
+| :--- | :--- | :--- | :--- |
+| `LU` | Highest | Fast for small grids | You need robustness on small problems. This is the most likely option to run out of memory. |
+| `GAMG` | Medium | Usually fast on large diffusion problems | Default balance for large runs. Try this first when `LU` runs out of memory. |
+| `ILU` | Medium-high | Often good on small/medium grids | `GAMG` struggles but the grid is not too large. |
+| `GMRES` | Low-medium | Slower | You need less memory than `ILU`/`GAMG` but want a stronger Krylov method. |
+| `JACOBI` | Low | Slower | Memory is tight and you can tolerate more iterations. |
+| `NONE` | Lowest | Slowest, least robust | Last-resort memory saver or debugging preconditioner effects. |
+
+Example:
+```bash
+_SolverMethod = JACOBI
+```
 
 #### Output Control
 Defines the region of the grid to write to output.

@@ -24,11 +24,11 @@ program HEATFLOW_V0_3
   use constructions, only: heatblock
   use output, only: data_write, final_print
   use inputs, only: read_all_files, iverb, ntime, LPercentage
-  use inputs, only: IVERB
+  use inputs, only: IVERB, SolverMethod
   use evolution, only: simulate
   use setup, only: set_global_variables
   use INITIAL, only: initial_evolve
-  use petsc_solver, only: petsc_init, petsc_finalize
+  use petsc_solver, only: petsc_init, petsc_finalize, petsc_set_solver_profile
 
   implicit none
    real(real12) :: cpustart, cpuend, cpustart2, progress
@@ -54,6 +54,7 @@ program HEATFLOW_V0_3
    ! ... and arrays                                              !
    !-------------------------------------------------------------!
    CALL read_all_files()                                         
+   CALL petsc_set_solver_profile(SolverMethod, int(IVERB))
    
    CALL cpu_time(cpustart2)                                      
    CALL set_global_variables() 

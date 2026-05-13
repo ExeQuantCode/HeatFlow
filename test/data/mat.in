@@ -7,6 +7,6 @@ rho = 997
 sound_speed = 8430
 tau = 1e-12
 em = 0
+vel = 0 0 0
 0
-
 

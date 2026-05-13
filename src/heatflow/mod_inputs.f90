@@ -99,6 +99,7 @@ module inputs
 
   ! Name of simiulation run
   character(1024) :: RunName
+  character(32) :: SolverMethod
   character(12)::Periodic
   ! Essentially it is the system that is being simulated
   type(heatblock), dimension(:,:,:), allocatable :: grid 
@@ -198,7 +199,7 @@ contains
   subroutine read_param(unit)
     implicit none
     integer:: unit, Reason
-    integer,dimension(50)::readvar
+    integer,dimension(51)::readvar
     character(1024)::buffer
 
     readvar(:)=0
@@ -215,6 +216,7 @@ contains
     WriteToTxt = .FALSE.
     CompressedOutput = .FALSE.
     HDF5Output = .FALSE.
+    SolverMethod = 'GAMG'
     ntime = 10
     heated_steps = 0
     write_every = 1
@@ -323,6 +325,8 @@ contains
        CALL assignL(buffer,"_CylindricalGrid",CylindricalGrid,readvar(48))
        CALL assignD(buffer,"kappaBoundNr",kappaBoundNr,readvar(49))
        CALL assignD(buffer,"T_BathNr",T_BathNr,readvar(50))
+       CALL assignS(buffer,"_SolverMethod",SolverMethod,readvar(51))
+       CALL assignS(buffer,"SolverMethod",SolverMethod,readvar(51))
 
     end do
     
@@ -561,6 +565,9 @@ contains
     if (readvar(50) .eq. 0) then
        readvar(50) = 1
     end if
+    if (readvar(51) .eq. 0) then
+       readvar(51) = 1
+    end if
 
     if (any(readvar.eq.0)) then
        write(6,*)
@@ -595,6 +602,7 @@ contains
        write(6,'(A35,L1)')      '  _WriteToTxt        = ', WriteToTxt
        write(6,'(A35,L1)')      '  _CompressedOutput  = ', CompressedOutput
        write(6,'(A35,L1)')      '  _HDF5Output        = ', HDF5Output
+       write(6,'(A35,A)')       '  _SolverMethod      = ', trim(SolverMethod)
        write(6,'(A35,I12)')     '   ntime       = ', ntime
        write(6,'(A35,I12)')     '   heattime    = ', heated_steps
        write(6,'(A35,I12)')     '   write_every = ', write_every
@@ -915,4 +923,3 @@ subroutine read_mat(unit)
   end subroutine assignV
 
 end module inputs
-

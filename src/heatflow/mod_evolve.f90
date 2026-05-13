@@ -105,7 +105,7 @@ contains
 
     ! Construct S vector 
 
-    if (itime .le. 2) then
+    if ((itime .le. 2) .and. (IVERB .gt. 3)) then
        block
          integer(int12) :: dbg_ix, dbg_idx, dbg_k
          real(real12) :: dbg_Ax, dbg_rowsum
@@ -211,67 +211,17 @@ contains
    allocate(x(NA))
    x = Temp_p + (Temp_p - Temp_pp)
    if (any(x - Temp_p .lt. TINY)) x = x + TINY ! avoid nan solver issue
-   
-   if (IVERB .gt. 3) then
-      write(*,*) "========== PETSc Solver Diagnostics =========="
-      write(*,*) "Time step:", itime
-      write(*,*) "Initial guess x: min=", minval(x), " max=", maxval(x), " avg=", sum(x)/size(x)
-      write(*,*) "RHS S: min=", minval(S), " max=", maxval(S), " avg=", sum(S)/size(S)
-      write(*,*) "Temp_p: min=", minval(Temp_p), " max=", maxval(Temp_p), " avg=", sum(Temp_p)/size(Temp_p)
-      write(*,*) "Matrix acsr: min=", minval(acsr), " max=", maxval(acsr), " avg=", sum(acsr)/size(acsr)
-      write(*,*) "Matrix size: n=", NA32, " nnz=", size(acsr)
-   end if
-   
-   ! Convert to 32-bit integers for PETSc (only on first call)
-   if (.not. allocated(ia32)) then
-      allocate(ia32(size(ia)), ja32(size(ja)))
-      ia32 = int(ia, kind=kind(ia32))
-      ja32 = int(ja, kind=kind(ja32))
-   end if
-   NA32 = int(NA, kind=kind(NA32))
-   
-   call solve_petsc_csr(NA32, ia32, ja32, acsr, S, x, tol, itmax)
-   
-   if (itime .le. 2) then
-      block
-        integer(int12) :: dbg_ix, dbg_idx, dbg_k
-        real(real12) :: dbg_Ax, dbg_resid
-        write(*,*) ''
-        write(*,*) '--- POST-SOLVE: Solution at iy=16, iz=1 ---'
-        write(*,'(A6,A14,A14,A14,A14)') &
-             'ix', 'Temp_p(old)', 'x(new)', 'deltaT', 'residual'
-        do dbg_ix = 1, nx
-           dbg_idx = dbg_ix + (16-1)*nx
-           ! Compute H*x for this row (should equal S)
-           dbg_Ax = 0.0_real12
-           do dbg_k = ia(dbg_idx), ia(dbg_idx+1)-1
-              dbg_Ax = dbg_Ax + acsr(dbg_k) * x(ja(dbg_k))
-           end do
-           dbg_resid = dbg_Ax - S(dbg_idx)
-           write(*,'(I6,ES14.6,ES14.6,ES14.6,ES14.6)') &
-                dbg_ix, Temp_p(dbg_idx), x(dbg_idx), &
-                x(dbg_idx) - Temp_p(dbg_idx), dbg_resid
-        end do
-        write(*,*) ''
-        write(*,*) '--- POST-SOLVE: Heater region iy=32 ---'
-        write(*,'(A6,A14,A14,A14)') 'ix', 'Temp_p(old)', 'x(new)', 'deltaT'
-        do dbg_ix = 1, min(10, nx)
-           dbg_idx = dbg_ix + (32-1)*nx
-           write(*,'(I6,ES14.6,ES14.6,ES14.6)') &
-                dbg_ix, Temp_p(dbg_idx), x(dbg_idx), &
-                x(dbg_idx) - Temp_p(dbg_idx)
-        end do
-        write(*,*) '=========================================================='
-      end block
-   end if
-   
-   ! Note: Don't deallocate ia32, ja32 - keep them for next time step
+
+   ! describe clearly all inputs
+   ! S: RHS vector
+   ! x: initial guess for the solution
+   ! tol: convergence tolerance
+   ! itmax: maximum number of iterations
+   ! acsr: CSR matrix representation
+   call GPU_solver(acsr, S, x, tol, itmax)
 
 
-         ! err=E)
-         
-   !
-    if (any(isnan(x(:)))) then
+   if (any(isnan(x(:)))) then
        write(0,*) "fatal error: NAN in x tempurature vector"
        write(0,*) 'time step ', itime, "      T   ", sum(Temp_p)/size(Temp_p), E ,iter
        write(0,*) 'time step ',itime, "      x   ", sum(x)/size(x), E ,iter
@@ -287,7 +237,7 @@ contains
     Temp_pp = Temp_p
     Temp_p = x
 
-    if (itime .le. 2) then
+    if ((itime .le. 2) .and. (IVERB .gt. 3)) then
        block
          integer(int12) :: dbg_ix2, dbg_idx2
          write(*,*) ''
@@ -308,4 +258,3 @@ contains
 
 
 end module evolution
-
