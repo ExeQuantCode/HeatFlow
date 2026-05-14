@@ -6,7 +6,7 @@ It covers:
 
 - system prerequisites
 - PETSc installation from source
-- CUDA and Kokkos requirements
+- the current native CUDA backend requirements
 - HeatFlow GPU build setup
 - running on a GPU node
 - benchmarking CPU vs GPU
@@ -14,22 +14,24 @@ It covers:
 
 This guide matches the current GPU flow in this repository:
 
-- GPU backend is PETSc plus Kokkos plus CUDA
+- GPU backend is PETSc native CUDA, using `MATAIJCUSPARSE` and `VECCUDA`
 - HeatFlow GPU target is `make gpu`
 - benchmark helper is `./benchmark.sh`
 - the currently verified runtime uses `-use_gpu_aware_mpi 0` unless the MPI on your site is GPU-aware
 
 This guide is written for the `117-gpu-cuda` branch.
 
-## 1. Scope and Current Assumptions
+If you are targeting AMD, use `amd_gpu_walkthrough.md` instead. If you are targeting Bede specifically, use `bede.md` for the cluster-specific module stack and notes.
+
+## 1. Scope and current assumptions
 
 The repository currently assumes:
 
-- PETSc is installed separately and already includes CUDA, Kokkos, and Kokkos-Kernels support
+- PETSc is installed separately and already includes CUDA support
 - the PETSc install prefix contains `lib/petsc/conf/petscvariables`
-- HeatFlow is built against that install prefix
+- HeatFlow is built against that install prefix for the GPU path
 
-Important: the GPU section of the current Makefile still contains some machine-specific defaults. On a fresh HPC system, you should expect to override at least some of these at build time:
+Important: the GPU section of the current `Makefile` still contains some machine-specific defaults. On a fresh machine or HPC system, expect to override at least some of these at build time:
 
 - `GPU_PETSC_DIR`
 - `GPU_FC`
@@ -39,7 +41,7 @@ Important: the GPU section of the current Makefile still contains some machine-s
 
 This walkthrough shows how to do that explicitly.
 
-## 2. What You Need
+## 2. What you need
 
 You need all of the following on the build side:
 
@@ -53,13 +55,13 @@ You need all of the following on the build side:
 - a Fortran compiler
 - MPI wrapper compilers: `mpicc`, `mpicxx`, `mpifort`
 - BLAS and LAPACK, ideally OpenBLAS
-- a CUDA toolkit or NVHPC CUDA installation
+- a CUDA toolkit or site-provided CUDA installation
 
-You also need an NVIDIA driver and GPU on the runtime nodes.
+You also need an NVIDIA driver and GPU on the runtime node.
 
 ### Package-manager example
 
-If you are on a normal Linux machine with root access, install the basics first. For Ubuntu-like systems this is a reasonable starting point:
+If you are on a normal Linux machine with root access, this is a reasonable starting point on Ubuntu-like systems:
 
 ```bash
 sudo apt-get update
@@ -79,7 +81,7 @@ Then install CUDA using your site or vendor instructions.
 
 ### HPC module example
 
-On an HPC system, you usually do not install packages directly. Instead, load modules similar to:
+On an HPC system, you normally load modules instead of installing packages directly:
 
 ```bash
 module purge
@@ -93,9 +95,9 @@ module load openblas
 
 Use the module names that exist on your site.
 
-## 3. Check the Toolchain Before You Build Anything
+## 3. Check the toolchain before building anything
 
-The single most important compatibility rule is:
+The most important compatibility rule is:
 
 **PETSc Fortran modules and HeatFlow must be built with the same underlying GNU Fortran major version.**
 
@@ -130,16 +132,16 @@ nvidia-smi
 nvcc --version
 ```
 
-If you are using NVHPC instead of a standalone CUDA toolkit, find the CUDA root manually and use that path later for PETSc.
+If you are using a site-managed CUDA install rather than `/usr/local/cuda`, note the real CUDA root now because you will need it for PETSc configure.
 
-## 4. Pick a Clean Directory Layout
+## 4. Pick a clean directory layout
 
 The exact paths do not matter, but using a stable layout makes debugging much easier.
 
 ```bash
 export HF_ROOT=$HOME/HeatFlow
 export PETSC_SRC=$HOME/petsc-src
-export PETSC_PREFIX=$HOME/petsc-kokkos
+export PETSC_PREFIX=$HOME/petsc-cuda
 export CUDA_DIR=${CUDA_HOME:-/usr/local/cuda}
 export CUDA_ARCH=86
 ```
@@ -162,7 +164,7 @@ cd "$HF_ROOT"
 git checkout 117-gpu-cuda
 ```
 
-## 6. Install PETSc
+## 6. Install PETSc for the native CUDA backend
 
 This is the part that must work before `make gpu` can work.
 
@@ -171,16 +173,15 @@ HeatFlow expects PETSc to provide:
 - shared libraries
 - Fortran module files like `petscksp.mod`
 - CUDA support
-- Kokkos support
-- Kokkos-Kernels support
+- native CUDA matrix and vector families such as `MATAIJCUSPARSE` and `VECCUDA`
 - an installed `petscvariables` file under the install prefix
 
 ### 6.1 Recommended PETSc version
 
-The current branch has been validated against a PETSc 3.21.x based install. If you are building from scratch, start with the current stable PETSc if it configures cleanly on your site. If you want to reproduce the currently verified stack more closely, use:
+Use a current PETSc release with native CUDA support. A good baseline is:
 
 ```bash
-git clone -b v3.21.6 https://gitlab.com/petsc/petsc.git "$PETSC_SRC"
+git clone -b v3.25.1 https://gitlab.com/petsc/petsc.git "$PETSC_SRC"
 ```
 
 ### 6.2 Build PETSc in a clean compiler environment
@@ -192,7 +193,7 @@ export MPI_CC=$(command -v mpicc)
 export MPI_CXX=$(command -v mpicxx)
 export MPI_FC=$(command -v mpifort)
 export GFORTRAN_BIN=$(dirname "$(readlink -f "$(command -v gfortran)")")
-export BUILD_PATH="$GFORTRAN_BIN:/usr/bin:/bin"
+export BUILD_PATH="$GFORTRAN_BIN:$PATH"
 
 env PATH="$BUILD_PATH" "$MPI_FC" --version
 env PATH="$BUILD_PATH" "$MPI_FC" -show
@@ -202,7 +203,7 @@ If that output does not match the compiler family you expect, fix that first.
 
 ### 6.3 Preferred PETSc configure command
 
-This is the simplest starting point on a fresh machine where PETSc is allowed to download Kokkos and Kokkos-Kernels itself:
+This is the simplest starting point on a fresh machine or cluster for the current HeatFlow GPU path:
 
 ```bash
 cd "$PETSC_SRC"
@@ -215,11 +216,6 @@ env PATH="$BUILD_PATH" ./configure \
   --with-cuda=1 \
   --with-cuda-dir="$CUDA_DIR" \
   --with-cuda-arch="$CUDA_ARCH" \
-  --with-kokkos=1 \
-  --download-kokkos \
-  --with-kokkos-kernels=1 \
-  --download-kokkos-kernels \
-  --with-openmp=1 \
   --with-shared-libraries=1 \
   --with-debugging=0 \
   --with-x=0 \
@@ -236,34 +232,13 @@ make all -j"$(nproc)"
 make install
 ```
 
-### 6.4 If the cluster blocks PETSc downloads
+If you want the first error to be easier to read on a cluster, start with `make all -j1` instead.
 
-Some clusters block downloads from compute or login nodes. In that case you have three realistic options:
+### 6.4 If you already have a PETSc install
 
-1. Stage the PETSc dependency tarballs manually and point PETSc at them.
-2. Build Kokkos and Kokkos-Kernels separately, install them under the same prefix, and point PETSc at that prefix.
-3. Use a site-provided PETSc if it already has CUDA and Kokkos enabled.
+You do not need to rebuild PETSc if your existing prefix already exposes the native CUDA types HeatFlow now uses.
 
-If you already installed Kokkos and Kokkos-Kernels separately into `$PETSC_PREFIX`, configure PETSc like this:
-
-```bash
-env PATH="$BUILD_PATH" ./configure \
-  --prefix="$PETSC_PREFIX" \
-  --with-cc="$MPI_CC" \
-  --with-cxx="$MPI_CXX" \
-  --with-fc="$MPI_FC" \
-  --with-cuda=1 \
-  --with-cuda-dir="$CUDA_DIR" \
-  --with-cuda-arch="$CUDA_ARCH" \
-  --with-kokkos=1 \
-  --with-kokkos-dir="$PETSC_PREFIX" \
-  --with-kokkos-kernels=1 \
-  --with-kokkos-kernels-dir="$PETSC_PREFIX" \
-  --with-openmp=1 \
-  --with-shared-libraries=1 \
-  --with-debugging=0 \
-  --with-x=0
-```
+For example, a prefix called `petsc-kokkos` is still acceptable if the actual installed PETSc headers contain `MATAIJCUSPARSE` and `VECCUDA`.
 
 ### 6.5 PETSc install checks
 
@@ -276,24 +251,16 @@ ls "$PETSC_PREFIX/lib/libpetsc.so"
 ls "$PETSC_PREFIX/lib/petsc/conf/petscvariables"
 ```
 
-Also verify that the installed PETSc exposes the Kokkos types HeatFlow uses:
+Also verify that the installed PETSc exposes the native CUDA types HeatFlow now uses:
 
 ```bash
-rg -n "MATAIJKOKKOS|MATSEQAIJKOKKOS|MATMPIAIJKOKKOS" "$PETSC_PREFIX/include"
-rg -n "VECKOKKOS|VECSEQKOKKOS|VECMPIKOKKOS" "$PETSC_PREFIX/include"
+rg -n "MATAIJCUSPARSE|MATSEQAIJCUSPARSE|MATMPIAIJCUSPARSE" "$PETSC_PREFIX/include"
+rg -n "VECCUDA|VECSEQCUDA|VECMPICUDA" "$PETSC_PREFIX/include"
 ```
 
-### 6.6 PETSc notes for newer CUDA stacks
+If those names are missing, you built the wrong PETSc variant for the current GPU path.
 
-If you pin an older PETSc release on a newer CUDA stack, you may hit issues such as:
-
-- NVTX headers missing even though CUDA is enabled
-- Kokkos configure failures because `nvcc` is not visible on `PATH`
-- link issues around `libnvJitLink`
-
-If PETSc configure fails, prefer fixing PETSc first rather than trying to work around it in HeatFlow.
-
-## 7. Build HeatFlow CPU First
+## 7. Build HeatFlow CPU first
 
 This is optional but strongly recommended. It gives you a known-good baseline before you debug the GPU toolchain.
 
@@ -325,7 +292,7 @@ At minimum, pass these:
 
 ```bash
 export GFORTRAN_BIN=$(dirname "$(readlink -f "$(command -v gfortran)")")
-export BUILD_PATH="$GFORTRAN_BIN:/usr/bin:/bin"
+export BUILD_PATH="$GFORTRAN_BIN:$PATH"
 export MPI_FC=$(command -v mpifort)
 ```
 
@@ -379,7 +346,13 @@ The expected GPU binary is:
 ls "$HF_ROOT/bin/ThermalFlow-gpu.x"
 ```
 
-## 9. Prepare a Run Directory
+When the updated code runs successfully, the banner should say:
+
+```text
+[Solver] Backend: PETSc native CUDA (GPU)
+```
+
+## 9. Prepare a run directory
 
 HeatFlow expects a run directory with an `inputs/` subdirectory containing:
 
@@ -397,7 +370,7 @@ case-root/
     mat.in
 ```
 
-## 10. Run on a GPU Node
+## 10. Run on a GPU node
 
 If you are on a cluster, get a GPU allocation first. For Slurm, a typical interactive example is:
 
@@ -434,7 +407,7 @@ If your MPI is not GPU-aware and you want a persistent default, do this instead:
 export PETSC_OPTIONS="-use_gpu_aware_mpi 0"
 ```
 
-## 11. Run the CPU vs GPU Benchmark
+## 11. Run the CPU vs GPU benchmark
 
 The repository already contains a benchmark helper that rebuilds both binaries and runs them:
 
@@ -453,17 +426,31 @@ What it does:
 
 The current script already applies `-use_gpu_aware_mpi 0` for the GPU path.
 
-## 12. Known-Good Example
+## 12. Fresh benchmark on this machine
 
-On the currently verified Cloak case, a single-repeat benchmark gave approximately:
+The current code path was re-tested on this machine after switching the GPU solver from PETSc Kokkos types to PETSc native CUDA types.
 
-- CPU: `94.802 s`
-- GPU: `25.370 s`
-- speedup: `3.74x`
+Machine:
 
-Treat this as a sanity check only. Another system or another case can be faster or slower.
+- GPU: NVIDIA RTX A1000
+- Driver: `580.126.09`
+- Case: `Cloak`
+- Repeats: `3`
 
-## 13. Common Failure Modes
+Measured results:
+
+- CPU median: `94.079 s`
+- GPU median: `26.208 s`
+- GPU speedup: `3.59x`
+
+Individual runs:
+
+- CPU: `94.079 94.033 94.213`
+- GPU: `26.128 26.208 26.707`
+
+Treat this as a sanity check rather than a universal performance target. Another GPU, another PETSc build, or another case can be faster or slower.
+
+## 13. Common failure modes
 
 ### PETSc module version mismatch
 
@@ -513,150 +500,36 @@ Fix:
 - find the actual library locations on your site
 - pass them through `GPU_EXTRA_LIBS`
 
-### Kokkos configure fails inside PETSc
+### PETSc install does not expose native CUDA types
+
+Symptom:
+
+- `MATAIJCUSPARSE` is missing from `petscmat.h`
+- `VECCUDA` is missing from `petscvec.h`
+- the GPU build fails when compiling `mod_petsc_solver.f90`
+
+Fix:
+
+- rebuild PETSc with `--with-cuda=1`
+- verify the installed headers under your chosen prefix
+- point `GPU_PETSC_DIR` at the correct install prefix
+
+### PETSc configure cannot find CUDA cleanly
 
 Fix:
 
 - make sure `nvcc` is visible on `PATH`
-- make sure `--with-cuda-dir` points to the real CUDA root
-- if bundled downloads fail, preinstall Kokkos and Kokkos-Kernels and point PETSc at them
+- set `CUDA_DIR` to the real CUDA root
+- pass `--with-cuda-dir` explicitly
+- verify `--with-cuda-arch` matches the actual GPU
 
-### PETSc install is incomplete
+## 14. Minimal checklist
 
-Symptom:
-
-- `make gpu` fails because `petscksp.mod` or `petscvariables` is missing
-
-Fix:
-
-- re-run PETSc build
-- re-run `make install`
-- verify the install prefix, not the source tree
-
-## 14. Short Checklist
-
-If you want the shortest possible validation path, check these in order:
-
-1. `mpicc`, `mpicxx`, `mpifort`, and `gfortran` all resolve to the toolchain you really intend to use.
-2. `nvidia-smi` and `nvcc --version` both work.
-3. PETSc builds with CUDA, Kokkos, Kokkos-Kernels, shared libs, and Fortran enabled.
-4. `$PETSC_PREFIX/include/petscksp.mod` exists.
-5. `$PETSC_PREFIX/lib/petsc/conf/petscvariables` exists.
-6. `make` builds the CPU binary.
-7. `make gpu ...` builds the GPU binary.
-8. A one-rank GPU run works with `-use_gpu_aware_mpi 0`.
-9. `./benchmark.sh /path/to/case-root 1` completes and writes a valid result file.
-
-If all nine steps pass, your fresh-machine GPU install is in good shape.
-
-The current verified build runs on an OpenMPI installation that is not GPU-aware. Without this flag, PETSc aborts with a message similar to:
-
-```text
-PETSc is configured with GPU support, but your MPI is not GPU-aware
-```
-
-If your MPI is GPU-aware, you can remove this option.
-
-If your cluster is not GPU-aware and you do not want to type the flag every time, set:
-
-```bash
-export PETSC_OPTIONS="-use_gpu_aware_mpi 0"
-```
-
-## 10. Run the CPU vs GPU Benchmark
-
-The repository already contains a benchmark helper:
-
-```bash
-cd "$HF_ROOT"
-./benchmark.sh /path/to/case-root 3
-```
-
-What it does:
-
-- rebuilds the CPU binary
-- rebuilds the GPU binary
-- runs both backends
-- extracts `simulation wall time`
-- writes results to `benchmark_results.txt` in the case directory
-
-The current script already applies the `-use_gpu_aware_mpi 0` fallback to the GPU run.
-
-## 11. Known-Good Example
-
-On the verified Cloak case used during development, a single-run benchmark produced:
-
-- CPU: `94.802 s`
-- GPU: `25.370 s`
-- speedup: about `3.74x`
-
-Treat this only as a sanity check, not as a guarantee for another cluster or another case.
-
-## 12. Troubleshooting
-
-### PETSc Fortran module mismatch
-
-Symptom:
-
-```text
-Cannot read module file 'petscksp.mod' ... created by a different version of GNU Fortran
-```
-
-Fix:
-
-- build PETSc and HeatFlow with the same underlying `gfortran` major version
-- inspect `mpifort -show`
-- set `GPU_GFORTRAN_PATH` so the wrapper picks up the correct compiler
-
-### PETSc says MPI is not GPU-aware
-
-Symptom:
-
-```text
-PETSc is configured with GPU support, but your MPI is not GPU-aware
-```
-
-Fix:
-
-- add `-use_gpu_aware_mpi 0`
-- or set `PETSC_OPTIONS="-use_gpu_aware_mpi 0"`
-
-### Linker cannot find CUDA, Kokkos, or MPI libraries
-
-Fix:
-
-- check that `GPU_PETSC_DIR` points at the PETSc install prefix, not the PETSc source tree
-- verify `$GPU_PETSC_DIR/lib/petsc/conf/petscvariables` exists
-- override `GPU_MPI_LIBDIRS` and `GPU_EXTRA_LIBS` for your site
-
-### PETSc configure/build fails on NVTX headers
-
-Older PETSc plus newer CUDA toolkits can fail on `nvToolsExt.h` or the NVTX logging code.
-
-If you hit this:
-
-- prefer a newer PETSc release if your site allows it
-- or patch PETSc so NVTX-specific files are guarded by `HAVE_CUDA_NVTX` rather than `HAVE_CUDA`
-- keep `--with-x=0` in the PETSc configure to avoid unrelated X11 viewer build failures on headless systems
-
-### Kokkos or Kokkos-Kernels configure fails inside PETSc
-
-Fixes that usually help:
-
-- make sure `nvcc` is visible on `PATH`
-- make sure `--with-cuda-dir` points at the real CUDA toolkit root
-- if PETSc cannot build bundled Kokkos cleanly on your site, preinstall Kokkos and Kokkos-Kernels and use `--with-kokkos-dir` and `--with-kokkos-kernels-dir`
-
-## 13. Minimal Fresh-Machine Checklist
-
-Use this as a final pass before you blame HeatFlow itself:
-
-1. `mpicc`, `mpicxx`, `mpifort`, and `gfortran` all resolve to the toolchain you intend to use.
-2. PETSc builds with CUDA, Kokkos, Kokkos-Kernels, shared libs, and Fortran enabled.
-3. `$PETSC_PREFIX/lib/petsc/conf/petscvariables` exists.
-4. `make` builds the CPU binary.
-5. `make gpu` builds the GPU binary.
-6. A one-rank GPU run works with `-use_gpu_aware_mpi 0`.
-7. `./benchmark.sh /path/to/case-root 1` completes and writes `benchmark_results.txt`.
-
-If all seven steps pass, you have a good baseline install.
+1. Load a consistent compiler, MPI, BLAS, and CUDA toolchain.
+2. Verify `mpifort` and `gfortran` resolve to the same compiler family.
+3. Build or reuse a PETSc install that exposes `MATAIJCUSPARSE` and `VECCUDA`.
+4. Build HeatFlow CPU first.
+5. Build HeatFlow GPU with explicit `GPU_PETSC_DIR`, `GPU_FC`, and `GPU_GFORTRAN_PATH`.
+6. Override `GPU_MPI_LIBDIRS` and `GPU_EXTRA_LIBS` if your site paths differ from the Makefile defaults.
+7. Start runtime tests with `-use_gpu_aware_mpi 0`.
+8. Use `./benchmark.sh /path/to/case-root 3` to confirm the end-to-end CPU/GPU speedup.

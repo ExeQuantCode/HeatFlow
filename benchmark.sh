@@ -72,7 +72,7 @@ make -s
 echo "  → $CPU_BIN"
 
 echo ""
-bold "Step 2/2 – Building GPU binary (PETSc+Kokkos/CUDA)"
+bold "Step 2/2 – Building GPU binary (PETSc native CUDA)"
 make gpuclean -s 2>/dev/null || true
 make gpu -s
 [[ -f "$GPU_BIN" ]] || die "GPU binary not found after build: $GPU_BIN"
