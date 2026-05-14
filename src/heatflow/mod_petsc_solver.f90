@@ -139,10 +139,15 @@ contains
 
     call MatCreate(PETSC_COMM_WORLD, A_saved, ierr)
     call MatSetSizes(A_saved, nlocal, nlocal, n, n, ierr)
+    !call MatSetType(A_saved, MATAIJKOKKOS,ierr)
     call MatSetType(A_saved, MATAIJ, ierr)
     call MatSeqAIJSetPreallocation(A_saved, 0, diag_nnz_saved, ierr)
     call MatMPIAIJSetPreallocation(A_saved, 0, diag_nnz_saved, 0, offdiag_nnz_saved, ierr)
-
+    !call MatCreate(PETSC_COMM_SELF, A_saved, ierr)
+    !call MatSetSizes(A_saved, n, n, n, n, ierr)
+    !call MatSetType(A_saved, MATAIJKOKKOS, ierr)
+    !call MatSeqAIJSetPreallocation(A_saved, 0, d_nnz, ierr)
+    
     allocate(cols0(max_row_nnz), vals0(max_row_nnz))
     do local_row = 1, nlocal
       global_row = row_start_saved + local_row - 1
