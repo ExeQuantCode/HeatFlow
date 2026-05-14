@@ -18,8 +18,11 @@ module petsc_solver
   !   JACOBI  : BiCGSTAB with Jacobi; low memory, often slower.
   !   NONE    : BiCGSTAB without a preconditioner; lowest memory, slowest/least robust.
   character(len=SOLVER_PROFILE_LEN), save :: solver_profile = 'GAMG'
+  ! set this parameter to compile with or without cuda
+  logical, parameter :: use_cuda = .true.
   integer, save :: solver_verbosity = 1
 
+  
   ! Persistent PETSc objects (reused across timesteps for memory efficiency)
   Mat, save :: A_saved
   Vec, save :: bb_saved
@@ -29,7 +32,7 @@ module petsc_solver
   integer, save :: n_saved = 0
   logical, save :: petsc_objects_nulled = .false.
   logical, save :: matrix_values_loaded = .false.
-
+  
 contains
 
   subroutine petsc_set_solver_profile(profile, verbosity)
@@ -83,7 +86,7 @@ contains
       case ('LU')
         write(*,'(A)') ' [Solver] LU/direct: most robust for small runs, but highest memory. Avoid for large grids.'
       case ('GAMG')
-        write(*,'(A)') ' [Solver] GAMG+GMRES: balanced large-run default; medium memory, usually much faster than low-memory methods.'
+        write(*,'(A)') ' [Solver] GAMG+GMRES: balanced large-run; medium memory, usuallyfaster than low-memory methods.'
       case ('ILU')
         write(*,'(A)') ' [Solver] ILU+BiCGSTAB: moderate memory and robust, but can still grow too large on big 3D grids.'
       case ('GMRES')
@@ -230,20 +233,43 @@ contains
       ! Create matrix with exact preallocation (most memory-efficient)
       
       ! Use a temporary local Mat object first, then assign
-      block
-        Mat :: A_temp
-        call MatCreate(PETSC_COMM_SELF, A_temp, ierr)
-        
-        if (ierr == 0) then
-          call MatSetSizes(A_temp, np, np, np, np, ierr)
-          
-          call MatSetType(A_temp, MATSEQAIJ, ierr)
-          
-          call MatSeqAIJSetPreallocation(A_temp, zerop, d_nnz, ierr)
-          
-          A_saved = A_temp
-        end if
-      end block
+      !###################################################################
+      ! split for cuda enabled
+      !###################################################################
+      if (use_cuda) then
+         block
+           Mat :: A_temp
+           
+           call MatCreate(PETSC_COMM_SELF, A_temp, ierr)
+           if (ierr == 0) call MatSetSizes(A_temp, np, np, np, np, ierr)
+           
+           ! Allows -mat_type aijcusparse to take effect.
+           if (ierr == 0) call MatSetFromOptions(A_temp, ierr)
+           
+           ! Preallocate AIJ-style storage. For -mat_type aijcusparse this should create
+           ! the CUDA/cuSPARSE-backed sequential AIJ matrix.
+           if (ierr == 0) call MatSeqAIJSetPreallocation(A_temp, zerop, d_nnz, ierr)
+           
+           if (ierr == 0) call MatSetUp(A_temp, ierr)
+           
+           A_saved = A_temp
+         end block
+      else
+         block
+           Mat :: A_temp
+           call MatCreate(PETSC_COMM_SELF, A_temp, ierr)
+           
+           if (ierr == 0) then
+              call MatSetSizes(A_temp, np, np, np, np, ierr)
+              
+              call MatSetType(A_temp, MATSEQAIJ, ierr)
+              
+              call MatSeqAIJSetPreallocation(A_temp, zerop, d_nnz, ierr)
+              
+              A_saved = A_temp
+           end if
+         end block
+      end if
       
       
       if (ierr /= 0) then
@@ -257,15 +283,37 @@ contains
       
       
       ! Create persistent vectors - use local temps like we did for matrix
-      block
-        Vec :: bb_temp, xx_temp
-        call VecCreateSeq(PETSC_COMM_SELF, np, bb_temp, ierr)
-        bb_saved = bb_temp
-        
-        call VecCreateSeq(PETSC_COMM_SELF, np, xx_temp, ierr)
-        xx_saved = xx_temp
-      end block
-      
+      !###################################################################
+      ! split for cuda enabled
+      !###################################################################
+      if (use_cuda) then
+         block
+           Vec :: bb_temp, xx_temp
+           
+           call VecCreate(PETSC_COMM_SELF, bb_temp, ierr)
+           if (ierr == 0) call VecSetSizes(bb_temp, np, np, ierr)
+           
+           ! Allows -vec_type cuda to take effect.
+           if (ierr == 0) call VecSetFromOptions(bb_temp, ierr)
+           
+           bb_saved = bb_temp
+           
+           ! Duplicate preserves the chosen vector type, e.g. cuda.
+           if (ierr == 0) call VecDuplicate(bb_saved, xx_temp, ierr)
+           
+           xx_saved = xx_temp
+         end block
+      else
+         block
+           Vec :: bb_temp, xx_temp
+           call VecCreateSeq(PETSC_COMM_SELF, np, bb_temp, ierr)
+           bb_saved = bb_temp
+           
+           call VecCreateSeq(PETSC_COMM_SELF, np, xx_temp, ierr)
+           xx_saved = xx_temp
+         end block
+      end if
+
       
       ! Create and configure KSP solver (persistent across timesteps)
       block
