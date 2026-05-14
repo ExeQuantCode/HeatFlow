@@ -173,12 +173,25 @@ GPU_GFORTRAN_PATH ?= /home/hm556/miniforge3/envs/py3.11/bin:/usr/bin:/bin
 GPU_FC           ?= env PATH=$(GPU_GFORTRAN_PATH) /usr/bin/mpifort
 GPU_BUILD_DIR    := ./obj/gpu
 GPU_PETSC_VARS   := $(GPU_PETSC_DIR)/lib/petsc/conf/petscvariables
+GPU_ARCH         := $(shell uname -m)
+GPU_CUDA_TRIPLET := $(if $(filter aarch64 arm64,$(GPU_ARCH)),sbsa-linux,x86_64-linux)
 
 GPU_PETSC_INC    := -I$(GPU_PETSC_DIR)/include
-GPU_MPI_LIBDIRS  := -L/usr/lib/x86_64-linux-gnu/openmpi/lib -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib
-GPU_EXTRA_LIBS   := -L/opt/nvidia/hpc_sdk/Linux_x86_64/26.3/cuda/12.9/targets/x86_64-linux/lib \
-	-Wl,-rpath,/opt/nvidia/hpc_sdk/Linux_x86_64/26.3/cuda/12.9/targets/x86_64-linux/lib \
-	-lnvJitLink /usr/lib/x86_64-linux-gnu/libudev.so.1 /usr/lib/x86_64-linux-gnu/libcap.so.2
+GPU_MPI_LIBDIRS  ?=
+GPU_NVJITLINK_FILE := $(firstword $(wildcard \
+	$(CUDA_DIR)/targets/$(GPU_CUDA_TRIPLET)/lib/libnvJitLink.so* \
+	$(CUDA_DIR)/lib64/libnvJitLink.so* \
+	/usr/local/cuda/targets/$(GPU_CUDA_TRIPLET)/lib/libnvJitLink.so* \
+	/usr/local/cuda/lib64/libnvJitLink.so* \
+	/opt/nvidia/hpc_sdk/Linux_$(GPU_ARCH)/*/cuda/*/targets/$(GPU_CUDA_TRIPLET)/lib/libnvJitLink.so*))
+GPU_NVJITLINK_DIR  := $(patsubst %/,%,$(dir $(GPU_NVJITLINK_FILE)))
+GPU_LIBUDEV_FILE   := $(firstword $(wildcard /usr/lib/*/libudev.so.1 /lib/*/libudev.so.1))
+GPU_LIBCAP_FILE    := $(firstword $(wildcard /usr/lib/*/libcap.so.2 /lib/*/libcap.so.2))
+ifneq ($(strip $(GPU_NVJITLINK_DIR)),)
+GPU_NVJITLINK_FLAGS := -L$(GPU_NVJITLINK_DIR) -Wl,-rpath,$(GPU_NVJITLINK_DIR) -lnvJitLink
+endif
+GPU_AUTO_EXTRA_LIBS := $(strip $(GPU_NVJITLINK_FLAGS) $(GPU_LIBUDEV_FILE) $(GPU_LIBCAP_FILE))
+GPU_EXTRA_LIBS   ?= $(GPU_AUTO_EXTRA_LIBS)
 GPU_PETSC_LIB    := $(GPU_MPI_LIBDIRS) $(shell awk -F' = ' '/^PETSC_WITH_EXTERNAL_LIB = /{print $$2}' $(GPU_PETSC_VARS)) $(GPU_EXTRA_LIBS)
 
 GPU_BLAS_FLAGS   := \
