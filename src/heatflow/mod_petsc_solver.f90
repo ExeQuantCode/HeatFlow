@@ -41,7 +41,7 @@ contains
     call MPI_Comm_rank(PETSC_COMM_WORLD, comm_rank_saved, ierr)
     call MPI_Comm_size(PETSC_COMM_WORLD, comm_size_saved, ierr)
 #ifdef HEATFLOW_GPU
-  if (comm_rank_saved == 0) write(*,'(A)') ' [Solver] Backend: PETSc+Kokkos/CUDA (GPU)'
+  if (comm_rank_saved == 0) write(*,'(A)') ' [Solver] Backend: PETSc native CUDA (GPU)'
 #else
     if (comm_rank_saved == 0) write(*,'(A)') ' [Solver] Backend: PETSc MATAIJ (CPU)'
 #endif
@@ -145,7 +145,7 @@ contains
     call MatCreate(PETSC_COMM_WORLD, A_saved, ierr)
     call MatSetSizes(A_saved, nlocal, nlocal, n, n, ierr)
 #ifdef HEATFLOW_GPU
-  call MatSetType(A_saved, MATAIJKOKKOS, ierr)
+  call MatSetType(A_saved, MATAIJCUSPARSE, ierr)
 #else
     call MatSetType(A_saved, MATAIJ, ierr)
 #endif
@@ -265,7 +265,7 @@ contains
 #ifdef HEATFLOW_GPU
       call VecCreate(PETSC_COMM_WORLD, bb_saved, ierr)
       call VecSetSizes(bb_saved, nlocal, n, ierr)
-  call VecSetType(bb_saved, 'kokkos', ierr)
+  call VecSetType(bb_saved, VECCUDA, ierr)
       call VecDuplicate(bb_saved, xx_saved, ierr)
 #else
       call VecCreateMPI(PETSC_COMM_WORLD, nlocal, n, bb_saved, ierr)

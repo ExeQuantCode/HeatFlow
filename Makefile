@@ -155,7 +155,7 @@ clean:
 help:
 	@echo "Targets:"
 	@echo "  make / make all    - build optimized (CPU, system PETSc)"
-	@echo "  make gpu           - build GPU version (PETSc+Kokkos/CUDA)"
+	@echo "  make gpu           - build GPU version (PETSc native CUDA)"
 	@echo "  make debug         - debug build"
 	@echo "  make run           - run distributed across all cores via MPI"
 	@echo "  make clean         - remove objects/modules"
@@ -165,7 +165,7 @@ help:
 	@echo "Parallel build: make -j$(NCORES)"
 
 ####################################################################
-# GPU BUILD  (PETSc + Kokkos/CUDA)
+# GPU BUILD  (PETSc native CUDA)
 ####################################################################
 
 GPU_PETSC_DIR    ?= /home/hm556/petsc-kokkos
@@ -199,7 +199,7 @@ gpu: show_gpu $(GPU_TARGET)
 	@echo "[GPU] Build complete: $(GPU_TARGET)"
 
 show_gpu:
-	@printf 'Building %s (PETSc+Kokkos/CUDA, GPU backend)\n' '$(GPU_NAME)'
+	@printf 'Building %s (PETSc native CUDA, GPU backend)\n' '$(GPU_NAME)'
 
 $(GPU_BUILD_DIR):
 	mkdir -p $@
