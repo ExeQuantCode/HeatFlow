@@ -33,6 +33,7 @@ program HEATFLOW_V0_3
   implicit none
    real(real12) :: cpustart, cpuend, cpustart2, progress
    integer(int12) :: itime
+   integer(8) :: wall_loop_t0, wall_loop_t1, wall_clk_rate
 
    
    !-------------------------------------------------------------!
@@ -73,6 +74,7 @@ program HEATFLOW_V0_3
    ! run simulation for 'ntime' time steps                       !
    !-------------------------------------------------------------!
 
+   CALL system_clock(wall_loop_t0, wall_clk_rate)
    do itime=1,ntime 
 
       if (petsc_is_root() .and. iverb.eq.0) then
@@ -98,6 +100,10 @@ program HEATFLOW_V0_3
       if (petsc_is_root() .and. IVERB.ge.3) CALL final_print
                                                                  
    end do  
+   CALL system_clock(wall_loop_t1)
+   if (petsc_is_root()) write(*,'(A,F12.3,A)') &
+        ' simulation wall time =', &
+        real(wall_loop_t1-wall_loop_t0,real12)/real(wall_clk_rate,real12), ' s'
    CALL petsc_finalize()
                                                       
    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!

@@ -40,6 +40,11 @@ contains
     call PetscInitialize(PETSC_NULL_CHARACTER, ierr)
     call MPI_Comm_rank(PETSC_COMM_WORLD, comm_rank_saved, ierr)
     call MPI_Comm_size(PETSC_COMM_WORLD, comm_size_saved, ierr)
+#ifdef HEATFLOW_GPU
+  if (comm_rank_saved == 0) write(*,'(A)') ' [Solver] Backend: PETSc+Kokkos/CUDA (GPU)'
+#else
+    if (comm_rank_saved == 0) write(*,'(A)') ' [Solver] Backend: PETSc MATAIJ (CPU)'
+#endif
   end subroutine petsc_init
 
   logical function petsc_is_root()
@@ -139,8 +144,11 @@ contains
 
     call MatCreate(PETSC_COMM_WORLD, A_saved, ierr)
     call MatSetSizes(A_saved, nlocal, nlocal, n, n, ierr)
-    !call MatSetType(A_saved, MATAIJKOKKOS,ierr)
+#ifdef HEATFLOW_GPU
+  call MatSetType(A_saved, MATAIJKOKKOS, ierr)
+#else
     call MatSetType(A_saved, MATAIJ, ierr)
+#endif
     call MatSeqAIJSetPreallocation(A_saved, 0, diag_nnz_saved, ierr)
     call MatMPIAIJSetPreallocation(A_saved, 0, diag_nnz_saved, 0, offdiag_nnz_saved, ierr)
     !call MatCreate(PETSC_COMM_SELF, A_saved, ierr)
@@ -254,8 +262,15 @@ contains
 
       allocate(b_local_saved(max(1, nlocal)), x_local_saved(max(1, nlocal)))
 
+#ifdef HEATFLOW_GPU
+      call VecCreate(PETSC_COMM_WORLD, bb_saved, ierr)
+      call VecSetSizes(bb_saved, nlocal, n, ierr)
+  call VecSetType(bb_saved, 'kokkos', ierr)
+      call VecDuplicate(bb_saved, xx_saved, ierr)
+#else
       call VecCreateMPI(PETSC_COMM_WORLD, nlocal, n, bb_saved, ierr)
       call VecDuplicate(bb_saved, xx_saved, ierr)
+#endif
 
       call KSPCreate(PETSC_COMM_WORLD, ksp_saved, ierr)
       call KSPSetOperators(ksp_saved, A_saved, A_saved, ierr)

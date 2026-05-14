@@ -115,7 +115,7 @@ OBJS := $(addprefix $(BUILD_DIR)/,$(notdir $(SRCS:.f90=.o)))
 
 .NOTPARALLEL:
 
-.PHONY: all debug clean distclean run help show
+.PHONY: all debug clean distclean run help show gpuclean
 
 all: show $(TARGET)
 
@@ -152,20 +152,74 @@ clean:
 	@echo "[CLEAN] objects and modules"
 	@rm -f $(BUILD_DIR)/*.o $(BUILD_DIR)/*.mod
 
-distclean: clean
-	@echo "[CLEAN] executable"
-	@rm -f $(TARGET)
-
 help:
 	@echo "Targets:"
-	@echo "  make / make all    - build optimized"
+	@echo "  make / make all    - build optimized (CPU, system PETSc)"
+	@echo "  make gpu           - build GPU version (PETSc+Kokkos/CUDA)"
 	@echo "  make debug         - debug build"
 	@echo "  make run           - run distributed across all cores via MPI"
 	@echo "  make clean         - remove objects/modules"
-	@echo "  make distclean     - remove executable"
+	@echo "  make distclean     - remove executable and GPU executable"
 	@echo "Variables:"
 	@echo "  RUN_ARGS='-ksp_type cg -pc_type gamg -ksp_rtol 1e-8 -ksp_monitor'"
 	@echo "Parallel build: make -j$(NCORES)"
+
+####################################################################
+# GPU BUILD  (PETSc + Kokkos/CUDA)
+####################################################################
+
+GPU_PETSC_DIR    ?= /home/hm556/petsc-kokkos
+GPU_GFORTRAN_PATH ?= /home/hm556/miniforge3/envs/py3.11/bin:/usr/bin:/bin
+GPU_FC           ?= env PATH=$(GPU_GFORTRAN_PATH) /usr/bin/mpifort
+GPU_BUILD_DIR    := ./obj/gpu
+GPU_PETSC_VARS   := $(GPU_PETSC_DIR)/lib/petsc/conf/petscvariables
+
+GPU_PETSC_INC    := -I$(GPU_PETSC_DIR)/include
+GPU_MPI_LIBDIRS  := -L/usr/lib/x86_64-linux-gnu/openmpi/lib -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib
+GPU_EXTRA_LIBS   := -L/opt/nvidia/hpc_sdk/Linux_x86_64/26.3/cuda/12.9/targets/x86_64-linux/lib \
+	-Wl,-rpath,/opt/nvidia/hpc_sdk/Linux_x86_64/26.3/cuda/12.9/targets/x86_64-linux/lib \
+	-lnvJitLink /usr/lib/x86_64-linux-gnu/libudev.so.1 /usr/lib/x86_64-linux-gnu/libcap.so.2
+GPU_PETSC_LIB    := $(GPU_MPI_LIBDIRS) $(shell awk -F' = ' '/^PETSC_WITH_EXTERNAL_LIB = /{print $$2}' $(GPU_PETSC_VARS)) $(GPU_EXTRA_LIBS)
+
+GPU_BLAS_FLAGS   := \
+	-lpthread -lm
+
+GPU_NAME         := ThermalFlow-gpu.x
+GPU_TARGET       := $(BIN_DIR)/$(GPU_NAME)
+
+GPU_FFLAGS       := -cpp $(OPTFLAGS) $(OMPFLAGS) -DHEATFLOW_GPU \
+	$(GPU_PETSC_INC) -J$(GPU_BUILD_DIR) -Wdate-time -D_FORTIFY_SOURCE=2i 
+
+GPU_SRCS         := $(SRCS)
+GPU_OBJS         := $(addprefix $(GPU_BUILD_DIR)/,$(notdir $(GPU_SRCS:.f90=.o)))
+
+.PHONY: gpu show_gpu gpuclean
+
+gpu: show_gpu $(GPU_TARGET)
+	@echo "[GPU] Build complete: $(GPU_TARGET)"
+
+show_gpu:
+	@printf 'Building %s (PETSc+Kokkos/CUDA, GPU backend)\n' '$(GPU_NAME)'
+
+$(GPU_BUILD_DIR):
+	mkdir -p $@
+
+$(GPU_BUILD_DIR)/%.o: $(SRC_DIR)/heatflow/%.f90 | $(GPU_BUILD_DIR)
+	$(GPU_FC) $(GPU_FFLAGS) -c $< -o $@
+
+$(GPU_BUILD_DIR)/heatflow.o: $(SRC_DIR)/heatflow.f90 | $(GPU_BUILD_DIR)
+	$(GPU_FC) $(GPU_FFLAGS) -c $< -o $@
+
+$(GPU_TARGET): $(BIN_DIR) $(GPU_OBJS)
+	$(GPU_FC) $(OPTFLAGS) $(OMPFLAGS) $(GPU_OBJS) -o $@ $(GPU_PETSC_LIB) $(GPU_BLAS_FLAGS)
+
+gpuclean:
+	@echo "[CLEAN] GPU objects and modules"
+	@rm -f $(GPU_BUILD_DIR)/*.o $(GPU_BUILD_DIR)/*.mod
+
+distclean: clean gpuclean
+	@echo "[CLEAN] executables"
+	@rm -f $(TARGET) $(GPU_TARGET)
 
 ####################################################################
 # End
