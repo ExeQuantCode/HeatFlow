@@ -30,13 +30,17 @@ If you only care about a one-rank local test, the sequential concrete names are 
 
 ## 2. Current HeatFlow source status
 
-The repository is not yet wired for this native-backend layout out of the box.
+The current branch is wired for the native CUDA layout used in this guide.
 
-The current GPU path still hard-codes PETSc Kokkos types in `src/heatflow/mod_petsc_solver.f90`, and the current `Makefile` still labels the GPU build as `PETSc+Kokkos/CUDA` and defaults `GPU_PETSC_DIR` to a `petsc-kokkos` install.
+The GPU solver now uses `MATAIJCUSPARSE` for matrices, `VECCUDA` for vectors, and the build labels the GPU target as `PETSc native CUDA`.
 
-That means this guide is the target build layout, not an unchanged build of the current branch.
+The solver also carries a PETSc Fortran handle fix for PETSc 3.25.1: saved `Mat`, `Vec`, and `KSP` objects are initialized in PETSc's recreatable destroyed state rather than `PETSC_NULL_*`, which avoids the runtime error
 
-The minimal source change is small: keep the solver structure the same, but replace the backend-specific PETSc type names.
+```text
+Cannot create PETSC_NULL_XXX object
+```
+
+on builds where the Fortran create wrappers reject explicit null-object sentinels for output handles.
 
 Conceptually, the GPU-specific matrix and vector setup should look like this:
 
@@ -160,9 +164,9 @@ rg -n "MATAIJCUSPARSE|MATSEQAIJCUSPARSE|MATMPIAIJCUSPARSE" "$PETSC_PREFIX/includ
 rg -n "VECCUDA|VECSEQCUDA|VECMPICUDA" "$PETSC_PREFIX/include"
 ```
 
-## 9. Build HeatFlow after the backend-type substitutions
+## 9. Build HeatFlow against the native CUDA PETSc install
 
-Once `mod_petsc_solver.f90` has been switched from Kokkos types to CUDA native PETSc types, build HeatFlow the same way as before, but point the GPU build at the native CUDA PETSc prefix.
+After updating to the latest branch state, build HeatFlow against the native CUDA PETSc prefix.
 
 First build the CPU version as a baseline:
 
@@ -176,34 +180,53 @@ Then build the GPU binary:
 
 ```bash
 make gpuclean
+rm -f bin/ThermalFlow-gpu.x
 make gpu \
   GPU_PETSC_DIR="$PETSC_PREFIX" \
   GPU_FC="env PATH=$BUILD_PATH $MPI_FC" \
   GPU_GFORTRAN_PATH="$BUILD_PATH"
 ```
 
+If you want to confirm that the PETSc Fortran handle fix is present before rebuilding, check that `src/heatflow/mod_petsc_solver.f90` contains the destroyed-handle initializers:
+
+```bash
+rg -n "tMat\(-2\)|tVec\(-2\)|tKSP\(-2\)" src/heatflow/mod_petsc_solver.f90
+```
+
+The current `Makefile` now probes common locations for `libnvJitLink`, `libudev.so.1`, and `libcap.so.2`, so on a normal Bede node you should not need to hard-code x86_64 paths by hand.
+
+If you already hit an old x86_64-specific link failure, update to the latest `Makefile` and rerun the same command first.
+
 ## 10. Grace-specific link-path warning
 
-The current GPU `Makefile` still contains x86_64-centric library defaults. On Grace-based Bede nodes those can be wrong.
-
-If the link step fails on paths like `/usr/lib/x86_64-linux-gnu/...`, derive the actual linker inputs from the live environment instead of guessing:
+If the link step still fails on Bede after updating to the latest `Makefile`, derive the actual linker inputs from the live environment instead of guessing:
 
 ```bash
 mpifort -show
 mpifort -showme:link
 PKG_CONFIG_PATH="$PETSC_PREFIX/lib/pkgconfig" pkg-config --libs --static PETSc
+ls /usr/lib/*/libudev.so.1 /usr/lib/*/libcap.so.2
 ```
 
-Then override the problematic paths explicitly if needed:
+If you need an immediate workaround for the exact error
+
+```text
+/usr/bin/ld: cannot find /usr/lib/x86_64-linux-gnu/libudev.so.1
+/usr/bin/ld: cannot find /usr/lib/x86_64-linux-gnu/libcap.so.2
+```
+
+rerun the build with the actual paths reported by the `ls` command above, for example:
 
 ```bash
 make gpu \
   GPU_PETSC_DIR="$PETSC_PREFIX" \
   GPU_FC="env PATH=$BUILD_PATH $MPI_FC" \
   GPU_GFORTRAN_PATH="$BUILD_PATH" \
-  GPU_MPI_LIBDIRS="-L/path/to/mpi/lib -Wl,-rpath,/path/to/mpi/lib" \
-  GPU_EXTRA_LIBS="-L/path/to/cuda/lib64 -Wl,-rpath,/path/to/cuda/lib64 -lnvJitLink /path/to/libudev.so.1 /path/to/libcap.so.2"
+  GPU_MPI_LIBDIRS="" \
+  GPU_EXTRA_LIBS="-L$CUDA_DIR/targets/sbsa-linux/lib -Wl,-rpath,$CUDA_DIR/targets/sbsa-linux/lib -lnvJitLink /path/to/libudev.so.1 /path/to/libcap.so.2"
 ```
+
+On Bede Grace nodes, `sbsa-linux` is the CUDA target triplet you should expect rather than `x86_64-linux`.
 
 ## 11. Run on a Bede GPU node
 
@@ -295,6 +318,28 @@ Then rebuild both with the same compiler family.
 
 Run with `-use_gpu_aware_mpi 0`.
 
+### `Cannot create PETSC_NULL_XXX object`
+
+This usually means the HeatFlow binary was built from a solver state that still initialized saved PETSc objects with `PETSC_NULL_MAT`, `PETSC_NULL_VEC`, or `PETSC_NULL_KSP` before calling `MatCreate`, `VecCreate`, or `KSPCreate`.
+
+On PETSc 3.25.1 Fortran builds, those explicit null sentinels can be treated as non-creatable output objects. Update the HeatFlow tree, then force a clean GPU rebuild:
+
+```bash
+cd "$HF_ROOT"
+make gpuclean
+rm -f bin/ThermalFlow-gpu.x
+make gpu \
+  GPU_PETSC_DIR="$PETSC_PREFIX" \
+  GPU_FC="env PATH=$BUILD_PATH $MPI_FC" \
+  GPU_GFORTRAN_PATH="$BUILD_PATH"
+```
+
+Before rebuilding, verify the fix is present in the source:
+
+```bash
+rg -n "tMat\(-2\)|tVec\(-2\)|tKSP\(-2\)" src/heatflow/mod_petsc_solver.f90
+```
+
 ### GPU link step fails on x86_64-specific paths
 
 The current `Makefile` defaults are still machine-specific. Override `GPU_MPI_LIBDIRS` and `GPU_EXTRA_LIBS` with paths from the active Bede node.
@@ -305,7 +350,7 @@ The current `Makefile` defaults are still machine-specific. Override `GPU_MPI_LI
 2. Set `CUDA_ARCH=90` for Bede Hopper-class nodes.
 3. Build PETSc with `--with-cuda`, not `--with-kokkos`.
 4. Verify the install exposes `MATAIJCUSPARSE` and `VECCUDA`.
-5. Replace the Kokkos-specific PETSc type names in the solver with the CUDA native PETSc types.
+5. Verify the solver uses `MATAIJCUSPARSE`, `VECCUDA`, and destroyed-handle initializers `tMat(-2)`, `tVec(-2)`, `tKSP(-2)`.
 6. Point `make gpu` at the native CUDA PETSc prefix.
 7. Override the current x86_64-biased link paths if the Grace node layout differs.
 8. Start runtime testing with `-use_gpu_aware_mpi 0`.
