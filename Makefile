@@ -188,7 +188,7 @@ GPU_NAME         := ThermalFlow-gpu.x
 GPU_TARGET       := $(BIN_DIR)/$(GPU_NAME)
 
 GPU_FFLAGS       := -cpp $(OPTFLAGS) $(OMPFLAGS) -DHEATFLOW_GPU \
-	$(GPU_PETSC_INC) -J$(GPU_BUILD_DIR) -Wdate-time -D_FORTIFY_SOURCE=2i 
+	$(GPU_PETSC_INC) -J$(GPU_BUILD_DIR) -Wdate-time -D_FORTIFY_SOURCE=2
 
 GPU_SRCS         := $(SRCS)
 GPU_OBJS         := $(addprefix $(GPU_BUILD_DIR)/,$(notdir $(GPU_SRCS:.f90=.o)))
