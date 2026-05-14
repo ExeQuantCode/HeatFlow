@@ -1,6 +1,5 @@
 ####################################################################
-# HeatFlow Build System (PETSc + OpenMP)
-# PETSc is REQUIRED — the source has no fallback stubs.
+# HeatFlow Build System (MKL + optional PETSc + OpenMP)
 ####################################################################
 
 SHELL        = /bin/sh
@@ -10,145 +9,88 @@ SRC_DIR      := ./src
 BUILD_DIR    := ./obj
 BIN_DIR      := ./bin
 
-# Compiler
-FC           := gfortran
+# Compiler (prefer system MPI wrapper for PETSc builds, allow user override)
+SYSTEM_PATH := PATH=/usr/bin:/bin
+ifeq ($(origin FC), default)
+ifneq ($(wildcard /usr/bin/mpifort),)
+FC := env $(SYSTEM_PATH) /usr/bin/mpifort
+else ifneq ($(wildcard /usr/bin/gfortran),)
+FC := env $(SYSTEM_PATH) /usr/bin/gfortran
+else
+FC := gfortran
+endif
+endif
 
 # Core count
-NCORES       := $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)
+NCORES       := $(shell nproc)
 
-# Common flags
+# Detect conda environment for BLAS/LAPACK (fallback if no system libs)
+CONDA_PREFIX ?= $(shell conda info --base 2>/dev/null || echo /home/hm556/miniforge3)
+
+# PETSc (discover dynamically when possible)
+ifneq ($(wildcard /usr/bin/pkg-config),)
+PKG_CONFIG := env $(SYSTEM_PATH) /usr/bin/pkg-config
+else
+PKG_CONFIG := pkg-config
+endif
+PETSC_PKG_CFLAGS := $(shell $(PKG_CONFIG) --cflags petsc 2>/dev/null || $(PKG_CONFIG) --cflags PETSc 2>/dev/null)
+PETSC_PKG_LIBS   := $(shell $(PKG_CONFIG) --libs petsc 2>/dev/null || $(PKG_CONFIG) --libs PETSc 2>/dev/null)
+
+ifdef PETSC_DIR
+PETSC_DIR_INC := -I$(PETSC_DIR)/include
+ifdef PETSC_ARCH
+PETSC_DIR_INC += -I$(PETSC_DIR)/$(PETSC_ARCH)/include
+PETSC_DIR_LIB := -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -Wl,-rpath,$(PETSC_DIR)/$(PETSC_ARCH)/lib
+endif
+endif
+
+ifeq ($(strip $(PETSC_PKG_CFLAGS)),)
+PETSC_INC  := $(PETSC_DIR_INC)
+PETSC_LIB  := $(PETSC_DIR_LIB) -lpetsc
+PETSC_NOTE := (PETSc from PETSC_DIR/PETSC_ARCH)
+else
+PETSC_INC  := $(PETSC_PKG_CFLAGS)
+PETSC_LIB  := $(PETSC_PKG_LIBS)
+PETSC_NOTE := (PETSc via pkg-config)
+endif
+
+ifeq ($(strip $(PETSC_INC)),)
+PETSC_INC  := -I/usr/share/petsc/3.15/include -I/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/include
+PETSC_LIB  := -L/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/lib -lpetsc -Wl,-rpath,/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/lib
+PETSC_NOTE := (legacy PETSc 3.15 fallback)
+endif
+
+# BLAS/LAPACK backend
+OPENBLAS_LIBS := $(shell $(PKG_CONFIG) --libs openblas 2>/dev/null)
+CONDA_BLAS_LIB := $(firstword $(wildcard $(CONDA_PREFIX)/lib/libblas.so.3 $(CONDA_PREFIX)/lib/libblas.so))
+CONDA_LAPACK_LIB := $(firstword $(wildcard $(CONDA_PREFIX)/lib/liblapack.so.3 $(CONDA_PREFIX)/lib/liblapack.so))
+ifeq ($(strip $(OPENBLAS_LIBS)),)
+ifneq ($(strip $(CONDA_BLAS_LIB)$(CONDA_LAPACK_LIB)),)
+BLAS_FLAGS := -Wl,--disable-new-dtags -Wl,-rpath,$(CONDA_PREFIX)/lib -Wl,--no-as-needed $(CONDA_BLAS_LIB) $(CONDA_LAPACK_LIB) -Wl,--as-needed -lpthread -lm
+BLAS_NOTE := (OpenBLAS from CONDA_PREFIX)
+else
+BLAS_FLAGS := -lblas -llapack -lpthread -lm
+BLAS_NOTE := (system BLAS/LAPACK fallback)
+endif
+else
+BLAS_FLAGS := $(OPENBLAS_LIBS) -lpthread -lm
+BLAS_NOTE := (OpenBLAS via pkg-config)
+endif
+
+# Flags
 OPTFLAGS    := -O3
 OMPFLAGS    := -fopenmp
 WARNFLAGS   := -Wall
 MODDIR_FLAG := -J$(BUILD_DIR)
 
-####################################################################
-# Platform detection — one big block per OS
-####################################################################
-UNAME_S := $(shell uname -s)
+FFLAGS      := -cpp $(OPTFLAGS) $(OMPFLAGS) $(WARNFLAGS) $(PETSC_INC) $(MODDIR_FLAG)
+DEBUGFLAGS  := -cpp -O0 -g -fcheck=all -fbacktrace -ffpe-trap=invalid,zero,overflow,underflow -fbounds-check $(PETSC_INC) $(MODDIR_FLAG)
 
-ifeq ($(UNAME_S),Darwin)
-    ################################################################
-    # macOS (Homebrew)
-    ################################################################
-
-    # --- PETSc (Homebrew) ---
-    BREW_PETSC := $(shell brew --prefix petsc 2>/dev/null)
-    ifneq ($(BREW_PETSC),)
-        PETSC_INC  := -I$(BREW_PETSC)/include
-        PETSC_LIB  := -L$(BREW_PETSC)/lib -lpetsc -Wl,-rpath,$(BREW_PETSC)/lib
-        PETSC_NOTE := (Homebrew PETSc)
-    else
-        $(error PETSc not found via Homebrew — install with: brew install petsc)
-    endif
-
-    # --- HDF5 (Homebrew, optional) ---
-    ifeq ($(USE_HDF5),1)
-        BREW_HDF5 := $(shell brew --prefix hdf5-mpi 2>/dev/null || brew --prefix hdf5 2>/dev/null)
-        ifneq ($(BREW_HDF5),)
-            HDF5_INC   := -I$(BREW_HDF5)/include
-            HDF5_LIB   := -L$(BREW_HDF5)/lib -lhdf5_fortran -lhdf5 -Wl,-rpath,$(BREW_HDF5)/lib
-            HDF5_FLAGS := -DUSE_HDF5 $(HDF5_INC)
-            HDF5_NOTE  := (+ HDF5)
-        else
-            $(error HDF5 requested but not found — install with: brew install hdf5)
-        endif
-    else
-        HDF5_FLAGS :=
-        HDF5_LIB   :=
-        HDF5_NOTE  :=
-    endif
-
-    # --- BLAS/LAPACK (Apple Accelerate) ---
-    MACOS_SDK := $(shell xcrun --show-sdk-path 2>/dev/null)
-    ifneq ($(MACOS_SDK),)
-        SYSROOT_FLAGS := -L$(MACOS_SDK)/usr/lib -F$(MACOS_SDK)/System/Library/Frameworks
-    else
-        SYSROOT_FLAGS :=
-    endif
-    BLAS_FLAGS := $(SYSROOT_FLAGS) -framework Accelerate -lgomp -lpthread -lm
-    BLAS_NOTE  := (Apple Accelerate)
-
-    # --- Runtime environment ---
-    RUN_ENV := OMP_NUM_THREADS=$(NCORES) \
-               VECLIB_MAXIMUM_THREADS=$(NCORES) \
-               OMP_PROC_BIND=spread \
-               OMP_PLACES=cores
-
-else
-    ################################################################
-    # Linux
-    ################################################################
-
-    # --- PETSc (pkg-config with Fortran include discovery) ---
-    PETSC_PKGCONFIG := $(shell pkg-config --cflags petsc 2>/dev/null)
-    ifneq ($(PETSC_PKGCONFIG),)
-        # pkg-config gives us the C include path and libs
-        PETSC_INC_BASE := $(shell pkg-config --cflags petsc)
-        PETSC_LIB      := $(shell pkg-config --libs petsc)
-        # Also need the Fortran finclude path (not provided by pkg-config)
-        # Find petsc/finclude/petscsys.h under /usr/share/petsc/
-        PETSC_FINCLUDE := $(shell find /usr/share/petsc -path '*/petsc/finclude/petscsys.h' -printf '%h/../..\n' 2>/dev/null | head -1)
-        ifneq ($(PETSC_FINCLUDE),)
-            PETSC_INC := $(PETSC_INC_BASE) -I$(PETSC_FINCLUDE)
-        else
-            PETSC_INC := $(PETSC_INC_BASE)
-        endif
-        PETSC_NOTE := (pkg-config PETSc)
-    else
-        # Debian/Ubuntu fallback (hardcoded paths)
-        PETSC_DEBIAN := $(shell test -d /usr/lib/petscdir/petsc3.19/x86_64-linux-gnu-real/include && echo yes)
-        PETSC_DEBIAN_OLD := $(shell test -d /usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/include && echo yes)
-        ifneq ($(PETSC_DEBIAN),)
-            PETSC_INC  := -I/usr/share/petsc/3.19t64/include -I/usr/lib/petscdir/petsc3.19/x86_64-linux-gnu-real/include
-            PETSC_LIB  := -L/usr/lib/petscdir/petsc3.19/x86_64-linux-gnu-real/lib -lpetsc_real -Wl,-rpath,/usr/lib/petscdir/petsc3.19/x86_64-linux-gnu-real/lib
-            PETSC_NOTE := (system PETSc 3.19)
-        else ifneq ($(PETSC_DEBIAN_OLD),)
-            PETSC_INC  := -I/usr/share/petsc/3.15/include -I/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/include
-            PETSC_LIB  := -L/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/lib -lpetsc -Wl,-rpath,/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/lib
-            PETSC_NOTE := (system PETSc 3.15)
-        else
-            $(error PETSc not found — install via: sudo apt install libpetsc-real-dev pkgconf)
-        endif
-    endif
-
-    # --- HDF5 (system, optional) ---
-    ifeq ($(USE_HDF5),1)
-        HDF5_INC   := -I/usr/include/hdf5/openmpi
-        HDF5_LIB   := -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi -lhdf5_fortran -lhdf5
-        HDF5_FLAGS := -DUSE_HDF5 $(HDF5_INC)
-        HDF5_NOTE  := (+ HDF5)
-    else
-        HDF5_FLAGS :=
-        HDF5_LIB   :=
-        HDF5_NOTE  :=
-    endif
-
-    # --- BLAS/LAPACK (OpenBLAS) ---
-    BLAS_FLAGS := -lopenblas -lgomp -lpthread -lm
-    BLAS_NOTE  := (OpenBLAS)
-
-    # --- Runtime environment ---
-    RUN_ENV := OMP_NUM_THREADS=$(NCORES) \
-               OPENBLAS_NUM_THREADS=$(NCORES) \
-               OMP_PROC_BIND=spread \
-               OMP_PLACES=cores
-
-endif
-
-####################################################################
-# Compiler flags
-####################################################################
-FFLAGS      := -cpp $(OPTFLAGS) $(OMPFLAGS) $(WARNFLAGS) $(PETSC_INC) $(HDF5_FLAGS) $(MODDIR_FLAG)
-DEBUGFLAGS  := -cpp -O0 -g -fcheck=all -fbacktrace -ffpe-trap=invalid,zero,overflow,underflow -fbounds-check $(PETSC_INC) $(HDF5_FLAGS) $(MODDIR_FLAG)
-
-####################################################################
 # Program
-####################################################################
 NAME    := ThermalFlow.x
 TARGET  := $(BIN_DIR)/$(NAME)
 
-# Sources (module order matters)
+# Sources (module order)
 SRCS := \
   heatflow/mod_constants.f90 \
   heatflow/mod_constructions.f90 \
@@ -172,15 +114,14 @@ SRCS := \
 
 OBJS := $(addprefix $(BUILD_DIR)/,$(notdir $(SRCS:.f90=.o)))
 
-####################################################################
-# Targets
-####################################################################
+.NOTPARALLEL:
+
 .PHONY: all debug clean distclean run help show
 
 all: show $(TARGET)
 
 show:
-	@printf 'Building %s %s %s %s\n' '$(NAME)' '$(PETSC_NOTE)' '$(HDF5_NOTE)' '$(BLAS_NOTE)'
+	@printf 'Building %s %s %s\n' '$(NAME)' '$(PETSC_NOTE)' '$(BLAS_NOTE)'
 
 $(BIN_DIR) $(BUILD_DIR):
 	mkdir -p $@
@@ -193,15 +134,20 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/heatflow/%.f90 | $(BUILD_DIR)
 $(BUILD_DIR)/heatflow.o: $(SRC_DIR)/heatflow.f90 | $(BUILD_DIR)
 	$(FC) $(FFLAGS) -c $< -o $@
 
-# Link
+# Link (single definition)
 $(TARGET): $(BIN_DIR) $(OBJS)
-	$(FC) $(OPTFLAGS) $(OMPFLAGS) $(OBJS) -o $@ $(BLAS_FLAGS) $(PETSC_LIB) $(HDF5_LIB)
+	$(FC) $(OPTFLAGS) $(OMPFLAGS) $(OBJS) -o $@ $(BLAS_FLAGS) $(PETSC_LIB)
 
 debug: FFLAGS = $(DEBUGFLAGS)
 debug: clean show $(TARGET)
 
 run: $(TARGET)
-	$(RUN_ENV) $< $(RUN_ARGS)
+	mpiexec -n $(NCORES) \
+	OMP_NUM_THREADS=1 \
+	OPENBLAS_NUM_THREADS=1 \
+	OMP_PROC_BIND=spread \
+	OMP_PLACES=cores \
+	$< $(RUN_ARGS)
 
 clean:
 	@echo "[CLEAN] objects and modules"
@@ -213,14 +159,13 @@ distclean: clean
 
 help:
 	@echo "Targets:"
-	@echo "  make / make all    - build with PETSc (required)"
+	@echo "  make / make all    - build optimized"
 	@echo "  make debug         - debug build"
-	@echo "  make run           - run with all cores"
+	@echo "  make run           - run distributed across all cores via MPI"
 	@echo "  make clean         - remove objects/modules"
 	@echo "  make distclean     - remove executable"
-	@echo "Options:"
-	@echo "  USE_HDF5=1         - enable HDF5 output support"
-	@echo "  RUN_ARGS='...'     - pass PETSc runtime flags"
+	@echo "Variables:"
+	@echo "  RUN_ARGS='-ksp_type cg -pc_type gamg -ksp_rtol 1e-8 -ksp_monitor'"
 	@echo "Parallel build: make -j$(NCORES)"
 
 ####################################################################
