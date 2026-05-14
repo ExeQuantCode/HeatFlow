@@ -35,9 +35,21 @@ module petsc_solver
 
 contains
 
+  subroutine petsc_prepare_saved_handles()
+    integer :: ierr
+
+    ! PETSc Fortran create wrappers reject PETSC_NULL_* output handles.
+    ! Destroy() on a null handle moves it into PETSc's recreatable state.
+    if (A_saved == PETSC_NULL_MAT) call MatDestroy(A_saved, ierr)
+    if (bb_saved == PETSC_NULL_VEC) call VecDestroy(bb_saved, ierr)
+    if (xx_saved == PETSC_NULL_VEC) call VecDestroy(xx_saved, ierr)
+    if (ksp_saved == PETSC_NULL_KSP) call KSPDestroy(ksp_saved, ierr)
+  end subroutine petsc_prepare_saved_handles
+
   subroutine petsc_init()
     integer :: ierr
     call PetscInitialize(PETSC_NULL_CHARACTER, ierr)
+    call petsc_prepare_saved_handles()
     call MPI_Comm_rank(PETSC_COMM_WORLD, comm_rank_saved, ierr)
     call MPI_Comm_size(PETSC_COMM_WORLD, comm_size_saved, ierr)
 #ifdef HEATFLOW_GPU
@@ -79,10 +91,6 @@ contains
     if (allocated(b_local_saved)) deallocate(b_local_saved)
     if (allocated(x_local_saved)) deallocate(x_local_saved)
 
-    A_saved = PETSC_NULL_MAT
-    bb_saved = PETSC_NULL_VEC
-    xx_saved = PETSC_NULL_VEC
-    ksp_saved = PETSC_NULL_KSP
     initialized = .false.
     n_saved = 0
     row_start_saved = 1
