@@ -26,9 +26,6 @@ It was decided that this project should be migrated to allow for better communit
 All information has been ported over where possible.
 Releases prior to `HeatFlow_CattaneoPaper` have had their history modified to remove history of files over 50MB in size.
 
-## How to Contribute on GitHub?
-
-Thank you for your understanding and continued support!
 
 ---
 
