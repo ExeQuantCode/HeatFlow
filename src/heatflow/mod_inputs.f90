@@ -59,6 +59,7 @@
 !!!     - Check_Stability, check if the simulation is stable
 !!!     - Check_Steady_State, check if the simulation is in steady state
 !!!     - WriteToTxt, write to a txt file
+!!!     - HDF5Output, write the temperature field to an HDF5 file (requires USE_HDF5 build)
 !!!     - LPercentage, the percentage of the simulation
 !!!     - InputTempDis, the input temperature distribution
 !!!     - Test_Run, the test run
@@ -92,7 +93,7 @@ module inputs
   integer(int12) :: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz, TempDepProp, heated_steps
   ! flags
   logical :: Check_Sparse_Full, Check_Stability, Check_Steady_State
-  logical :: WriteToTxt, LPercentage, InputTempDis, CompressedOutput
+  logical :: WriteToTxt, LPercentage, InputTempDis, CompressedOutput, HDF5Output
   logical ::  Test_Run = .FALSE., FullRestart = .FALSE.
 
   ! Name of simiulation run
@@ -337,7 +338,7 @@ contains
   subroutine read_param(unit)
     implicit none
     integer:: unit, Reason
-    integer,dimension(46)::readvar
+    integer,dimension(47)::readvar
     character(1024)::buffer
 
     readvar(:)=0
@@ -355,6 +356,7 @@ contains
     RunName = trim(adjustl(RunName))
     WriteToTxt = .FALSE.
     CompressedOutput = .FALSE.
+    HDF5Output = .FALSE.
     ntime = 10
     heated_steps = 0
     write_every = 1
@@ -460,6 +462,7 @@ contains
        CALL assignL(buffer,"_CompressedOutput",CompressedOutput,readvar(44))
        CALL assignS(buffer,"solver",solver_type,readvar(45))
        CALL assignI(buffer,"T_decimals",T_decimals,readvar(46))
+       CALL assignL(buffer,"_HDF5Output",HDF5Output,readvar(47))
        !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     end do
@@ -762,6 +765,7 @@ contains
        write(6,'(A35,A)')       '  _RunName           = ', trim(RunName)
        write(6,'(A35,L1)')      '  _WriteToTxt        = ', WriteToTxt
        write(6,'(A35,L1)')      '  _CompressedOutput  = ', CompressedOutput
+       write(6,'(A35,L1)')      '  _HDF5Output        = ', HDF5Output
        write(6,'(A35,I12)')     '   ntime       = ', ntime
        write(6,'(A35,I12)')     '   heattime    = ', heated_steps
        write(6,'(A35,I12)')     '   write_every = ', write_every

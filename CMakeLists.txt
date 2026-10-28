@@ -34,6 +34,25 @@ project(HeatFlow LANGUAGES C Fortran)
 # set options for building tests and examples
 option(BUILD_TESTS "Build the unit tests" On)
 option(HEATFLOW_PETSC "Build with PETSc solver support (auto-detected; legacy-solver-only build if not found)" On)
+option(HEATFLOW_HDF5 "Build with HDF5 output support" Off)
+
+if (HEATFLOW_HDF5)
+    # Prefer pkg-config (Debian/Ubuntu hdf5-openmpi), fall back to CMake's FindHDF5
+    find_package(PkgConfig QUIET)
+    if (PkgConfig_FOUND)
+        pkg_search_module(HDF5_PC QUIET hdf5-openmpi hdf5-mpi hdf5)
+    endif()
+    if (HDF5_PC_FOUND)
+        set(HDF5_Fortran_INCLUDE_DIRS "${HDF5_PC_INCLUDE_DIRS}")
+        find_library(HDF5_FORTRAN_LIB NAMES hdf5_fortran HINTS ${HDF5_PC_LIBRARY_DIRS})
+        if (NOT HDF5_FORTRAN_LIB)
+            message(FATAL_ERROR "HDF5 Fortran library (libhdf5_fortran) not found")
+        endif()
+        set(HDF5_Fortran_LIBRARIES "${HDF5_FORTRAN_LIB};${HDF5_PC_LIBRARIES}")
+    else()
+        find_package(HDF5 REQUIRED COMPONENTS Fortran)
+    endif()
+endif()
 
 # MPI is required (mod_inputs/mod_setup use mpi)
 find_package(MPI REQUIRED)
@@ -103,6 +122,7 @@ set(LIB_FILES
     mod_global.f90
     mod_Sparse.f90
     mod_inputs.f90
+    mod_output_hdf5.f90
     mod_material.f90
     mod_hmatrix.f90
     mod_init_evolve.f90
@@ -198,6 +218,13 @@ if (PETSC_FOUND)
     target_link_libraries(${PROJECT_LIBRARY_NAME} PUBLIC ${PETSC_LIBRARIES})
 else()
     message(STATUS "PETSc not found: building legacy-solver-only version")
+endif()
+if (HEATFLOW_HDF5)
+    message(STATUS "Building with HDF5 output support")
+    target_compile_definitions(${PROJECT_LIBRARY_NAME} PUBLIC USE_HDF5)
+    target_include_directories(${PROJECT_LIBRARY_NAME} PUBLIC ${HDF5_Fortran_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
+    target_link_directories(${PROJECT_LIBRARY_NAME} PUBLIC ${HDF5_PC_LIBRARY_DIRS})
+    target_link_libraries(${PROJECT_LIBRARY_NAME} PUBLIC ${HDF5_Fortran_LIBRARIES} ${HDF5_LIBRARIES})
 endif()
 target_compile_options(${PROJECT_LIBRARY_NAME} PUBLIC "$<$<CONFIG:Release>:${OPTIMFLAGS}>")
 target_compile_options(${PROJECT_LIBRARY_NAME} PUBLIC "$<$<CONFIG:Bigmem>:${MEMFLAGS}>")

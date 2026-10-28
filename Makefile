@@ -92,6 +92,30 @@ else
 PETSC_DEF  := -DHAVE_PETSC
 endif
 
+# HDF5 (optional; enable with: make USE_HDF5=1)
+ifeq ($(USE_HDF5),1)
+ifeq ($(UNAME_S),Darwin)
+# --- macOS: HDF5 via Homebrew ---
+BREW_HDF5 := $(shell brew --prefix hdf5-mpi 2>/dev/null || brew --prefix hdf5 2>/dev/null)
+ifneq ($(BREW_HDF5),)
+HDF5_INC   := -I$(BREW_HDF5)/include
+HDF5_LIB   := -L$(BREW_HDF5)/lib -lhdf5_fortran -lhdf5 -Wl,-rpath,$(BREW_HDF5)/lib
+else
+$(error HDF5 requested (USE_HDF5=1) but not found - install with: brew install hdf5-mpi)
+endif
+else
+# --- Linux: system HDF5 (OpenMPI variant) ---
+HDF5_INC   := -I/usr/include/hdf5/openmpi
+HDF5_LIB   := -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi -lhdf5_fortran -lhdf5
+endif
+HDF5_FLAGS := -DUSE_HDF5 $(HDF5_INC)
+HDF5_NOTE  := (+ HDF5)
+else
+HDF5_FLAGS :=
+HDF5_LIB   :=
+HDF5_NOTE  :=
+endif
+
 # BLAS/LAPACK backend (platform specific)
 ifeq ($(UNAME_S),Darwin)
 # --- macOS: Apple Accelerate framework ---
@@ -128,8 +152,8 @@ OMPFLAGS    := -fopenmp
 WARNFLAGS   := -Wall
 MODDIR_FLAG := -J$(BUILD_DIR)
 
-FFLAGS      := -cpp $(PETSC_DEF) $(OPTFLAGS) $(OMPFLAGS) $(WARNFLAGS) $(PETSC_INC) $(MODDIR_FLAG)
-DEBUGFLAGS  := -cpp $(PETSC_DEF) -O0 -g -fcheck=all -fbacktrace -ffpe-trap=invalid,zero,overflow,underflow -fbounds-check $(PETSC_INC) $(MODDIR_FLAG)
+FFLAGS      := -cpp $(PETSC_DEF) $(OPTFLAGS) $(OMPFLAGS) $(WARNFLAGS) $(PETSC_INC) $(HDF5_FLAGS) $(MODDIR_FLAG)
+DEBUGFLAGS  := -cpp $(PETSC_DEF) -O0 -g -fcheck=all -fbacktrace -ffpe-trap=invalid,zero,overflow,underflow -fbounds-check $(PETSC_INC) $(HDF5_FLAGS) $(MODDIR_FLAG)
 
 # Program
 NAME    := ThermalFlow.x
@@ -143,6 +167,7 @@ SRCS := \
   heatflow/mod_global.f90 \
   heatflow/mod_Sparse.f90 \
   heatflow/mod_inputs.f90 \
+  heatflow/mod_output_hdf5.f90 \
   heatflow/mod_material.f90 \
   heatflow/mod_hmatrix.f90 \
   heatflow/mod_init_evolve.f90 \
@@ -165,7 +190,7 @@ OBJS := $(addprefix $(BUILD_DIR)/,$(notdir $(SRCS:.f90=.o)))
 all: show $(TARGET)
 
 show:
-	@printf 'Building %s %s %s\n' '$(NAME)' '$(PETSC_NOTE)' '$(BLAS_NOTE)'
+	@printf 'Building %s %s %s %s\n' '$(NAME)' '$(PETSC_NOTE)' '$(HDF5_NOTE)' '$(BLAS_NOTE)'
 
 $(BIN_DIR) $(BUILD_DIR):
 	mkdir -p $@
@@ -180,7 +205,7 @@ $(BUILD_DIR)/heatflow.o: $(SRC_DIR)/heatflow.f90 | $(BUILD_DIR)
 
 # Link (single definition)
 $(TARGET): $(BIN_DIR) $(OBJS)
-	$(FC) $(OPTFLAGS) $(OMPFLAGS) $(OBJS) -o $@ $(BLAS_FLAGS) $(PETSC_LIB)
+	$(FC) $(OPTFLAGS) $(OMPFLAGS) $(OBJS) -o $@ $(BLAS_FLAGS) $(PETSC_LIB) $(HDF5_LIB)
 
 debug: FFLAGS = $(DEBUGFLAGS)
 debug: clean show $(TARGET)
@@ -205,6 +230,7 @@ help:
 	@echo "  make distclean     - remove executable"
 	@echo "Variables:"
 	@echo "  PETSC=0            - build without PETSc (legacy solver only)"
+	@echo "  USE_HDF5=1         - build with HDF5 output support"
 	@echo "  RUN_ARGS='-ksp_type cg -pc_type gamg -ksp_rtol 1e-8 -ksp_monitor'"
 	@echo "Parallel build: make -j$(NCORES)"
 
