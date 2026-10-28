@@ -4,6 +4,7 @@ module test_mod_setup_mod
     use inputs, only: TempDepProp, Periodicx, Periodicy, Periodicz
     use inputs, only: kappaBoundx1, kappaBoundy1, kappaBoundz1, kappaBoundNx, kappaBoundNy, kappaBoundNz
     use inputs, only: T_Bathx1, T_Bathx2, T_Bathy1, T_Bathy2, T_Bathz1, T_Bathz2, T_BathCG
+    use inputs, only: Check_Sparse_Full, Check_Stability
     use setup, only: set_global_variables, sparse_Hmatrix, stability, build_Hmatrix, SparseToReal
     use globe_data, only: ra, Temp_cur, Temp_p, Temp_pp, inverse_time, heat, lin_rhoc, Q_P
     implicit none
@@ -90,8 +91,6 @@ end subroutine
 
 subroutine test_sparse_hmatrix(success)
     implicit none
-    integer :: nx, ny, nz
-    logical :: Periodicx, Periodicy, Periodicz
     logical :: success
     write(*,*) "Testing sparse_hmatrix..."
     
@@ -133,7 +132,7 @@ subroutine test_stability(success)
     grid(ix,iy,iz)%Length(1) = 1.0_real12
     grid(ix,iy,iz)%Length(2) = 1.0_real12
     grid(ix,iy,iz)%Length(3) = 1.0_real12
-    time_step = 10000_real12 ! Small timestep for stability
+    time_step = 0.01_real12 ! Small timestep so the stability condition is met
     
     ! Call stability check
     call stability(kappa, rho, heat_capacity, ix, iy, iz)
@@ -144,15 +143,12 @@ end subroutine
 
 subroutine test_build_hmatrix(success)
     implicit none
-    integer :: nx, ny, nz
-    logical :: Check_Sparse_Full
     logical :: success
     write(*,*) "Testing build_hmatrix..."
     
     ! Setup
     nx = 2; ny = 2; nz = 2
     NA = nx * ny * nz
-    Check_Sparse_Full = .true.
     
     ! Call function
     call build_Hmatrix()
@@ -162,7 +158,6 @@ end subroutine
 
 subroutine test_sparse_to_real(success)
     implicit none
-    integer :: nx, ny, nz, NA
     real(real12), dimension(:,:), allocatable :: test_matrix
     logical :: success
     
@@ -191,10 +186,20 @@ end module test_mod_setup_mod
 program test_mod_setup
     use test_mod_setup_mod, only: test_set_global_variables, test_sparse_hmatrix, setup_test    
     use test_mod_setup_mod, only: test_stability, test_build_hmatrix, test_sparse_to_real
+    use test_mod_setup_mod, only: Check_Sparse_Full, Check_Stability, IVERB
+    use mpi
     implicit none
 
     ! Test variables
     logical :: success = .true.
+    integer :: ierr
+    
+    call MPI_Init(ierr)
+    
+    ! Initialise check flags read by set_global_variables
+    Check_Sparse_Full = .false.
+    Check_Stability = .false.
+    IVERB = 0
     
     ! Run tests
     print*, "Tests started:"
@@ -204,6 +209,8 @@ program test_mod_setup
     call test_stability(success)
     call test_build_hmatrix(success)
     ! call test_sparse_to_real(success)
+
+    call MPI_Finalize(ierr)
 
     ! Print summary
     write(*,*) "Tests completed:"

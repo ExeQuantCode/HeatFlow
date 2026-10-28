@@ -5,7 +5,9 @@ program test_mod_evolve
     use inputs, only: TempDepProp, Periodicx, Periodicy, Periodicz
     use inputs, only: kappaBoundx1, kappaBoundy1, kappaBoundz1, kappaBoundNx, kappaBoundNy, kappaBoundNz
     use inputs, only: T_Bathx1, T_Bathx2, T_Bathy1, T_Bathy2, T_Bathz1, T_Bathz2, T_BathCG
+    use inputs, only: solver_type, freq
     use heating, only: heater
+    use petsc_solver, only: petsc_init, petsc_finalize
     use globe_data, only: Temp_p, Temp_pp, inverse_time, heat, lin_rhoc
     use setup, only: sparse_Hmatrix
     implicit none
@@ -13,6 +15,13 @@ program test_mod_evolve
     ! Test variables
     integer(int12) :: itime
     logical :: success
+
+    ! Initialize PETSc (also initialises MPI), as in the main program
+    call petsc_init()
+
+    ! Deterministic solver and heater inputs (read_param is not run here)
+    solver_type = 'ilu'
+    freq = 1.0_real12
 
     ! Initialize test environment
     call setup_test()
@@ -42,6 +51,8 @@ program test_mod_evolve
 
     ! Cleanup test environment
     call cleanup_test()
+
+    call petsc_finalize()
 
 contains
 

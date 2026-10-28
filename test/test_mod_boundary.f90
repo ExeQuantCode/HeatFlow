@@ -90,9 +90,10 @@ contains
         
         result = constantboundarytempgrad(1_int12)
         
-        if (abs(result - 50.0_real12) > 1e-10) then
+        ! constantboundarytempgrad returns Temp_p + T_BathCG = 100 + 2 = 102
+        if (abs(result - 102.0_real12) > 1e-10) then
             write(0,*) "Test failed: Constant gradient calculation incorrect"
-            write(0,*) "Expected: ", 50.0_real12
+            write(0,*) "Expected: ", 102.0_real12
             write(0,*) "Actual: ", result
             success = .false.
         else

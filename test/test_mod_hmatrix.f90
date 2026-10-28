@@ -1,6 +1,6 @@
 module test_hmatrixmod
     use constants, only: real12, int12
-    use inputs, only: time_step, grid
+    use inputs, only: time_step, grid, nx, ny, nz
     use inputs, only: isteady, icattaneo, kappaBoundx1, kappaBoundy1, kappaBoundz1
     use inputs, only: kappaBoundNx, kappaBoundNy, kappaBoundNz, Periodicx, Periodicy, Periodicz
     use globe_data, only: inverse_time, lin_rhoc
@@ -47,11 +47,15 @@ contains
         test_y = 3
         test_z = 3
         test_i = 1
+        nx = test_x
+        ny = test_y
+        nz = test_z
         allocate(grid(test_x, test_y, test_z))
         allocate(lin_rhoc(1))
 
         grid(1,1,1)%tau = 0.0_real12  
         lin_rhoc(1) = 1.0_real12
+        inverse_time = 1.0_real12
 
         result = calculate_alpha(test_x, test_y, test_z, test_i)
 
@@ -70,13 +74,18 @@ contains
         integer(int12) :: x1, y1, z1, x2, y2, z2
         logical :: success
         
-        ! Test interior points
+        ! Test interior points (grid was allocated in test_calculate_alpha)
         x1 = 2
         y1 = 2
         z1 = 2
         x2 = 2
         y2 = 2
         z2 = 3
+
+        grid(:,:,:)%kappa = 1.0_real12
+        grid(:,:,:)%Length(1) = 1.0_real12
+        grid(:,:,:)%Length(2) = 1.0_real12
+        grid(:,:,:)%Length(3) = 1.0_real12
 
         result = calculate_conductivity(x1, y1, z1, x2, y2, z2)
         
@@ -128,6 +137,7 @@ program main
     implicit none
     logical :: success
     
+    success = .true.
     call run_all_tests(success)
     if (success) then
         write(*,*) "All tests passed"
