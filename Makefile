@@ -21,8 +21,11 @@ FC := gfortran
 endif
 endif
 
-# Core count
-NCORES       := $(shell nproc)
+# Core count (nproc on Linux, sysctl on macOS)
+NCORES       := $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)
+
+# Platform detection
+UNAME_S      := $(shell uname -s)
 
 # Detect conda environment for BLAS/LAPACK (fallback if no system libs)
 CONDA_PREFIX ?= $(shell conda info --base 2>/dev/null || echo /home/hm556/miniforge3)
@@ -36,6 +39,16 @@ endif
 
 # PETSc (discover dynamically when possible; disable with: make PETSC=0)
 ifneq ($(PETSC),0)
+ifeq ($(UNAME_S),Darwin)
+# --- macOS: PETSc via Homebrew ---
+BREW_PETSC := $(shell brew --prefix petsc 2>/dev/null)
+ifneq ($(BREW_PETSC),)
+PETSC_INC  := -I$(BREW_PETSC)/include
+PETSC_LIB  := -L$(BREW_PETSC)/lib -lpetsc -Wl,-rpath,$(BREW_PETSC)/lib
+PETSC_NOTE := (Homebrew PETSc)
+endif
+else
+# --- Linux: pkg-config, then PETSC_DIR/PETSC_ARCH, then Debian paths ---
 PETSC_PKG_CFLAGS := $(shell $(PKG_CONFIG) --cflags petsc 2>/dev/null || $(PKG_CONFIG) --cflags PETSc 2>/dev/null)
 PETSC_PKG_LIBS   := $(shell $(PKG_CONFIG) --libs petsc 2>/dev/null || $(PKG_CONFIG) --libs PETSc 2>/dev/null)
 
@@ -68,6 +81,7 @@ PETSC_NOTE := (legacy PETSc 3.15 fallback)
 endif
 endif
 endif
+endif
 
 # If no PETSc was found, build the legacy-solver-only version
 ifeq ($(strip $(PETSC_INC)),)
@@ -78,7 +92,18 @@ else
 PETSC_DEF  := -DHAVE_PETSC
 endif
 
-# BLAS/LAPACK backend
+# BLAS/LAPACK backend (platform specific)
+ifeq ($(UNAME_S),Darwin)
+# --- macOS: Apple Accelerate framework ---
+MACOS_SDK := $(shell xcrun --show-sdk-path 2>/dev/null)
+ifneq ($(MACOS_SDK),)
+SYSROOT_FLAGS := -L$(MACOS_SDK)/usr/lib -F$(MACOS_SDK)/System/Library/Frameworks
+endif
+BLAS_FLAGS := $(SYSROOT_FLAGS) -framework Accelerate -lgomp -lpthread -lm
+BLAS_NOTE  := (Apple Accelerate)
+RUN_ENV    := OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 OMP_PROC_BIND=spread OMP_PLACES=cores
+else
+# --- Linux: OpenBLAS (pkg-config, conda, then system) ---
 OPENBLAS_LIBS := $(shell $(PKG_CONFIG) --libs openblas 2>/dev/null)
 CONDA_BLAS_LIB := $(firstword $(wildcard $(CONDA_PREFIX)/lib/libblas.so.3 $(CONDA_PREFIX)/lib/libblas.so))
 CONDA_LAPACK_LIB := $(firstword $(wildcard $(CONDA_PREFIX)/lib/liblapack.so.3 $(CONDA_PREFIX)/lib/liblapack.so))
@@ -93,6 +118,8 @@ endif
 else
 BLAS_FLAGS := $(OPENBLAS_LIBS) -lpthread -lm
 BLAS_NOTE := (OpenBLAS via pkg-config)
+endif
+RUN_ENV    := OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 OMP_PROC_BIND=spread OMP_PLACES=cores
 endif
 
 # Flags
@@ -159,12 +186,7 @@ debug: FFLAGS = $(DEBUGFLAGS)
 debug: clean show $(TARGET)
 
 run: $(TARGET)
-	mpiexec -n $(NCORES) \
-	OMP_NUM_THREADS=1 \
-	OPENBLAS_NUM_THREADS=1 \
-	OMP_PROC_BIND=spread \
-	OMP_PLACES=cores \
-	$< $(RUN_ARGS)
+	$(RUN_ENV) mpiexec -n $(NCORES) $< $(RUN_ARGS)
 
 clean:
 	@echo "[CLEAN] objects and modules"
