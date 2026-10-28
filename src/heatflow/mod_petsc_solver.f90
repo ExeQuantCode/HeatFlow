@@ -1,12 +1,15 @@
 module petsc_solver
+#ifdef HAVE_PETSC
 #include "petsc/finclude/petscsys.h"
 #include "petsc/finclude/petscksp.h"
   use petscksp
+#endif
   use mpi
   use inputs, only: solver_type
   implicit none
   private
   public :: petsc_init, petsc_finalize, solve_petsc_csr, petsc_cleanup, petsc_is_root, petsc_world_size
+  public :: petsc_available
 
   ! ===== PRECONDITIONER SELECTION =====
   ! Selected at runtime via the "solver" input flag (see mod_inputs):
@@ -14,7 +17,11 @@ module petsc_solver
   ! 'ilu'  = Incomplete LU (good general purpose, robust)
   ! 'lu'   = Direct solver (most robust, uses more memory)
   ! ====================================
+  ! If PETSc is not available at compile time (HAVE_PETSC undefined) ...
+  ! ... this module is compiled as a stub with the same public interface, ...
+  ! ... so the rest of the code needs no changes. Only solver = legacy works.
 
+#ifdef HAVE_PETSC
   ! Persistent PETSc objects (reused across timesteps for memory efficiency)
   Mat, save :: A_saved = PETSC_NULL_MAT
   Vec, save :: bb_saved = PETSC_NULL_VEC
@@ -32,9 +39,25 @@ module petsc_solver
   PetscInt, allocatable, save :: diag_nnz_saved(:), offdiag_nnz_saved(:)
   integer, allocatable, save :: recvcounts_saved(:), displs_saved(:)
   real(8), allocatable, save :: b_local_saved(:), x_local_saved(:)
+#else
+  integer, save :: comm_rank_saved = 0
+  integer, save :: comm_size_saved = 1
+#endif
 
 contains
 
+  !!!##################################################################
+  !!! Returns whether this binary was compiled with PETSc support
+  !!!##################################################################
+  logical function petsc_available()
+#ifdef HAVE_PETSC
+    petsc_available = .true.
+#else
+    petsc_available = .false.
+#endif
+  end function petsc_available
+
+#ifdef HAVE_PETSC
   subroutine petsc_init()
     integer :: ierr
     call PetscInitialize(PETSC_NULL_CHARACTER, ierr)
@@ -337,4 +360,48 @@ contains
     call MPI_Allgatherv(x_local_saved, nlocal, MPI_DOUBLE_PRECISION, x, recvcounts_saved, displs_saved, &
          MPI_DOUBLE_PRECISION, PETSC_COMM_WORLD, ierr)
   end subroutine solve_petsc_csr
+
+#else
+  !!!##################################################################
+  !!! Stub implementation for builds without PETSc (legacy solver only)
+  !!!##################################################################
+  subroutine petsc_init()
+    integer :: ierr
+    call MPI_Init(ierr)
+    call MPI_Comm_rank(MPI_COMM_WORLD, comm_rank_saved, ierr)
+    call MPI_Comm_size(MPI_COMM_WORLD, comm_size_saved, ierr)
+  end subroutine petsc_init
+
+  logical function petsc_is_root()
+    petsc_is_root = (comm_rank_saved == 0)
+  end function petsc_is_root
+
+  integer function petsc_world_size()
+    petsc_world_size = comm_size_saved
+  end function petsc_world_size
+
+  subroutine petsc_finalize()
+    integer :: ierr
+    call MPI_Finalize(ierr)
+  end subroutine petsc_finalize
+
+  subroutine petsc_cleanup()
+    ! no PETSc objects in a legacy-only build
+  end subroutine petsc_cleanup
+
+  subroutine solve_petsc_csr(n, ia, ja, aval, b, x, rtol, maxit)
+    integer, intent(in) :: n
+    integer, intent(in) :: ia(:), ja(:)
+    real(8), intent(in) :: aval(:), b(:)
+    real(8), intent(inout) :: x(:)
+    real(8), intent(in) :: rtol
+    integer, intent(in) :: maxit
+    if (petsc_is_root()) then
+       write(0,*) 'ERROR: solver = "', trim(solver_type), '" requires PETSc,'
+       write(0,*) '       but this binary was compiled without PETSc.'
+       write(0,*) '       Set solver = legacy or rebuild with PETSc available.'
+    end if
+    stop 1
+  end subroutine solve_petsc_csr
+#endif
 end module petsc_solver

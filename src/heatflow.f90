@@ -24,11 +24,11 @@ program HEATFLOW_V0_3
   use constructions, only: heatblock
   use output, only: data_write, final_print
   use inputs, only: read_all_files, iverb, ntime, LPercentage
-  use inputs, only: IVERB
+  use inputs, only: IVERB, solver_type
   use evolution, only: simulate
   use setup, only: set_global_variables
   use INITIAL, only: initial_evolve
-   use petsc_solver, only: petsc_init, petsc_finalize, petsc_is_root
+   use petsc_solver, only: petsc_init, petsc_finalize, petsc_is_root, petsc_available
 
   implicit none
    real(real12) :: cpustart, cpuend, cpustart2, progress
@@ -54,6 +54,19 @@ program HEATFLOW_V0_3
    ! ... and arrays                                              !
    !-------------------------------------------------------------!
    CALL read_all_files()                                         
+
+   !-------------------------------------------------------------!
+   ! Check the selected solver is available in this build        !
+   !-------------------------------------------------------------!
+   if ((solver_type .ne. 'legacy') .and. (.not. petsc_available())) then
+      if (petsc_is_root()) then
+         write(6,*) 'Error: solver = "', trim(solver_type), '" requires PETSc,'
+         write(6,*) '       but this binary was compiled without PETSc.'
+         write(6,*) '       Set solver = legacy or rebuild with PETSc available.'
+      end if
+      stop 1
+   end if
+   !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
    
    CALL cpu_time(cpustart2)                                      
    CALL set_global_variables() 

@@ -27,12 +27,15 @@ NCORES       := $(shell nproc)
 # Detect conda environment for BLAS/LAPACK (fallback if no system libs)
 CONDA_PREFIX ?= $(shell conda info --base 2>/dev/null || echo /home/hm556/miniforge3)
 
-# PETSc (discover dynamically when possible)
+# pkg-config (used for PETSc and BLAS detection)
 ifneq ($(wildcard /usr/bin/pkg-config),)
 PKG_CONFIG := env $(SYSTEM_PATH) /usr/bin/pkg-config
 else
 PKG_CONFIG := pkg-config
 endif
+
+# PETSc (discover dynamically when possible; disable with: make PETSC=0)
+ifneq ($(PETSC),0)
 PETSC_PKG_CFLAGS := $(shell $(PKG_CONFIG) --cflags petsc 2>/dev/null || $(PKG_CONFIG) --cflags PETSc 2>/dev/null)
 PETSC_PKG_LIBS   := $(shell $(PKG_CONFIG) --libs petsc 2>/dev/null || $(PKG_CONFIG) --libs PETSc 2>/dev/null)
 
@@ -46,18 +49,33 @@ endif
 
 ifeq ($(strip $(PETSC_PKG_CFLAGS)),)
 PETSC_INC  := $(PETSC_DIR_INC)
+ifneq ($(strip $(PETSC_INC)),)
 PETSC_LIB  := $(PETSC_DIR_LIB) -lpetsc
 PETSC_NOTE := (PETSc from PETSC_DIR/PETSC_ARCH)
+endif
 else
 PETSC_INC  := $(PETSC_PKG_CFLAGS)
 PETSC_LIB  := $(PETSC_PKG_LIBS)
 PETSC_NOTE := (PETSc via pkg-config)
 endif
 
+# Legacy hardcoded fallback, only if it exists on this system
 ifeq ($(strip $(PETSC_INC)),)
+ifneq ($(wildcard /usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/include),)
 PETSC_INC  := -I/usr/share/petsc/3.15/include -I/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/include
 PETSC_LIB  := -L/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/lib -lpetsc -Wl,-rpath,/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/lib
 PETSC_NOTE := (legacy PETSc 3.15 fallback)
+endif
+endif
+endif
+
+# If no PETSc was found, build the legacy-solver-only version
+ifeq ($(strip $(PETSC_INC)),)
+PETSC_DEF  :=
+PETSC_LIB  :=
+PETSC_NOTE := (no PETSc found - legacy solver only)
+else
+PETSC_DEF  := -DHAVE_PETSC
 endif
 
 # BLAS/LAPACK backend
@@ -83,8 +101,8 @@ OMPFLAGS    := -fopenmp
 WARNFLAGS   := -Wall
 MODDIR_FLAG := -J$(BUILD_DIR)
 
-FFLAGS      := -cpp $(OPTFLAGS) $(OMPFLAGS) $(WARNFLAGS) $(PETSC_INC) $(MODDIR_FLAG)
-DEBUGFLAGS  := -cpp -O0 -g -fcheck=all -fbacktrace -ffpe-trap=invalid,zero,overflow,underflow -fbounds-check $(PETSC_INC) $(MODDIR_FLAG)
+FFLAGS      := -cpp $(PETSC_DEF) $(OPTFLAGS) $(OMPFLAGS) $(WARNFLAGS) $(PETSC_INC) $(MODDIR_FLAG)
+DEBUGFLAGS  := -cpp $(PETSC_DEF) -O0 -g -fcheck=all -fbacktrace -ffpe-trap=invalid,zero,overflow,underflow -fbounds-check $(PETSC_INC) $(MODDIR_FLAG)
 
 # Program
 NAME    := ThermalFlow.x
@@ -164,6 +182,7 @@ help:
 	@echo "  make clean         - remove objects/modules"
 	@echo "  make distclean     - remove executable"
 	@echo "Variables:"
+	@echo "  PETSC=0            - build without PETSc (legacy solver only)"
 	@echo "  RUN_ARGS='-ksp_type cg -pc_type gamg -ksp_rtol 1e-8 -ksp_monitor'"
 	@echo "Parallel build: make -j$(NCORES)"
 

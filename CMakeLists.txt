@@ -23,6 +23,18 @@ project(HeatFlow LANGUAGES C Fortran)
 
 # set options for building tests and examples
 option(BUILD_TESTS "Build the unit tests" On)
+option(HEATFLOW_PETSC "Build with PETSc solver support (auto-detected; legacy-solver-only build if not found)" On)
+
+# MPI is required (mod_inputs/mod_setup use mpi)
+find_package(MPI REQUIRED)
+
+# PETSc is optional: without it the code builds a legacy-solver-only version
+if (HEATFLOW_PETSC)
+    find_package(PkgConfig QUIET)
+    if (PkgConfig_FOUND)
+        pkg_check_modules(PETSC QUIET petsc)
+    endif()
+endif()
 
 # set coverage compiler flags
 if (CMAKE_BUILD_TYPE MATCHES "Coverage")
@@ -62,6 +74,7 @@ set(LIB_FILES
     mod_material.f90
     mod_hmatrix.f90
     mod_init_evolve.f90
+    mod_petsc_solver.f90
     mod_setup.f90
     mod_boundary.f90
     mod_heating.f90
@@ -97,7 +110,7 @@ set(OPTIMFLAGS "")
 set(FASTFLAGS "")
 
 # set flags based on compiler
-if (CMAKE_Fortran_COMPILER MATCHES ".*gfortran.*" OR CMAKE_Fortran_COMPILER MATCHES ".*gcc.*")
+if (CMAKE_Fortran_COMPILER MATCHES ".*gfortran.*" OR CMAKE_Fortran_COMPILER MATCHES ".*gcc.*" OR CMAKE_Fortran_COMPILER MATCHES ".*mpifort.*" OR CMAKE_Fortran_COMPILER MATCHES ".*mpif90.*")
     message(STATUS "Using gfortran compiler")
     set(PPFLAGS -cpp)
     set(MPFLAGS -fopenmp)
@@ -144,7 +157,16 @@ message(STATUS "project name: ${PROJECT_NAME}")
 # create the library
 add_library(${PROJECT_LIBRARY_NAME} STATIC ${PREPENDED_LIB_FILES})
 set_target_properties(${PROJECT_LIBRARY_NAME} PROPERTIES Fortran_MODULE_DIRECTORY ${MODULE_DIR})
-target_link_libraries(${PROJECT_LIBRARY_NAME} PUBLIC)
+target_link_libraries(${PROJECT_LIBRARY_NAME} PUBLIC MPI::MPI_Fortran)
+if (PETSC_FOUND)
+    message(STATUS "PETSc found: building with PETSc solver support")
+    target_compile_definitions(${PROJECT_LIBRARY_NAME} PUBLIC HAVE_PETSC)
+    target_include_directories(${PROJECT_LIBRARY_NAME} PUBLIC ${PETSC_INCLUDE_DIRS})
+    target_link_directories(${PROJECT_LIBRARY_NAME} PUBLIC ${PETSC_LIBRARY_DIRS})
+    target_link_libraries(${PROJECT_LIBRARY_NAME} PUBLIC ${PETSC_LIBRARIES})
+else()
+    message(STATUS "PETSc not found: building legacy-solver-only version")
+endif()
 target_compile_options(${PROJECT_LIBRARY_NAME} PUBLIC "$<$<CONFIG:Release>:${OPTIMFLAGS}>")
 target_compile_options(${PROJECT_LIBRARY_NAME} PUBLIC "$<$<CONFIG:Bigmem>:${MEMFLAGS}>")
 target_compile_options(${PROJECT_LIBRARY_NAME} PUBLIC "$<$<CONFIG:Parallel>:${OPTIMFLAGS}>")

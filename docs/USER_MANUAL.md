@@ -2,6 +2,10 @@
 
 This manual provides a concise guide to configuring and running simulations using the **HeatFlow** software. The software simulates heat transport using finite difference methods, primarily focusing on the Cattaneo (hyperbolic heat equation) and Fourier models.
 
+## Building
+
+Build with `make` (MPI is required). PETSc is detected automatically; if it is not found, a legacy-solver-only version is built (only `solver = legacy` is available). To force a build without PETSc even when it is installed, use `make PETSC=0`.
+
 ## Input Files
 
 The simulation is controlled by three main input files located in the `inputs/` directory:
