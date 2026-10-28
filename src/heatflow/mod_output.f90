@@ -45,7 +45,7 @@ module output
   use constants, only: real12, int12, TINY, fields
   use inputs, only: nx,ny,nz, time_step, grid, NA, Check_Steady_State, ntime, WriteToTxt
   use inputs, only: Test_Run, freq, RunName, FullRestart, IVERB, write_every, CompressedOutput
-  use inputs, only: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz
+  use inputs, only: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz, T_decimals
   use globe_data, only: Temp_p,Temp_pp, heat, heated_volume, logname
   implicit none
   
@@ -56,12 +56,16 @@ contains
     real(real12), dimension(nx,ny,nz) :: CT, Temp_cur
     integer(int12) :: ix, iy, iz, indexA
     character(len=1024) :: file_prefix, file_extension, outdir
+    character(len=64) :: tform
     integer :: logunit
     
     logunit = 20
     file_prefix = 'Temperture_'
     outdir='./outputs/'
     file_extension = '.out'
+    ! Runtime format for the temperature values: Fw.d with d = T_decimals ...
+    ! ... (fixed number of decimal places, e.g. 100.001 and 1000.001 for d=3)
+    write(tform,'(A,I0,A,I0,A)') '(*(F', T_decimals+10, '.', T_decimals, ',1X))'
     
     !---------------------------------------
     !  make a 3d array
@@ -100,7 +104,7 @@ contains
              open(logunit,file=logname)
             !  print*, logunit
             !  print*, logname
-             write(logunit,*) real((itime-1)*(time_step)), &
+             write(logunit,tform) real((itime-1)*(time_step)), &
                   (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
           end if
           close(logunit)
@@ -128,7 +132,7 @@ contains
              ! print*, logunit
              ! print*, logname
              open(logunit,file=logname, status='old', position='append')
-             write(logunit,*) real((itime-1)*(time_step)), &
+             write(logunit,tform) real((itime-1)*(time_step)), &
                 (Temp_cur(start_ix:end_ix, start_iy:end_iy, start_iz:end_iz))
              close(logunit)
           end if

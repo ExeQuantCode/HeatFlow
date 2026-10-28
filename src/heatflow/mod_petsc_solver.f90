@@ -3,16 +3,16 @@ module petsc_solver
 #include "petsc/finclude/petscksp.h"
   use petscksp
   use mpi
+  use inputs, only: solver_type
   implicit none
   private
   public :: petsc_init, petsc_finalize, solve_petsc_csr, petsc_cleanup, petsc_is_root, petsc_world_size
 
   ! ===== PRECONDITIONER SELECTION =====
-  ! Change this to switch between preconditioners:
-  ! 'GAMG' = Algebraic Multigrid (best for elliptic PDEs, 10-20x faster)
-  ! 'ILU'  = Incomplete LU (good general purpose, robust)
-  ! 'LU'   = Direct solver (most robust, uses more memory)
-  character(len=10), parameter :: PRECONDITIONER = 'GAMG'
+  ! Selected at runtime via the "solver" input flag (see mod_inputs):
+  ! 'gamg' = Algebraic Multigrid (best for elliptic PDEs, 10-20x faster)
+  ! 'ilu'  = Incomplete LU (good general purpose, robust)
+  ! 'lu'   = Direct solver (most robust, uses more memory)
   ! ====================================
 
   ! Persistent PETSc objects (reused across timesteps for memory efficiency)
@@ -254,40 +254,43 @@ contains
 
       call KSPCreate(PETSC_COMM_WORLD, ksp_saved, ierr)
       call KSPSetOperators(ksp_saved, A_saved, A_saved, ierr)
-      call KSPSetInitialGuessNonzero(ksp_saved, PETSC_TRUE, ierr)
       call KSPGetPC(ksp_saved, pc, ierr)
 
-      select case (trim(PRECONDITIONER))
-        case ('GAMG')
+      select case (trim(solver_type))
+        case ('gamg')
           call PCSetType(pc, PCGAMG, ierr)
           call KSPSetType(ksp_saved, KSPGMRES, ierr)
+          call KSPSetInitialGuessNonzero(ksp_saved, PETSC_TRUE, ierr)
           if (petsc_is_root()) then
             write(*,'(A,I0,A)') ' [Solver] Using GAMG (Algebraic Multigrid) with GMRES across ', &
                  comm_size_saved, ' MPI ranks'
           end if
 
-        case ('ILU')
+        case ('ilu')
           call PCSetType(pc, PCILU, ierr)
           call KSPSetType(ksp_saved, KSPBCGS, ierr)
+          call KSPSetInitialGuessNonzero(ksp_saved, PETSC_TRUE, ierr)
           if (petsc_is_root()) then
             write(*,'(A,I0,A)') ' [Solver] Using ILU preconditioner with BiCGSTAB across ', &
                  comm_size_saved, ' MPI ranks'
           end if
 
-        case ('LU')
+        case ('lu')
           call PCSetType(pc, PCLU, ierr)
           call KSPSetType(ksp_saved, KSPPREONLY, ierr)
+          call KSPSetInitialGuessNonzero(ksp_saved, PETSC_FALSE, ierr)
           if (petsc_is_root()) then
             write(*,'(A,I0,A)') ' [Solver] Using direct LU solver across ', comm_size_saved, ' MPI ranks'
           end if
 
         case default
           if (petsc_is_root()) then
-            write(*,'(A,A)') ' [Warning] Unknown preconditioner: ', trim(PRECONDITIONER)
+            write(*,'(A,A)') ' [Warning] Unknown preconditioner: ', trim(solver_type)
             write(*,'(A)') '           Defaulting to ILU'
           end if
           call PCSetType(pc, PCILU, ierr)
           call KSPSetType(ksp_saved, KSPBCGS, ierr)
+          call KSPSetInitialGuessNonzero(ksp_saved, PETSC_TRUE, ierr)
       end select
 
       call KSPSetTolerances(ksp_saved, rtol, PETSC_DEFAULT_REAL, PETSC_DEFAULT_REAL, maxit, ierr)

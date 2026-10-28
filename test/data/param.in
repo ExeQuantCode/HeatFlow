@@ -15,6 +15,8 @@
     freq = 0.0     !
     icattaneo = 0 !
     isteady =  0  !
+    solver = ilu
+    T_decimals = 3
     T_System = 278 ! Doesnt matter if _FullRestart or _InputTempDis = True
     T_Bath = 0 !not used
     T_Bathx1 = 283     !

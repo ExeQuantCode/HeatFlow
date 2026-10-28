@@ -19,7 +19,7 @@ module setup
    use mpi
   use inputs, only: nx, ny, nz, NA, grid, time_step, kappaBoundx1, kappaBoundy1, kappaBoundz1 
   use inputs, only: Check_Sparse_Full, Check_Stability, ntime,IVERB, Periodicx, Periodicy
-  use inputs, only: Periodicz ! 
+  use inputs, only: Periodicz, solver_type ! 
   use hmatrixmod, only: hmatrixfunc
   use globe_data, only:  ra, Temp_cur, Temp_p, Temp_pp,inverse_time, heat, lin_rhoc, Q_P
   use globe_data, only: acsr, ja, ia
@@ -94,6 +94,8 @@ module setup
       else
          ! Build CSR format directly (acsr, ja, ia are allocated inside sparse_Hmatrix)
          CALL sparse_Hmatrix()
+         ! The legacy linbcg solver reads the matrix from the ra SRS structure
+         if (solver_type .eq. 'legacy') CALL fill_ra_from_csr()
          ! No need for COO->CSR conversion anymore, it's already in CSR format!
          if (is_root) write(*,*) "Sparse matrix setup complete."
       end if
@@ -101,6 +103,32 @@ module setup
 
 
    end subroutine set_global_variables
+!!!#################################################################################################
+
+!!!#################################################################################################
+!!! Fills the legacy SRS matrix structure ra from the CSR arrays ...
+!!! ... (required by the legacy linbcg solver, which reads ra via globe_data)
+!!!#################################################################################################
+   subroutine fill_ra_from_csr()
+      integer(int12) :: row, k, count
+
+      count = ia(NA+1) - 1
+      ra%n = NA
+      ra%len = count
+      if (associated(ra%val)) deallocate(ra%val)
+      if (associated(ra%irow)) deallocate(ra%irow)
+      if (associated(ra%jcol)) deallocate(ra%jcol)
+      allocate(ra%val(count), ra%irow(count), ra%jcol(count))
+      count = 0
+      do row = 1, NA
+         do k = ia(row), ia(row+1) - 1
+            count = count + 1
+            ra%val(count) = acsr(k)
+            ra%irow(count) = row
+            ra%jcol(count) = int(ja(k), int12)
+         end do
+      end do
+   end subroutine fill_ra_from_csr
 !!!#################################################################################################
 
 !!!#################################################################################################

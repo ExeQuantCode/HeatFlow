@@ -22,7 +22,7 @@
 module evolution
   use constants, only: real12, int12, TINY
   use inputs, only: NA, icattaneo, isteady, nx, ny, nz, IVERB,T_System, time_step, grid, power_in
-  use inputs, only: TempDepProp
+  use inputs, only: TempDepProp, solver_type
   use sptype, only: I4B
   use solver, only: linbcg
   use globe_data, only: Temp_p, Temp_pp, inverse_time, heat, lin_rhoc
@@ -53,7 +53,7 @@ contains
     real(real12), dimension(NA) :: S, Q, Qdens, S_CAT, B
     real(real12), dimension(:), allocatable :: x
     integer:: ncg, itol, itmax !, iss
-    integer :: iter
+    integer(I4B) :: iter
     real(real12) :: e, err, tol
     integer :: NA32
 
@@ -170,7 +170,11 @@ contains
    allocate(x(NA))
    x = Temp_p + (Temp_p - Temp_pp)
    if (any(x - Temp_p .lt. TINY)) x = x + TINY ! avoid nan solver issue
-   
+
+   if (solver_type .eq. 'legacy') then
+      ! Legacy conjugate gradient solver (matrix read from ra via globe_data)
+      CALL linbcg(S, x, itol=int(itol,I4B), tol=tol, itmax=int(itmax,I4B), iter=iter, err=err)
+   else
    ! Debug: Print initial guess statistics
    if (IVERB .gt. 3) then
       write(*,*) "========== PETSc Solver Diagnostics =========="
@@ -181,7 +185,7 @@ contains
       write(*,*) "Matrix acsr: min=", minval(acsr), " max=", maxval(acsr), " avg=", sum(acsr)/size(acsr)
       write(*,*) "Matrix size: n=", NA32, " nnz=", size(acsr)
    end if
-   
+
    ! Convert to 32-bit integers for PETSc (only on first call)
    if (.not. allocated(ia32)) then
       allocate(ia32(size(ia)), ja32(size(ja)))
@@ -189,9 +193,9 @@ contains
       ja32 = int(ja, kind=kind(ja32))
    end if
    NA32 = int(NA, kind=kind(NA32))
-   
+
    call solve_petsc_csr(NA32, ia32, ja32, acsr, S, x, tol, itmax)
-   
+
    ! Debug: Print solution statistics and verify solution
    if (IVERB .gt. 3) then
       write(*,*) "Solution x after PETSc: min=", minval(x), " max=", maxval(x), " avg=", sum(x)/size(x)
@@ -199,14 +203,13 @@ contains
       write(*,*) "Max temperature change: ", maxval(abs(x-Temp_p))
       write(*,*) "=============================================="
    end if
-   
+
    ! Note: Don't deallocate ia32, ja32 - keep them for next time step
+   end if
 
 
    ! CALL solve_pardiso(acsr, S, ia, ja, x)
-   !  CALL linbcg(S,x,itol=int(itol,I4B),tol=tol, itmax=int(itmax,I4B), iter=iter, &
-         ! err=E)
-         
+          
    !
     if (any(isnan(x(:)))) then
        write(0,*) "fatal error: NAN in x tempurature vector"

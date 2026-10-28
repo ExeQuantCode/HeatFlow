@@ -25,6 +25,7 @@ This file uses a `KEYWORD = VALUE` format. Comments can be added using `!`.
 | `isteady` | Integer | `0` | Steady state switch (`1` = Steady state, `0` = Transient). |
 | `heattime` | Integer | `0` | Number of steps for which heating is applied (case 2). |
 | `TempDepProp`| Integer | `0` | Flag for temperature dependent properties. |
+| `solver` | String | `ilu` | Linear solver: `legacy` (original CG solver) or PETSc preconditioners `ilu`, `lu`, `gamg`. |
 
 #### Boundary & Conditions
 | Keyword | Type | Default | Description |
@@ -60,6 +61,7 @@ Defines the region of the grid to write to output.
 | Keyword | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `write_every` | Integer | `1` | Write output every N steps. |
+| `T_decimals` | Integer | `3` | Decimal places for temperatures in the output file (e.g. `3` gives `100.001` and `1000.001`). |
 | `start_ix`, `end_ix` | Integer | `1`..`Nx` | X-range for output. |
 | `start_iy`, `end_iy` | Integer | `1`..`Ny` | Y-range for output. |
 | `start_iz`, `end_iz` | Integer | `1`..`Nz` | Z-range for output. |

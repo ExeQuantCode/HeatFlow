@@ -43,6 +43,8 @@
 !!!     - T_Bath, the bath temperature
 !!!     - T_BathCG, the constant gradient of the bath temperature
 !!!     - CG_dir, a string with the directions for constant gradient (format: any combination of +x, -x, +y, -y, +z, -z)
+!!!     - solver, the linear solver to use (legacy, ilu, lu, gamg)
+!!!     - T_decimals, the number of decimal places for the temperature output file
 !!!     - IVERB, the verbose
 !!!     - ntime, the number of time steps
 !!!     - heated_steps, the number of steps for which heating is applied in heating case 2
@@ -85,7 +87,7 @@ module inputs
   real(real12) :: T_Bathx1, T_Bathx2, T_Bathy1, T_Bathy2, T_Bathz1, T_Bathz2, T_System, T_Bath
   real(real12) :: T_BathCG, BR
   ! verbose, number of time steps, boundary condition, number of cells
-  integer(int12) :: IVERB, ntime, nx, ny, nz, icattaneo, isteady, NA, write_every
+  integer(int12) :: IVERB, ntime, nx, ny, nz, icattaneo, isteady, NA, write_every, T_decimals
   ! what cells to write to txt file
   integer(int12) :: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz, TempDepProp, heated_steps
   ! flags
@@ -103,6 +105,7 @@ module inputs
 
   ! Boundary directions
   character(64) :: CG_dir
+  character(16) :: solver_type
   logical :: CG_x_p, CG_x_m, CG_y_p, CG_y_m, CG_z_p, CG_z_m
 
 
@@ -203,7 +206,7 @@ contains
   subroutine read_param(unit)
     implicit none
     integer:: unit, Reason
-    integer,dimension(44)::readvar
+    integer,dimension(46)::readvar
     character(1024)::buffer
 
     readvar(:)=0
@@ -239,6 +242,8 @@ contains
     T_BathCG = 0
     BR = 1.0
     CG_dir = ' '
+    solver_type = 'ilu'
+    T_decimals = 3
     CG_x_p = .FALSE.
     CG_x_m = .FALSE.
     CG_y_p = .FALSE.
@@ -322,6 +327,8 @@ contains
        CALL assignD(buffer,"BR",BR,readvar(42))
        CALL assignS(buffer,"CG_dir",CG_dir,readvar(43))
        CALL assignL(buffer,"_CompressedOutput",CompressedOutput,readvar(44))
+       CALL assignS(buffer,"solver",solver_type,readvar(45))
+       CALL assignI(buffer,"T_decimals",T_decimals,readvar(46))
        !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     end do
@@ -351,6 +358,12 @@ contains
     if (index(CG_dir, '+z') .gt. 0) CG_z_p = .true.
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+    !--------------------------------------------------
+    ! normalise the solver selection to lower case
+    !--------------------------------------------------
+    solver_type = to_lower(solver_type)
+    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 
     CALL check_param(readvar,size(readvar,1))
 
@@ -369,6 +382,43 @@ contains
 
      call MPI_Comm_rank(MPI_COMM_WORLD, comm_rank, ierr)
      is_root = (comm_rank == 0)
+
+     !--------------------------------------------------
+     ! Error on invalid solver selection
+     !--------------------------------------------------
+     select case (trim(solver_type))
+     case ('legacy', 'ilu', 'lu', 'gamg')
+        ! valid selection
+     case default
+        if (is_root) then
+           write(6,*)
+           write(6,'(A43)') '###############################'
+           write(6,'(A43)') '##########   ERROR   ##########'
+           write(6,'(A43)') '###############################'
+           write(6,*)
+           write(6,'(A)')    ' ---       Error in subroutine "check_param"      ---'
+           write(6,'(A,A,A)')' --- ERROR: unknown solver "', trim(solver_type), '"'
+           write(6,'(A)')    ' --- Valid options: legacy, ilu, lu, gamg'
+        end if
+        stop
+     end select
+
+     !--------------------------------------------------
+     ! Error on invalid T_decimals
+     !--------------------------------------------------
+     if (T_decimals .lt. 0) then
+        if (is_root) then
+           write(6,*)
+           write(6,'(A43)') '###############################'
+           write(6,'(A43)') '##########   ERROR   ##########'
+           write(6,'(A43)') '###############################'
+           write(6,*)
+           write(6,'(A)')    ' ---       Error in subroutine "check_param"      ---'
+           write(6,'(A)')    ' --- ERROR: T_decimals cannot be negative'
+        end if
+        stop
+     end if
+     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     if(any(readvar.gt.1)) then
        if (is_root) then
@@ -607,6 +657,8 @@ contains
        write(6,'(A35,I6)')      '   TempDepProp   = ', TempDepProp
        write(6,'(A35,A12)')     '   Periodic      = ', Periodic
        write(6,'(A35,F12.5)')   '   T_BathCG      = ', T_BathCG
+       write(6,'(A35,A)')       '   solver        = ', trim(solver_type)
+       write(6,'(A35,I6)')      '   T_decimals    = ', T_decimals
        write(6,'(A35,F12.5)')   '   BR            = ', BR
        write(6,'(A35,I6)')      '   start_ix      = ', start_ix
        write(6,'(A35,I6)')      '   end_ix        = ', end_ix
@@ -848,6 +900,23 @@ subroutine read_mat(unit)
     return
   end function val
 !!!#################################################################################################
+
+!!!#################################################################################################
+!!! converts a string to lower case
+!!!#################################################################################################
+  pure function to_lower(str) result(lower)
+    character(len=*), intent(in) :: str
+    character(len=len(str)) :: lower
+    integer :: i, ic
+    do i = 1, len(str)
+       ic = iachar(str(i:i))
+       if (ic .ge. iachar('A') .and. ic .le. iachar('Z')) then
+          lower(i:i) = achar(ic + 32)
+       else
+          lower(i:i) = str(i:i)
+       end if
+    end do
+  end function to_lower
 
 end module inputs
 

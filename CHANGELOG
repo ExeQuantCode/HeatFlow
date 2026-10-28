@@ -12,6 +12,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 ### Security
 
+##[2.1.0] - 2026-10-28
+## Added
+- Runtime solver selection via the `solver` input flag: `legacy` (original conjugate gradient solver) or the PETSc preconditioners `ilu`, `lu` and `gamg`. Default: `ilu`
+- `T_decimals` input parameter controlling the number of decimal places written to the temperature output file. Default: `3`
+
+## Changed
+- The PETSc preconditioner is now selected at runtime via `solver` instead of the compile-time `PRECONDITIONER` parameter (previously fixed to GAMG)
+
+## Fixed
+- LU direct solver no longer fails with "preonly doesn't make sense with nonzero initial guess" (nonzero initial guess is now only used for the iterative solvers)
+
 ##[2.0.0] - 2026-03-26
 ## Added
 -Add Petsc solver

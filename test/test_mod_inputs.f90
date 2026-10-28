@@ -1,6 +1,7 @@
 module test_mod_inputs
     use constants, only: real12, int12
     use inputs, only: read_param, read_mat, read_system
+    use inputs, only: solver_type, T_decimals
     use initial, only: read_temp_file
     ! use TempDep, only: ReadTempDepTable    
     implicit none
@@ -37,6 +38,19 @@ contains
         open(newunit=unit, file=param_infile, iostat=reason)
         CALL read_param(unit)
         close(unit)
+
+        !-----------------------------------------------
+        ! check the solver and T_decimals parameters
+        !-----------------------------------------------
+        if (trim(solver_type) .ne. 'ilu') then
+            write(0,*) 'Error: solver_type = "', trim(solver_type), '", expected "ilu"'
+            stop 1
+        end if
+        if (T_decimals .ne. 3) then
+            write(0,*) 'Error: T_decimals = ', T_decimals, ', expected 3'
+            stop 1
+        end if
+        write(*,*) "test_read_param (solver, T_decimals): PASSED"
         
     
         !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -288,10 +302,15 @@ end module test_mod_inputs
 
 program main
     use test_mod_inputs
+    use mpi
     implicit none
     logical :: success
-    
+    integer :: ierr
+
+    success = .true.
+    call MPI_Init(ierr)
     call run_all_tests(success)
+    call MPI_Finalize(ierr)
     if (success) then
         write(*,*) "All tests passed"
     else
