@@ -98,9 +98,10 @@ module inputs
   ! Name of simiulation run
   character(1024) :: RunName
   character(12)::Periodic
-  ! Input and output directories (settable via the -i and -o command line options)
+  ! Input, output and restart directories (settable via command line options)
   character(1024) :: input_dir = './inputs'
   character(1024) :: output_dir = './outputs'
+  character(1024) :: restart_dir = './restart'
   ! Essentially it is the system that is being simulated
   type(heatblock), dimension(:,:,:), allocatable :: grid 
   type(material), dimension(:), allocatable :: input_materials ! The materials
@@ -116,51 +117,130 @@ module inputs
 
 contains
 !!!#################################################################################################
-!!! read_cli_dirs parses the command line for the -i and -o options ...
-!!! ... which set the input and output directories (defaults ./inputs and ./outputs). ...
+!!! read_cli_dirs parses the command line for the input/output directory options: ...
+!!! ...   -i <dir>, --input-directory <dir>, --input-directory=<dir> ...
+!!! ...   -o <dir>, --output-directory <dir>, --output-directory=<dir> ...
+!!! ...   --directory <dir> (legacy alias: dir/inputs, dir/outputs, dir/restart) ...
+!!! ... Defaults are ./inputs, ./outputs and ./restart. ...
 !!! ... The output directory is created if it does not exist.
 !!!#################################################################################################
   subroutine read_cli_dirs()
     implicit none
     integer :: i, nargs
-    character(1024) :: arg
+    character(1024) :: arg, directory
 
     nargs = command_argument_count()
+    directory = ''
     i = 1
     do while (i .le. nargs)
        call get_command_argument(i, arg)
        select case (trim(arg))
-       case ('-i')
+       case ('-i', '--input-directory')
           if (i .eq. nargs) then
-             write(6,*) 'Error: -i requires a directory argument'
+             write(6,*) 'Error: ', trim(arg), ' requires a directory argument'
              stop 1
           end if
           call get_command_argument(i+1, input_dir)
           i = i + 2
-       case ('-o')
+       case ('-o', '--output-directory')
           if (i .eq. nargs) then
-             write(6,*) 'Error: -o requires a directory argument'
+             write(6,*) 'Error: ', trim(arg), ' requires a directory argument'
              stop 1
           end if
           call get_command_argument(i+1, output_dir)
           i = i + 2
+       case ('--directory')
+          if (i .eq. nargs) then
+             write(6,*) 'Error: --directory requires a directory argument'
+             stop 1
+          end if
+          call get_command_argument(i+1, directory)
+          i = i + 2
        case default
-          ! ignore unrecognised arguments (e.g. PETSc runtime options)
+          if (index(trim(arg), '--input-directory=') .eq. 1) then
+             input_dir = trim(arg(len('--input-directory=') + 1:))
+          else if (index(trim(arg), '--output-directory=') .eq. 1) then
+             output_dir = trim(arg(len('--output-directory=') + 1:))
+          else if (index(trim(arg), '--directory=') .eq. 1) then
+             directory = trim(arg(len('--directory=') + 1:))
+          end if
+          ! ignore any other arguments (e.g. PETSc runtime options)
           i = i + 1
        end select
     end do
 
-    ! strip any trailing slash so paths can be formed as dir//'/'file
-    input_dir = trim(input_dir)
-    output_dir = trim(output_dir)
-    if (input_dir(len_trim(input_dir):len_trim(input_dir)) .eq. '/') &
-         input_dir = input_dir(:len_trim(input_dir)-1)
-    if (output_dir(len_trim(output_dir):len_trim(output_dir)) .eq. '/') &
-         output_dir = output_dir(:len_trim(output_dir)-1)
+    ! legacy --directory alias maps to dir/inputs, dir/outputs, dir/restart
+    if (len_trim(directory) .gt. 0) then
+       input_dir = join_path(directory, 'inputs')
+       output_dir = join_path(directory, 'outputs')
+       restart_dir = join_path(directory, 'restart')
+    end if
+
+    ! strip trailing slashes so paths can be formed as dir//'/'file
+    input_dir = normalize_directory(input_dir)
+    output_dir = normalize_directory(output_dir)
+    restart_dir = normalize_directory(restart_dir)
+
+    ! keep restart files beside a custom inputs directory when possible
+    if (len_trim(directory) .eq. 0) call derive_restart_dir_from_input()
 
     ! create the output directory if it does not exist
-    call execute_command_line('mkdir -p '//trim(output_dir))
+    call execute_command_line('mkdir -p "'//trim(output_dir)//'"')
   end subroutine read_cli_dirs
+!!!#################################################################################################
+
+!!!#################################################################################################
+!!! build a filesystem path from a directory and a file name
+!!!#################################################################################################
+  function join_path(directory, name) result(path)
+    implicit none
+    character(len=*), intent(in) :: directory, name
+    character(len=1024) :: path
+
+    if (len_trim(directory) .eq. 0) then
+       path = trim(name)
+    else if (len_trim(name) .eq. 0) then
+       path = trim(directory)
+    else
+       path = trim(normalize_directory(directory)) // '/' // trim(name)
+    end if
+  end function join_path
+!!!#################################################################################################
+
+!!!#################################################################################################
+!!! remove trailing slashes so path joins stay consistent
+!!!#################################################################################################
+  function normalize_directory(dirname) result(normalized)
+    implicit none
+    character(len=*), intent(in) :: dirname
+    character(len=1024) :: normalized
+    integer :: last_char
+
+    normalized = trim(adjustl(dirname))
+    last_char = len_trim(normalized)
+    do while (last_char .gt. 1 .and. normalized(last_char:last_char) .eq. '/')
+       last_char = last_char - 1
+    end do
+    normalized = normalized(:last_char)
+  end function normalize_directory
+!!!#################################################################################################
+
+!!!#################################################################################################
+!!! keep restart files beside an inputs directory when possible
+!!!#################################################################################################
+  subroutine derive_restart_dir_from_input()
+    implicit none
+    integer :: dir_length
+
+    dir_length = len_trim(input_dir)
+    if (trim(input_dir) .eq. 'inputs') then
+       restart_dir = 'restart'
+    else if (dir_length .gt. 7) then
+       if (input_dir(dir_length-6:dir_length) .eq. '/inputs') then
+          restart_dir = trim(input_dir(:dir_length-7)) // '/restart'
+       end if
+    end if
+  end subroutine derive_restart_dir_from_input
 !!!#################################################################################################
 
 !!!#################################################################################################
@@ -177,7 +257,7 @@ contains
     ! get data from param.in
     !-----------------------------------------------
     ! name infile
-    param_infile = trim(input_dir)//"/param.in" ! file name
+    param_infile = join_path(input_dir, 'param.in') ! file name
 
     ! check if file is there
     inquire(file=param_infile, exist=file_exists) ! check if file exists
@@ -202,7 +282,7 @@ contains
     !-----------------------------------------------
     ! name infile
 
-    mat_infile = trim(input_dir)//"/mat.in" ! file name
+    mat_infile = join_path(input_dir, 'mat.in') ! file name
 
     ! check if file is there
     inquire(file=mat_infile, exist=file_exists)
@@ -225,7 +305,7 @@ contains
     !-----------------------------------------------
     ! name infile
 
-    mesh_infile = trim(input_dir)//"/system.in" ! file name
+    mesh_infile = join_path(input_dir, 'system.in') ! file name
 
     ! check if file is there
     inquire(file=mesh_infile, exist=file_exists)
