@@ -11,11 +11,21 @@ set(CMAKE_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}
 set(MODULE_DIR ${CMAKE_BUILD_DIR}/mod)
 
 
-# set compiler
-set(CMAKE_Fortran_COMPILER gfortran
-  CACHE STRING "Select Fortran compiler." )  # Change this to your desired compiler
-set(CMAKE_C_COMPILER gcc
-  CACHE STRING "Select C compiler." )  # Change this to your desired compiler
+# set compiler (auto-detected, MPI wrapper preferred; override with -DCMAKE_Fortran_COMPILER=...)
+if(NOT DEFINED CMAKE_Fortran_COMPILER)
+  find_program(HF_Fortran_COMPILER NAMES mpifort mpif90 gfortran ifx ifort nagfor)
+  if(HF_Fortran_COMPILER)
+    set(CMAKE_Fortran_COMPILER "${HF_Fortran_COMPILER}"
+      CACHE STRING "Select Fortran compiler." )
+  endif()
+endif()
+if(NOT DEFINED CMAKE_C_COMPILER)
+  find_program(HF_C_COMPILER NAMES mpicc gcc clang icx icc)
+  if(HF_C_COMPILER)
+    set(CMAKE_C_COMPILER "${HF_C_COMPILER}"
+      CACHE STRING "Select C compiler." )
+  endif()
+endif()
 set(CMAKE_Fortran_STANDARD 2018)
 
 # set the project name
@@ -32,7 +42,29 @@ find_package(MPI REQUIRED)
 if (HEATFLOW_PETSC)
     find_package(PkgConfig QUIET)
     if (PkgConfig_FOUND)
-        pkg_check_modules(PETSC QUIET petsc)
+        pkg_search_module(PETSC QUIET petsc PETSc)
+    endif()
+    # Fall back to PETSC_DIR/PETSC_ARCH (e.g. bespoke or module-built PETSc)
+    if (NOT PETSC_FOUND)
+        if (NOT DEFINED PETSC_DIR)
+            set(PETSC_DIR $ENV{PETSC_DIR})
+        endif()
+        if (NOT DEFINED PETSC_ARCH)
+            set(PETSC_ARCH $ENV{PETSC_ARCH})
+        endif()
+        if (PETSC_DIR)
+            set(PETSC_INCLUDE_DIRS "${PETSC_DIR}/include")
+            set(HF_PETSC_LIB_HINTS "${PETSC_DIR}/lib")
+            if (PETSC_ARCH)
+                list(APPEND PETSC_INCLUDE_DIRS "${PETSC_DIR}/${PETSC_ARCH}/include")
+                list(APPEND HF_PETSC_LIB_HINTS "${PETSC_DIR}/${PETSC_ARCH}/lib")
+            endif()
+            find_library(PETSC_LIBRARY NAMES petsc HINTS ${HF_PETSC_LIB_HINTS})
+            if (PETSC_LIBRARY)
+                set(PETSC_FOUND TRUE)
+                set(PETSC_LIBRARIES "${PETSC_LIBRARY}")
+            endif()
+        endif()
     endif()
 endif()
 
@@ -109,9 +141,9 @@ set(MEMFLAGS "")
 set(OPTIMFLAGS "")
 set(FASTFLAGS "")
 
-# set flags based on compiler
-if (CMAKE_Fortran_COMPILER MATCHES ".*gfortran.*" OR CMAKE_Fortran_COMPILER MATCHES ".*gcc.*" OR CMAKE_Fortran_COMPILER MATCHES ".*mpifort.*" OR CMAKE_Fortran_COMPILER MATCHES ".*mpif90.*")
-    message(STATUS "Using gfortran compiler")
+# set flags based on compiler ID (robust across wrappers and platforms)
+if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+    message(STATUS "Using GNU compiler: ${CMAKE_Fortran_COMPILER}")
     set(PPFLAGS -cpp)
     set(MPFLAGS -fopenmp)
     set(WARNFLAGS -Wall)
@@ -120,7 +152,7 @@ if (CMAKE_Fortran_COMPILER MATCHES ".*gfortran.*" OR CMAKE_Fortran_COMPILER MATC
     set(MEMFLAGS -mcmodel=large)
     set(OPTIMFLAGS -O3 -march=native)
     set(FASTFLAGS -Ofast -march=native)
-elseif (CMAKE_Fortran_COMPILER MATCHES ".*nag.*")
+elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "NAG")
     message(STATUS "Using nag compiler")
     set(PPFLAGS -f2018 -fpp)
     set(MPFLAGS -openmp)
@@ -130,7 +162,7 @@ elseif (CMAKE_Fortran_COMPILER MATCHES ".*nag.*")
     set(MEMFLAGS -mcmodel=large)
     set(OPTIMFLAGS -O3)
     set(FASTFLAGS -Ofast)
-elseif (CMAKE_Fortran_COMPILER MATCHES ".*ifort.*" OR CMAKE_Fortran_COMPILER MATCHES ".*ifx.*")
+elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
     message(STATUS "Using intel compiler")
     set(PPFLAGS -fpp)
     set(MPFLAGS -qopenmp)
@@ -142,7 +174,7 @@ elseif (CMAKE_Fortran_COMPILER MATCHES ".*ifort.*" OR CMAKE_Fortran_COMPILER MAT
     set(FASTFLAGS -Ofast)
 else()
     # Code for other Fortran compilers
-    message(STATUS "Using a different Fortran compiler")
+    message(STATUS "Using a different Fortran compiler: ${CMAKE_Fortran_COMPILER_ID}")
 endif()
 
 
@@ -207,7 +239,7 @@ if(BUILD_TESTS)
   add_subdirectory(test)
 endif()
 
-if ( ( CMAKE_Fortran_COMPILER MATCHES ".*gfortran.*" OR CMAKE_Fortran_COMPILER MATCHES ".*gcc.*" ) AND 
+if ( ( CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" ) AND
      ( CMAKE_BUILD_TYPE MATCHES "Coverage" ) )
 
     append_coverage_compiler_flags()
