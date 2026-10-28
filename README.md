@@ -82,7 +82,7 @@ For cmake installation, start within the repository root directory, run the foll
 ```
 mkdir build
 cd build
-cmake [-DCMAKE_BUILD_TYPE=Release] [-DHEATFLOW_PETSC=OFF] [-DHEATFLOW_HDF5=ON] ..
+cmake [-DCMAKE_BUILD_TYPE=Release] [-DHEATFLOW_PETSC=ON] [-DHEATFLOW_HDF5=ON] ..
 make install
 ```
 
