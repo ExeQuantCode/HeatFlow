@@ -19,10 +19,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for compiling without PETSc when the libraries are not available (legacy-solver-only build); auto-detected by the Makefile and CMake, or forced with `make PETSC=0` / `-DHEATFLOW_PETSC=OFF`
 - Early validation at startup that the selected solver is available in the current build
 - `-i` and `-o` command line options to select the input and output directories (default `./inputs` and `./outputs`); the output directory is created if it does not exist
+- macOS build support: Makefile Darwin block (Homebrew PETSc, Apple Accelerate BLAS), CMake compiler auto-detection and `COMPILER_ID`-based flags, `PETSC_DIR`/`PETSC_ARCH` fallback
+- Directory selection command line options: `-i`/`--input-directory`, `-o`/`--output-directory` and the `--directory` alias (maps to `<dir>/inputs`, `<dir>/outputs`, `<dir>/restart`); the restart directory is configurable via `restart_dir`
+- HDF5 output support: `_HDF5Output` input flag writes `times` and `temperatures` datasets (GZIP compressed) to `output_<RunName>.h5`; enabled at build time with `make USE_HDF5=1` or `-DHEATFLOW_HDF5=ON`
+- `build_fpm_with_petsc.sh` helper for fpm builds with PETSc
 
 ## Changed
 - The PETSc preconditioner is now selected at runtime via `solver` instead of the compile-time `PRECONDITIONER` parameter (previously fixed to GAMG)
 - CMake build now includes the PETSc solver module and links MPI
+- PETSc objects are now nullified at runtime instead of declaration-time (required for newer PETSc, e.g. macOS Homebrew)
+- fpm.toml no longer hardcodes PETSc paths; include/library paths are provided at build time
 
 ## Fixed
 - LU direct solver no longer fails with "preonly doesn't make sense with nonzero initial guess" (nonzero initial guess is now only used for the iterative solvers)

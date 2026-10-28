@@ -38,7 +38,10 @@ Thank you for your understanding and continued support!
 - Fortran compiler supporting Fortran 2003 standard or later
 - MPI (e.g. OpenMPI) — required
 - PETSc — optional, enables the `ilu`, `lu` and `gamg` solvers (without it only the `legacy` solver is available)
+- HDF5 — optional, enables HDF5 output (`_HDF5Output` flag)
 - GNU Make or CMake (fpm can also be used)
+
+On macOS, dependencies are available via Homebrew: `brew install open-mpi petsc hdf5-mpi`
 
 The software bas been developed and tested using the following Fortran compilers:
 - gfortran -- gcc 13.2.0
@@ -67,7 +70,13 @@ To force a build without PETSc even when it is installed:
 make PETSC=0
 ```
 
-The executable is written to `bin/ThermalFlow.x`.
+To build with HDF5 output support:
+
+```
+make USE_HDF5=1
+```
+
+PETSc is detected via pkg-config or `PETSC_DIR`/`PETSC_ARCH` on Linux, and via Homebrew on macOS. The executable is written to `bin/ThermalFlow.x`.
 
 ### cmake
 
@@ -76,7 +85,7 @@ For cmake installation, start within the repository root directory, run the foll
 ```
 mkdir build
 cd build
-cmake [-DCMAKE_BUILD_TYPE=Release] [-DHEATFLOW_PETSC=OFF] ..
+cmake [-DCMAKE_BUILD_TYPE=Release] [-DHEATFLOW_PETSC=OFF] [-DHEATFLOW_HDF5=ON] ..
 make install
 ```
 
@@ -103,7 +112,7 @@ fpm build --profile=release
 
 ## Running
 
-The simulation is controlled by input files (`param.in`, `mat.in`, `system.in`), read by default from `./inputs`, with output written to `./outputs`. Both directories can be selected with the `-i` and `-o` command line options (the output directory is created if it does not exist).
+The simulation is controlled by input files (`param.in`, `mat.in`, `system.in`), read by default from `./inputs`, with output written to `./outputs` (restart files in `./restart`). The directories can be selected on the command line — `-i`/`--input-directory`, `-o`/`--output-directory`, or the `--directory` alias which maps to `<dir>/inputs`, `<dir>/outputs` and `<dir>/restart` (the output directory is created if it does not exist).
 
 Example command:
 
@@ -111,10 +120,18 @@ Example command:
 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 mpiexec -n 2 ./bin/ThermalFlow.x -i ./inputs -o ./outputs
 ```
 
-The linear solver is chosen at runtime with the `solver` keyword in `param.in` (`legacy`, `ilu`, `lu` or `gamg`; default `ilu`). PETSc runtime options (e.g. `-ksp_monitor`) can be passed on the command line alongside `-i`/`-o`:
+or equivalently, with a single run directory:
+
+```
+mpiexec -n 2 ./bin/ThermalFlow.x --directory .
+```
+
+The linear solver is chosen at runtime with the `solver` keyword in `param.in` (`legacy`, `ilu`, `lu` or `gamg`; default `ilu`). PETSc runtime options (e.g. `-ksp_monitor`) can be passed on the command line alongside the directory options:
 
 ```
 mpiexec -n 2 ./bin/ThermalFlow.x -i ./inputs -o ./outputs -ksp_monitor
 ```
+
+Setting `_HDF5Output = T` in `param.in` writes the temperature field to `outputs/output_<RunName>.h5` (requires a build with HDF5 support).
 
 See `docs/USER_MANUAL.md` for the full list of input keywords and options.

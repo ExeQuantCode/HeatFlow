@@ -6,6 +6,18 @@ This manual provides a concise guide to configuring and running simulations usin
 
 Build with `make` (MPI is required). PETSc is detected automatically; if it is not found, a legacy-solver-only version is built (only `solver = legacy` is available). To force a build without PETSc even when it is installed, use `make PETSC=0`.
 
+## Command Line Options
+
+The input and output directories can be selected on the command line (defaults: `./inputs`, `./outputs`, restart files in `./restart`):
+
+| Option | Description |
+| :--- | :--- |
+| `-i <dir>` / `--input-directory <dir>` / `--input-directory=<dir>` | Directory containing `param.in`, `mat.in` and `system.in`. The restart directory is derived from it when it ends in `/inputs`. |
+| `-o <dir>` / `--output-directory <dir>` / `--output-directory=<dir>` | Directory for all output files (created if it does not exist). |
+| `--directory <dir>` / `--directory=<dir>` | Legacy alias: uses `<dir>/inputs`, `<dir>/outputs` and `<dir>/restart`. |
+
+PETSc runtime options (e.g. `-ksp_monitor`) can be passed alongside these options.
+
 ## Input Files
 
 The simulation is controlled by three main input files located in the `inputs/` directory:
@@ -59,6 +71,8 @@ All flags default to `.False.`. Set to `.True.` (or `T`) to enable.
 - `_Test_Run`: Flag for test runs.
 - `_InputTempDis`: Load initial temperature distribution from file.
 - `_FullRestart`: Perform a full restart.
+- `_CompressedOutput`: Write the temperature output in compressed binary form.
+- `_HDF5Output`: Write the temperature output to an HDF5 file (`output_<RunName>.h5`, GZIP compressed). Requires a build with HDF5 support (`make USE_HDF5=1` or `-DHEATFLOW_HDF5=ON`).
 
 #### Output Control
 Defines the region of the grid to write to output.
