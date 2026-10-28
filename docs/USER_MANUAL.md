@@ -148,7 +148,7 @@ Each line in the file (after header) corresponds to one row (X-direction).
 Ensure the `inputs/` directory exists with the three required files. Run the executable from the directory containing `inputs/`.
 
 ```bash
-./ThermalFlow.x
+./HeatFlow
 ```
 or via `fpm`:
 ```bash

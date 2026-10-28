@@ -17,11 +17,11 @@ find_parent_dir() {
 parent_dir=$(find_parent_dir)
 
 # get path to executable
-executable_path="$parent_dir/bin/ThermalFlow.x"
+executable_path="$parent_dir/bin/HeatFlow"
 executable_dir=$(dirname "$executable_path")
 
 # Confirm path
-read -e -p "The path to ThermalFlow.x is: " -i "$executable_path" executable_path
+read -e -p "The path to HeatFlow is: " -i "$executable_path" executable_path
 
 while [[ ! -f "$executable_path" ]]; do
   echo "The file does not exist"
@@ -72,7 +72,7 @@ EOF
 # Make the new script executable
 chmod +x Thermal-omp.x
 
-# Move the Thermal-omp.x script to the same directory as ThermalFlow.x
+# Move the Thermal-omp.x script to the same directory as HeatFlow
 mv Thermal-omp.x "$executable_dir"
 
 echo "The Thermal-omp.x script has been created and moved to $executable_dir"

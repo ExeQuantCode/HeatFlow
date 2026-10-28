@@ -73,7 +73,7 @@ To build with HDF5 output support:
 make USE_HDF5=1
 ```
 
-PETSc is detected via pkg-config or `PETSC_DIR`/`PETSC_ARCH` on Linux, and via Homebrew on macOS. The executable is written to `bin/ThermalFlow.x`.
+PETSc is detected via pkg-config or `PETSC_DIR`/`PETSC_ARCH` on Linux, and via Homebrew on macOS. The executable is written to `bin/HeatFlow`.
 
 ### cmake
 
@@ -114,19 +114,19 @@ The simulation is controlled by input files (`param.in`, `mat.in`, `system.in`),
 Example command:
 
 ```
-OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 mpiexec -n 2 ./bin/ThermalFlow.x -i ./inputs -o ./outputs
+OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 mpiexec -n 2 ./bin/HeatFlow -i ./inputs -o ./outputs
 ```
 
 or equivalently, with a single run directory:
 
 ```
-mpiexec -n 2 ./bin/ThermalFlow.x --directory .
+mpiexec -n 2 ./bin/HeatFlow --directory .
 ```
 
 The linear solver is chosen at runtime with the `solver` keyword in `param.in` (`legacy`, `ilu`, `lu` or `gamg`; default `ilu`). PETSc runtime options (e.g. `-ksp_monitor`) can be passed on the command line alongside the directory options:
 
 ```
-mpiexec -n 2 ./bin/ThermalFlow.x -i ./inputs -o ./outputs -ksp_monitor
+mpiexec -n 2 ./bin/HeatFlow -i ./inputs -o ./outputs -ksp_monitor
 ```
 
 Setting `_HDF5Output = T` in `param.in` writes the temperature field to `outputs/output_<RunName>.h5` (requires a build with HDF5 support).

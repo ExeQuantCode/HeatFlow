@@ -156,7 +156,7 @@ FFLAGS      := -cpp $(PETSC_DEF) $(OPTFLAGS) $(OMPFLAGS) $(WARNFLAGS) $(PETSC_IN
 DEBUGFLAGS  := -cpp $(PETSC_DEF) -O0 -g -fcheck=all -fbacktrace -ffpe-trap=invalid,zero,overflow,underflow -fbounds-check $(PETSC_INC) $(HDF5_FLAGS) $(MODDIR_FLAG)
 
 # Program
-NAME    := ThermalFlow.x
+NAME    := HeatFlow
 TARGET  := $(BIN_DIR)/$(NAME)
 
 # Sources (module order)
