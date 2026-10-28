@@ -1,6 +1,5 @@
 1 !Host
 heat_capacity = 4200
-h_conv = 100
 kappa  = 0.541
 kappa3D = 148
 rho = 997

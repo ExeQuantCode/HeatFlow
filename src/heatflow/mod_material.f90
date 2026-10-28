@@ -7,7 +7,6 @@
 !!! - TC, the temperature of the material.
 !!! - kappa, the thermal conductivity of the material.
 !!! - kappa3D, the thermal conductivity of the material in 3D.
-!!! - h_conv, the convective heat transfer coefficient.
 !!! - heat_capacity, the heat capacity of the material.
 !!! - rho, the density of the material.
 !!! - sound_speed, the speed of sound in the material.
@@ -27,7 +26,6 @@ contains
 !!!  The material properties are:
 !!!  - kappa, the thermal conductivity of the material.
 !!!  - kappa3D, the thermal conductivity of the material in 3D.
-!!!  - h_conv, the convective heat transfer coefficient.
 !!!  - heat_capacity, the heat capacity of the material.
 !!!  - rho, the density of the material.
 !!!  - sound_speed, the speed of sound in the material.
@@ -43,7 +41,6 @@ contains
 !!!  - imaterial_type, the material type.
 !!!  - kappa, the thermal conductivity of the material.
 !!!  - kappa3D, the thermal conductivity of the material in 3D.
-!!!  - h_conv, the convective heat transfer coefficient.
 !!!  - heat_capacity, the heat capacity of the material.
 !!!  - rho, the density of the material.
 !!!  - sound_speed, the speed of sound in the material.
@@ -51,22 +48,17 @@ contains
 !!!  - em, the emissivity of the material.
 !!!#########################################################################
 
-subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_speed,tau, em, vel)
+subroutine material(imaterial_type,kappa,kappa3D,heat_capacity,rho,sound_speed,tau, em)
   
    integer(int12), intent(in) ::imaterial_type
    integer(int12) :: i, tmp
-   real(real12), intent(inout) :: kappa3D, kappa, h_conv, heat_capacity, sound_speed, rho, tau
+   real(real12), intent(inout) :: kappa3D, kappa, heat_capacity, sound_speed, rho, tau
    real(real12), intent(inout) :: em
-   real(real12), dimension(3), intent(inout) :: vel
    logical :: found
 
 !!!=============================================
 !!! notes ::
 !!! 140 - silicon
-!!! 3001 - air (convection - h 50)
-!!! 3002 - air (convection - h 100)
-!!! 3003 - air (convection - h 200)
-!!! 3004 - air (convection - h 0)
 !!! 
 !!! 9001 - Muscle  !values provided by A. Ghita
 !!! 9002 - epidermis !values provided by A. Ghita
@@ -91,15 +83,11 @@ subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_
          if (tmp .eq. imaterial_type) then
             found = .true.
             heat_capacity = input_materials(i)%heat_capacity
-            ! h_conv        = input_materials(i)%h_conv
             kappa         = input_materials(i)%kappa
             ! kappa3D       = input_materials(i)%kappa3D
             rho           = input_materials(i)%rho
             ! sound_speed   = input_materials(i)%sound_speed
             tau           = input_materials(i)%tau
-            vel(1)        = input_materials(i)%vel(1)
-            vel(2)        = input_materials(i)%vel(2)
-            vel(3)        = input_materials(i)%vel(3)
             em   = input_materials(i)%em
 
             exit mat_loop
@@ -122,7 +110,6 @@ subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_
 !!!air
       case(100)
          heat_capacity=1.0!0.718 !730.0
-         h_conv=21.4 !engineering toolbox, v~1[m/s]
          !      heat_diffusion=1.0 !9.909090909e-07
          kappa=1.0!0.02587 ! engineering toolbox at 20c
          kappa3D=0.02587
@@ -142,7 +129,6 @@ subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_
 !!!Sample case is Silicon (ai bees)
       case(140)
          heat_capacity=4200.0!! all sources
-         h_conv=0 !moving bee at 5m/s
          !      heat_diffusion=1.0 !9.909090909e-07
          kappa=130.0
          kappa3D=130.0 !from www.ioffe.ru thermal properties of silicon
@@ -153,7 +139,6 @@ subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_
          !plastic  
       case(3001)
          heat_capacity=840.0
-         h_conv=0.0 !!ranges between 10 and 100
          kappa=0.19
          kappa3D=0.19
          rho=941.0
@@ -162,7 +147,6 @@ subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_
          !soil 1 
       case(3002)
          heat_capacity=1100.0 !this is 40% wet soil from engineering toolbox
-         h_conv=0.0 !!ranges between 10 and 100
          kappa=1.42
          kappa3D=1.42
          rho=1700.0
@@ -171,7 +155,6 @@ subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_
          !soil 2 
       case(3003)
          heat_capacity=1400.0
-         h_conv=0 !!ranges between 10 and 100
          kappa=1.59
          kappa3D=1.59
          rho=1800.0
@@ -180,7 +163,6 @@ subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_
          !clay 
       case(3004)
          heat_capacity=2300.0
-         h_conv=0 !!ranges between 10 and 100
          kappa=1.25
          kappa3D=1.25
          rho=2300.0
@@ -189,7 +171,6 @@ subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_
          !muscle
       case(9001) 
          heat_capacity=3421.0
-         h_conv=0.0 !!ranges between 10 and 100
          kappa=0.6
          kappa3D=0.0
          rho=1090.0
@@ -199,7 +180,6 @@ subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_
          !epidermis
       case(9002)
          heat_capacity=3391.0
-         h_conv=0.0 !!ranges between 10 and 100
          kappa=0.209
          kappa3D=0.0
          rho=1109.0
@@ -209,7 +189,6 @@ subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_
          !fat
       case(9003)
          heat_capacity=2348.0
-         h_conv=0.0 
          kappa=0.317
          kappa3D=0.0
          rho=911.0
@@ -218,7 +197,6 @@ subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_
          !Si
       case(310)
          heat_capacity= 700.0
-         h_conv = 0.0
          kappa = 130.0
          kappa3D = 130.0
          rho = 2329.0
@@ -227,7 +205,6 @@ subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_
          !SiO2
       case(320)
          heat_capacity= 720.0
-         h_conv = 0.0
          kappa  = 1.4
          kappa3D = 1.4
          rho = 2400.0
@@ -237,7 +214,6 @@ subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_
          !Silver
       case(330)
          heat_capacity = 236.0
-         h_conv = 0.0
          kappa = 427.0
          kappa3D = 429.0
          rho = 10524.0
@@ -246,7 +222,6 @@ subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_
          !SU8 
       case(340)
          heat_capacity= 1500.0 !https://doi.org/10.1016/j.ijheatmasstransfer.2021.122346
-         h_conv = 0.0
          kappa  = 0.2 !kayaku am data sheet for SU8 3000 series
          kappa3D = 0.2
          rho = 1153.0 !kayaku am data sheet for SU8 3000 series
@@ -256,7 +231,6 @@ subroutine material(imaterial_type,kappa,kappa3D,h_conv,heat_capacity,rho,sound_
          !ITO
       case(350)
          heat_capacity= 361.0
-         h_conv = 0.0
          kappa  = 10.2
          kappa3D = 10.2
          rho = 7140.0

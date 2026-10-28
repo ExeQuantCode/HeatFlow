@@ -87,7 +87,6 @@ keyword = value
 | `rho` | Density. |
 | `tau` | Relaxation time (for Cattaneo). |
 | `em` | Emissivity / Parameter (usage depends on physics context). |
-| `vel` | Velocity vector (3 components, e.g., `vel = 1.0 0.0 0.0`). |
 
 **Example:**
 ```
@@ -96,7 +95,6 @@ heat_capacity = 4200
 kappa = 0.541
 rho = 997
 tau = 1e-12
-vel = 0.0 0.0 0.0
 0
 ```
 

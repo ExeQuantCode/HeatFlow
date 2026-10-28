@@ -12,10 +12,9 @@
 !
 !The material type represents a type of material used in the simulation. It contains several fields:
 !index: An integer that serves as an identifier for the material.
-!heat_capacity, h_conv, kappa, kappa3D, rho, sound_speed, tau: ...
+!heat_capacity, kappa, kappa3D, rho, sound_speed, tau: ...
 !...These are physical properties of the material.
-! h_conv represent convective heat transfer coefficient, ...
-!... and kappa3D represent three-dimensional thermal conductivity.
+! kappa3D represent three-dimensional thermal conductivity.
 !source: A logical (boolean) value that indicate whether this material is a source of heat.
 !####################################################
 module constructions
@@ -26,7 +25,6 @@ module constructions
      integer(int12) :: imaterial_type !what type of material it is in the mat.in
      real(real12) :: volume !volume of the block
      real(real12), dimension(3) :: Length !length of the block in 3 dimensions
-     real(real12), dimension(3) :: vel !vel of the block in 3 dimensions
      integer(int12) :: iheater !whether the block is a heater
      real(real12) :: kappa, rho, heat_capacity, tau, em !physical properties of the material
   end type heatblock
@@ -34,13 +32,11 @@ module constructions
   type material
      integer(int12) :: index !identifier for the material
      real(real12) :: heat_capacity !heat capacity of the material
-    !  real(real12) :: h_conv !convective heat transfer coefficient
      real(real12) :: kappa !thermal conductivity
     !  real(real12) :: kappa3D !three-dimensional thermal conductivity
      real(real12) :: rho !density of the material
     !  real(real12) :: sound_speed   !speed of sound in the material
      real(real12) :: tau !relaxation time
-     real(real12), dimension(3) :: vel !velocity of the material
      real(real12) :: em !emisstivity
      logical :: source !whether the material is a source of heat ??
   end type material
