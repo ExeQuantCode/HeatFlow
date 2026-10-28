@@ -23,7 +23,7 @@ program HEATFLOW_V0_3
   use constants, only: real12, int12
   use constructions, only: heatblock
   use output, only: data_write, final_print
-  use inputs, only: read_all_files, iverb, ntime, LPercentage
+  use inputs, only: read_all_files, read_cli_dirs, iverb, ntime, LPercentage
   use inputs, only: IVERB, solver_type
   use evolution, only: simulate
   use setup, only: set_global_variables
@@ -49,6 +49,11 @@ program HEATFLOW_V0_3
    ! give feedback to user that code has begun
    if (petsc_is_root()) write(*,*) 'Setup initialising'
    
+   !-------------------------------------------------------------!
+   ! Parse the command line for -i/-o directory options          !
+   !-------------------------------------------------------------!
+   CALL read_cli_dirs()
+
    !-------------------------------------------------------------!
    ! Read parameters from input file and set global variables ...!
    ! ... and arrays                                              !

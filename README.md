@@ -36,7 +36,9 @@ Thank you for your understanding and continued support!
 ## Requirements
 
 - Fortran compiler supporting Fortran 2003 standard or later
-- fpm or CMake
+- MPI (e.g. OpenMPI) — required
+- PETSc — optional, enables the `ilu`, `lu` and `gamg` solvers (without it only the `legacy` solver is available)
+- GNU Make or CMake (fpm can also be used)
 
 The software bas been developed and tested using the following Fortran compilers:
 - gfortran -- gcc 13.2.0
@@ -50,19 +52,22 @@ To install HeatFlow, the source must be obtained from the git repository. Use th
  cd HeatFlow
 ```
 
-### fpm
+### make
 
-To install using fpm, run the following command in the repository root directory:
-
-```
-fpm build --profile=release
-```
-
-To execute the code, use
+The simplest way to build is with the provided Makefile. PETSc is detected automatically;
+if it is not found, a legacy-solver-only version is built:
 
 ```
-fpm run HeatFlow --profile release -- [ALL PROGRAM OPTIONS]
+make
 ```
+
+To force a build without PETSc even when it is installed:
+
+```
+make PETSC=0
+```
+
+The executable is written to `bin/ThermalFlow.x`.
 
 ### cmake
 
@@ -71,7 +76,7 @@ For cmake installation, start within the repository root directory, run the foll
 ```
 mkdir build
 cd build
-cmake [-DCMAKE_BUILD_TYPE=Release] ..
+cmake [-DCMAKE_BUILD_TYPE=Release] [-DHEATFLOW_PETSC=OFF] ..
 make install
 ```
 
@@ -88,8 +93,28 @@ This can be done with the following command (works on a per-terminal basis, if y
 export PATH="${PATH}:${HOME}/.local/HeatFlow/bin"
 ```
 
-To execute the program, use the following command:
+### fpm
+
+To install using fpm, run the following command in the repository root directory:
 
 ```
-HeatFlow
+fpm build --profile=release
 ```
+
+## Running
+
+The simulation is controlled by input files (`param.in`, `mat.in`, `system.in`), read by default from `./inputs`, with output written to `./outputs`. Both directories can be selected with the `-i` and `-o` command line options (the output directory is created if it does not exist).
+
+Example command:
+
+```
+OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 mpiexec -n 2 ./bin/ThermalFlow.x -i ./inputs -o ./outputs
+```
+
+The linear solver is chosen at runtime with the `solver` keyword in `param.in` (`legacy`, `ilu`, `lu` or `gamg`; default `ilu`). PETSc runtime options (e.g. `-ksp_monitor`) can be passed on the command line alongside `-i`/`-o`:
+
+```
+mpiexec -n 2 ./bin/ThermalFlow.x -i ./inputs -o ./outputs -ksp_monitor
+```
+
+See `docs/USER_MANUAL.md` for the full list of input keywords and options.

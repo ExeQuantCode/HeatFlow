@@ -98,6 +98,9 @@ module inputs
   ! Name of simiulation run
   character(1024) :: RunName
   character(12)::Periodic
+  ! Input and output directories (settable via the -i and -o command line options)
+  character(1024) :: input_dir = './inputs'
+  character(1024) :: output_dir = './outputs'
   ! Essentially it is the system that is being simulated
   type(heatblock), dimension(:,:,:), allocatable :: grid 
   type(material), dimension(:), allocatable :: input_materials ! The materials
@@ -113,12 +116,60 @@ module inputs
 
 contains
 !!!#################################################################################################
+!!! read_cli_dirs parses the command line for the -i and -o options ...
+!!! ... which set the input and output directories (defaults ./inputs and ./outputs). ...
+!!! ... The output directory is created if it does not exist.
+!!!#################################################################################################
+  subroutine read_cli_dirs()
+    implicit none
+    integer :: i, nargs
+    character(1024) :: arg
+
+    nargs = command_argument_count()
+    i = 1
+    do while (i .le. nargs)
+       call get_command_argument(i, arg)
+       select case (trim(arg))
+       case ('-i')
+          if (i .eq. nargs) then
+             write(6,*) 'Error: -i requires a directory argument'
+             stop 1
+          end if
+          call get_command_argument(i+1, input_dir)
+          i = i + 2
+       case ('-o')
+          if (i .eq. nargs) then
+             write(6,*) 'Error: -o requires a directory argument'
+             stop 1
+          end if
+          call get_command_argument(i+1, output_dir)
+          i = i + 2
+       case default
+          ! ignore unrecognised arguments (e.g. PETSc runtime options)
+          i = i + 1
+       end select
+    end do
+
+    ! strip any trailing slash so paths can be formed as dir//'/'file
+    input_dir = trim(input_dir)
+    output_dir = trim(output_dir)
+    if (input_dir(len_trim(input_dir):len_trim(input_dir)) .eq. '/') &
+         input_dir = input_dir(:len_trim(input_dir)-1)
+    if (output_dir(len_trim(output_dir):len_trim(output_dir)) .eq. '/') &
+         output_dir = output_dir(:len_trim(output_dir)-1)
+
+    ! create the output directory if it does not exist
+    call execute_command_line('mkdir -p '//trim(output_dir))
+  end subroutine read_cli_dirs
+!!!#################################################################################################
+
+!!!#################################################################################################
 !!! read_all_files will call the routines to read each input file
 !!!#################################################################################################
   subroutine read_all_files()
     implicit none
     integer :: unit, reason ! file unit and reason
-    character(64) :: param_infile, mat_infile, mesh_infile ! file names
+    character(1024) :: param_infile, mat_infile, mesh_infile ! file names
     logical :: file_exists ! check if file exists
 
 
@@ -126,14 +177,14 @@ contains
     ! get data from param.in
     !-----------------------------------------------
     ! name infile
-    param_infile = "./inputs/param.in" ! file name
+    param_infile = trim(input_dir)//"/param.in" ! file name
 
     ! check if file is there
     inquire(file=param_infile, exist=file_exists) ! check if file exists
 
     ! give error and exit code
     if (.not.file_exists) then
-        write(6,*) 'Error cannot find file: param.in'
+        write(6,*) 'Error cannot find file: ', trim(param_infile)
         stop
     end if
     
@@ -151,14 +202,14 @@ contains
     !-----------------------------------------------
     ! name infile
 
-    mat_infile = "./inputs/mat.in" ! file name
+    mat_infile = trim(input_dir)//"/mat.in" ! file name
 
     ! check if file is there
     inquire(file=mat_infile, exist=file_exists)
 
     ! give error and exit code
     if (.not.file_exists) then
-        write(6,*) 'Error cannot find file: mat.in'
+        write(6,*) 'Error cannot find file: ', trim(mat_infile)
         stop
     end if
     
@@ -174,14 +225,14 @@ contains
     !-----------------------------------------------
     ! name infile
 
-    mesh_infile = "./inputs/system.in" ! file name
+    mesh_infile = trim(input_dir)//"/system.in" ! file name
 
     ! check if file is there
     inquire(file=mesh_infile, exist=file_exists)
 
     ! give error and exit code
     if (.not.file_exists) then
-        write(6,*) 'Error cannot find file: system.in'
+        write(6,*) 'Error cannot find file: ', trim(mesh_infile)
         stop
     end if
     

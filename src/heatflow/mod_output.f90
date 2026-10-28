@@ -46,6 +46,7 @@ module output
   use inputs, only: nx,ny,nz, time_step, grid, NA, Check_Steady_State, ntime, WriteToTxt
   use inputs, only: Test_Run, freq, RunName, FullRestart, IVERB, write_every, CompressedOutput
   use inputs, only: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz, T_decimals
+  use inputs, only: output_dir
   use globe_data, only: Temp_p,Temp_pp, heat, heated_volume, logname
   implicit none
   
@@ -61,7 +62,7 @@ contains
     
     logunit = 20
     file_prefix = 'Temperture_'
-    outdir='./outputs/'
+    outdir=trim(output_dir)//'/'
     file_extension = '.out'
     ! Runtime format for the temperature values: Fw.d with d = T_decimals ...
     ! ... (fixed number of decimal places, e.g. 100.001 and 1000.001 for d=3)
@@ -88,8 +89,8 @@ contains
           !---------------------------------------
           ! open test output files                
           !---------------------------------------
-          open(unit=33,file='./outputs/Power.txt')
-          open(unit=30, file='./outputs/Test.txt')
+          open(unit=33,file=trim(output_dir)//'/Power.txt')
+          open(unit=30, file=trim(output_dir)//'/Test.txt')
           !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
        else
           !---------------------------------------
@@ -199,7 +200,7 @@ contains
       end do
    end do
    if (itime .eq. 1) then
-      open(unit=31,file='./outputs/DTemperature.txt')
+      open(unit=31,file=trim(output_dir)//'/DTemperature.txt')
    end if
    
 
@@ -252,14 +253,14 @@ contains
    
    end if 
 
-    open(newunit=unit,file='./outputs/TempDis.dat')
+    open(newunit=unit,file=trim(output_dir)//'/TempDis.dat')
     write(form,'(A,I0,A)') '(',fields,'(ES16.8,1X))'
     write(unit,form) Temp_p(:)
     write(unit,*)
     write(unit,*)
     close(unit)
     
-    open(newunit=unit,file='./outputs/TempDisTPD.dat')
+    open(newunit=unit,file=trim(output_dir)//'/TempDisTPD.dat')
     write(form,'(A,I0,A)') '(',fields,'(ES16.8,1X))'
     write(unit,form) Temp_pp(:)
     write(unit,*)
