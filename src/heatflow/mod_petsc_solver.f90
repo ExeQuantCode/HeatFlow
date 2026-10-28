@@ -23,10 +23,13 @@ module petsc_solver
 
 #ifdef HAVE_PETSC
   ! Persistent PETSc objects (reused across timesteps for memory efficiency)
-  Mat, save :: A_saved = PETSC_NULL_MAT
-  Vec, save :: bb_saved = PETSC_NULL_VEC
-  Vec, save :: xx_saved = PETSC_NULL_VEC
-  KSP, save :: ksp_saved = PETSC_NULL_KSP
+  ! Note: PETSC_NULL_* are not valid initialization expressions on newer PETSc ...
+  ! ... versions (e.g. macOS Homebrew), so the objects are nulled at runtime ...
+  ! ... in petsc_init instead (see below).
+  Mat, save :: A_saved
+  Vec, save :: bb_saved
+  Vec, save :: xx_saved
+  KSP, save :: ksp_saved
   logical, save :: initialized = .false.
   integer, save :: n_saved = 0
   integer, save :: comm_rank_saved = 0
@@ -61,6 +64,12 @@ contains
   subroutine petsc_init()
     integer :: ierr
     call PetscInitialize(PETSC_NULL_CHARACTER, ierr)
+    ! Null the persistent objects at runtime (declaration-time ...
+    ! ... initialisation with PETSC_NULL_* is not portable to newer PETSc)
+    A_saved = PETSC_NULL_MAT
+    bb_saved = PETSC_NULL_VEC
+    xx_saved = PETSC_NULL_VEC
+    ksp_saved = PETSC_NULL_KSP
     call MPI_Comm_rank(PETSC_COMM_WORLD, comm_rank_saved, ierr)
     call MPI_Comm_size(PETSC_COMM_WORLD, comm_size_saved, ierr)
   end subroutine petsc_init
