@@ -39,7 +39,7 @@ module setup
       integer(int12) :: ix,iy,iz,index
       integer :: ierr, comm_rank
       logical :: is_root
-      real(real12) :: kappa,kappa3D,heat_capacity,rho,sound_speed,tau, em
+      real(real12) :: kappa,heat_capacity,rho,tau, em
 
       call MPI_Comm_rank(MPI_COMM_WORLD, comm_rank, ierr)
       is_root = (comm_rank == 0)
@@ -71,7 +71,7 @@ module setup
             do ix = 1, nx
             index = index + 1
             CALL material(grid(ix,iy,iz)%imaterial_type,&
-                 kappa,kappa3D,heat_capacity,rho,sound_speed,tau, em)
+                 kappa,heat_capacity,rho,tau, em)
             grid(ix,iy,iz)%kappa = kappa
             grid(ix,iy,iz)%rho = rho
             grid(ix,iy,iz)%heat_capacity = heat_capacity

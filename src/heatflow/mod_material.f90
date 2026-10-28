@@ -6,10 +6,8 @@
 !!! - imaterial_type, the material type.
 !!! - TC, the temperature of the material.
 !!! - kappa, the thermal conductivity of the material.
-!!! - kappa3D, the thermal conductivity of the material in 3D.
 !!! - heat_capacity, the heat capacity of the material.
 !!! - rho, the density of the material.
-!!! - sound_speed, the speed of sound in the material.
 !!! - tau, the relaxation time of the material.
 !!! Author: Harry Mclean, Frank Davies, Steven Hepplestone
 !!!#################################################################################################
@@ -25,10 +23,8 @@ contains
 !!!  This subroutine takes the material type and returns the material properties.
 !!!  The material properties are:
 !!!  - kappa, the thermal conductivity of the material.
-!!!  - kappa3D, the thermal conductivity of the material in 3D.
 !!!  - heat_capacity, the heat capacity of the material.
 !!!  - rho, the density of the material.
-!!!  - sound_speed, the speed of sound in the material.
 !!!  - tau, the relaxation time of the material.
 !!!  - em, the emissivity of the material.
 !!!  The material type is an integer that corresponds to a material in the input_materials array.
@@ -40,19 +36,17 @@ contains
 !!!  Arguments:
 !!!  - imaterial_type, the material type.
 !!!  - kappa, the thermal conductivity of the material.
-!!!  - kappa3D, the thermal conductivity of the material in 3D.
 !!!  - heat_capacity, the heat capacity of the material.
 !!!  - rho, the density of the material.
-!!!  - sound_speed, the speed of sound in the material.
 !!!  - tau, the relaxation time of the material.
 !!!  - em, the emissivity of the material.
 !!!#########################################################################
 
-subroutine material(imaterial_type,kappa,kappa3D,heat_capacity,rho,sound_speed,tau, em)
+subroutine material(imaterial_type,kappa,heat_capacity,rho,tau, em)
   
    integer(int12), intent(in) ::imaterial_type
    integer(int12) :: i, tmp
-   real(real12), intent(inout) :: kappa3D, kappa, heat_capacity, sound_speed, rho, tau
+   real(real12), intent(inout) :: kappa, heat_capacity, rho, tau
    real(real12), intent(inout) :: em
    logical :: found
 
@@ -84,9 +78,7 @@ subroutine material(imaterial_type,kappa,kappa3D,heat_capacity,rho,sound_speed,t
             found = .true.
             heat_capacity = input_materials(i)%heat_capacity
             kappa         = input_materials(i)%kappa
-            ! kappa3D       = input_materials(i)%kappa3D
             rho           = input_materials(i)%rho
-            ! sound_speed   = input_materials(i)%sound_speed
             tau           = input_materials(i)%tau
             em   = input_materials(i)%em
 
@@ -112,7 +104,6 @@ subroutine material(imaterial_type,kappa,kappa3D,heat_capacity,rho,sound_speed,t
          heat_capacity=1.0!0.718 !730.0
          !      heat_diffusion=1.0 !9.909090909e-07
          kappa=1.0!0.02587 ! engineering toolbox at 20c
-         kappa3D=0.02587
          rho=1.0!1.225
          tau= 0.0
          !!1-1000 are reserved for solids.
@@ -131,110 +122,84 @@ subroutine material(imaterial_type,kappa,kappa3D,heat_capacity,rho,sound_speed,t
          heat_capacity=4200.0!! all sources
          !      heat_diffusion=1.0 !9.909090909e-07
          kappa=130.0
-         kappa3D=130.0 !from www.ioffe.ru thermal properties of silicon
          rho=2328.0 ! from all sources
-         sound_speed=8433.0 !...
 
 
          !plastic  
       case(3001)
          heat_capacity=840.0
          kappa=0.19
-         kappa3D=0.19
          rho=941.0
-         sound_speed=1000.0
 
          !soil 1 
       case(3002)
          heat_capacity=1100.0 !this is 40% wet soil from engineering toolbox
          kappa=1.42
-         kappa3D=1.42
          rho=1700.0
-         sound_speed=1000.0
 
          !soil 2 
       case(3003)
          heat_capacity=1400.0
          kappa=1.59
-         kappa3D=1.59
          rho=1800.0
-         sound_speed=1000.0
 
          !clay 
       case(3004)
          heat_capacity=2300.0
          kappa=1.25
-         kappa3D=1.25
          rho=2300.0
-         sound_speed=1000.0 !approx.
 
          !muscle
       case(9001) 
          heat_capacity=3421.0
          kappa=0.6
-         kappa3D=0.0
          rho=1090.0
-         sound_speed=3.0
 
 
          !epidermis
       case(9002)
          heat_capacity=3391.0
          kappa=0.209
-         kappa3D=0.0
          rho=1109.0
-         sound_speed=3.0
 
 
          !fat
       case(9003)
          heat_capacity=2348.0
          kappa=0.317
-         kappa3D=0.0
          rho=911.0
-         sound_speed=3.0 !380.0
 
          !Si
       case(310)
          heat_capacity= 700.0
          kappa = 130.0
-         kappa3D = 130.0
          rho = 2329.0
-         sound_speed = 8433.0
 
          !SiO2
       case(320)
          heat_capacity= 720.0
          kappa  = 1.4
-         kappa3D = 1.4
          rho = 2400.0
-         sound_speed=5970.0
          tau = 1.0
 
          !Silver
       case(330)
          heat_capacity = 236.0
          kappa = 427.0
-         kappa3D = 429.0
          rho = 10524.0
-         sound_speed = 3650.0
 
          !SU8 
       case(340)
          heat_capacity= 1500.0 !https://doi.org/10.1016/j.ijheatmasstransfer.2021.122346
          kappa  = 0.2 !kayaku am data sheet for SU8 3000 series
-         kappa3D = 0.2
          rho = 1153.0 !kayaku am data sheet for SU8 3000 series
-         sound_speed= 8433.0 !UNKNOWN, TAKEN FROM Si
          tau = 1.0
 
          !ITO
       case(350)
          heat_capacity= 361.0
          kappa  = 10.2
-         kappa3D = 10.2
          rho = 7140.0
-         sound_speed= 3650.0 !UNKNOWN, TAKEN FROM Ag
          tau = 1.0
       case default
          write(6,*) 'Error: imaterial_type not recognized:', imaterial_type

@@ -29,7 +29,6 @@ This file uses a `KEYWORD = VALUE` format. Comments can be added using `!`.
 #### Boundary & Conditions
 | Keyword | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `iboundary` | Integer | `1` | Boundary condition type. |
 | `Periodic` | String | `''` | Periodic boundaries. Contains 'x', 'y', or 'z' (e.g., `'xy'`). |
 | `kappaBound` | Double | `0.0` | Global boundary thermal conductivity (sets all planes). |
 | `kappaBoundx1`...`z2` | Double | `0.0` | Specific boundary conductivity (e.g., `kappaBoundx1` for x=1 plane). |
@@ -38,7 +37,6 @@ This file uses a `KEYWORD = VALUE` format. Comments can be added using `!`.
 | `T_Bathx1`...`z2` | Double | `T_Bath` | Specific boundary temperatures. |
 | `T_BathCG` | Double | `0.0` | Constant gradient bath temperature. |
 | `CG_dir` | String | `' '` | Direction for constant gradient (e.g., `'+x'`, `'-y'`). |
-| `T_BathCC` | Logical| `F` | Scale constant gradient with DeltaT. |
 | `BR` | Double | `1.0` | Bath Ratio (scaling factor). |
 
 #### Power

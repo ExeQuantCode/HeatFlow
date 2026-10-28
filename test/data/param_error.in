@@ -13,7 +13,6 @@
     heattime = 2
     time_step = 1  !
     freq = 0.0     !
-    iboundary = 1     !
     icattaneo = 0 !
     isteady =  0  !
     T_System = 278 ! Doesnt matter if _FullRestart or _InputTempDis = True

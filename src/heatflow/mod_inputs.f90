@@ -43,12 +43,10 @@
 !!!     - T_Bath, the bath temperature
 !!!     - T_BathCG, the constant gradient of the bath temperature
 !!!     - CG_dir, a string with the directions for constant gradient (format: any combination of +x, -x, +y, -y, +z, -z)
-!!!     - T_BathCC, if true scales the constant gradient with DeltaT from avg of all heated cells to T_Bath
 !!!     - IVERB, the verbose
 !!!     - ntime, the number of time steps
 !!!     - heated_steps, the number of steps for which heating is applied in heating case 2
 !!!     - write_every, the number of time steps to write to txt file
-!!!     - iboundary, the boundary condition
 !!!     - nx, the number of cells in the x direction
 !!!     - ny, the number of cells in the y direction
 !!!     - nz, the number of cells in the z direction
@@ -80,14 +78,14 @@ module inputs
 
   integer :: unit, newunit
   ! time step, frequency, power in, boundary kappa
-  logical :: Periodicx,Periodicy,Periodicz, T_BathCC
+  logical :: Periodicx,Periodicy,Periodicz
   real(real12) :: time_step, freq, power_in, kappaBoundx1, kappaBoundy1, kappaBoundz1, KappaBound
   real(real12) :: kappaBoundNx, kappaBoundNy, kappaBoundNz
   ! Bath temperatures
   real(real12) :: T_Bathx1, T_Bathx2, T_Bathy1, T_Bathy2, T_Bathz1, T_Bathz2, T_System, T_Bath
   real(real12) :: T_BathCG, BR
   ! verbose, number of time steps, boundary condition, number of cells
-  integer(int12) :: IVERB, ntime, iboundary, nx, ny, nz, icattaneo, isteady, NA, write_every
+  integer(int12) :: IVERB, ntime, nx, ny, nz, icattaneo, isteady, NA, write_every
   ! what cells to write to txt file
   integer(int12) :: start_ix, end_ix, start_iy, end_iy, start_iz, end_iz, TempDepProp, heated_steps
   ! flags
@@ -205,7 +203,7 @@ contains
   subroutine read_param(unit)
     implicit none
     integer:: unit, Reason
-    integer,dimension(46)::readvar
+    integer,dimension(44)::readvar
     character(1024)::buffer
 
     readvar(:)=0
@@ -228,7 +226,6 @@ contains
     write_every = 1
     time_step = 1.0
     freq = 1
-    iboundary = 1
     icattaneo = 1
     isteady = 0
     !T_System = n or [Bx1:BNx,By1:BNy,Bz1:BNz]
@@ -240,7 +237,6 @@ contains
     T_Bathz1 = T_Bath
     T_Bathz2 = T_Bath
     T_BathCG = 0
-    T_BathCC = .FALSE.
     BR = 1.0
     CG_dir = ' '
     CG_x_p = .FALSE.
@@ -286,48 +282,46 @@ contains
        CALL assignI(buffer,"ntime",ntime,readvar(2))           
        CALL assignD(buffer,"time_step",time_step,readvar(3))   
        CALL assignD(buffer,"freq",freq,readvar(4))       
-       CALL assignI(buffer,"iboundary",iboundary,readvar(5))   
-       CALL assignI(buffer,"icattaneo", icattaneo, readvar(6))
-       CALL assignI(buffer,"isteady", isteady, readvar(7))
-       CALL assignD(buffer,"power_in",power_in,readvar(8))       
-       CALL assignD(buffer,"kappaBoundx1",kappaBoundx1,readvar(9))
-       CALL assignD(buffer,"kappaBoundy1",kappaBoundy1,readvar(10))    
-       CALL assignD(buffer,"kappaBoundz1",kappaBoundz1,readvar(11))
-       CALL assignL(buffer,"_Check_Sparse_Full",Check_Sparse_Full,readvar(12))
-       CALL assignL(buffer,"_Check_Stability",Check_Stability,readvar(13))
-       CALL assignL(buffer,"_WriteToTxt",WriteToTxt,readvar(14))
-       CALL assignL(buffer,"_Percentage_Completion",LPercentage,readvar(15))
-       CALL assignL(buffer,"_Test_Run",Test_Run,readvar(16))
-       CALL assignL(buffer,"_InputTempDis",InputTempDis,readvar(17))
-       CALL assignS(buffer,"_RunName",RunName,readvar(18))
-       CALL assignL(buffer,"_FullRestart",FullRestart,readvar(19))
-       CALL assignD(buffer,"T_Bathx1",T_Bathx1,readvar(20)) 
-       CALL assignD(buffer,"T_Bathx2",T_Bathx2,readvar(21))
-       CALL assignD(buffer,"T_Bathy1",T_Bathy1,readvar(22))
-       CALL assignD(buffer,"T_Bathy2",T_Bathy2,readvar(23))
-       CALL assignD(buffer,"T_Bathz1",T_Bathz1,readvar(24))
-       CALL assignD(buffer,"T_Bathz2",T_Bathz2,readvar(25))
-       CALL assignD(buffer,"T_System",T_System,readvar(26))
-       CALL assignD(buffer,"T_Bath",T_Bath,readvar(27))
-       CALL assignD(buffer,"kappaBound",KappaBound,readvar(28))
-       CALL assignD(buffer,"kappaBoundNx",kappaBoundNx,readvar(29))
-       CALL assignD(buffer,"kappaBoundNy",kappaBoundNy,readvar(30))
-       CALL assignD(buffer,"kappaBoundNz",kappaBoundNz,readvar(31))
-       CALL assignI(buffer,"start_ix",start_ix,readvar(32))
-       CALL assignI(buffer,"end_ix",end_ix,readvar(33))
-       CALL assignI(buffer,"start_iy",start_iy,readvar(34))
-       CALL assignI(buffer,"end_iy",end_iy,readvar(35))
-       CALL assignI(buffer,"start_iz",start_iz,readvar(36))
-       CALL assignI(buffer,"end_iz",end_iz,readvar(37))
-       CALL assignI(buffer,"write_every",write_every,readvar(38))
-       CALL assignI(buffer,"TempDepProp",TempDepProp,readvar(39))
-       CALL assignS(buffer,"Periodic",Periodic,readvar(40))
-       CALL assignI(buffer,"heattime",heated_steps,readvar(41))
-       CALL assignD(buffer,"T_BathCG",T_BathCG,readvar(42))
-       CALL assignD(buffer,"BR",BR,readvar(43))
-       CALL assignL(buffer,"T_BathCC",T_BathCC,readvar(44))
-       CALL assignS(buffer,"CG_dir",CG_dir,readvar(45))
-       CALL assignL(buffer,"_CompressedOutput",CompressedOutput,readvar(46))
+       CALL assignI(buffer,"icattaneo", icattaneo, readvar(5))
+       CALL assignI(buffer,"isteady", isteady, readvar(6))
+       CALL assignD(buffer,"power_in",power_in,readvar(7))       
+       CALL assignD(buffer,"kappaBoundx1",kappaBoundx1,readvar(8))
+       CALL assignD(buffer,"kappaBoundy1",kappaBoundy1,readvar(9))    
+       CALL assignD(buffer,"kappaBoundz1",kappaBoundz1,readvar(10))
+       CALL assignL(buffer,"_Check_Sparse_Full",Check_Sparse_Full,readvar(11))
+       CALL assignL(buffer,"_Check_Stability",Check_Stability,readvar(12))
+       CALL assignL(buffer,"_WriteToTxt",WriteToTxt,readvar(13))
+       CALL assignL(buffer,"_Percentage_Completion",LPercentage,readvar(14))
+       CALL assignL(buffer,"_Test_Run",Test_Run,readvar(15))
+       CALL assignL(buffer,"_InputTempDis",InputTempDis,readvar(16))
+       CALL assignS(buffer,"_RunName",RunName,readvar(17))
+       CALL assignL(buffer,"_FullRestart",FullRestart,readvar(18))
+       CALL assignD(buffer,"T_Bathx1",T_Bathx1,readvar(19)) 
+       CALL assignD(buffer,"T_Bathx2",T_Bathx2,readvar(20))
+       CALL assignD(buffer,"T_Bathy1",T_Bathy1,readvar(21))
+       CALL assignD(buffer,"T_Bathy2",T_Bathy2,readvar(22))
+       CALL assignD(buffer,"T_Bathz1",T_Bathz1,readvar(23))
+       CALL assignD(buffer,"T_Bathz2",T_Bathz2,readvar(24))
+       CALL assignD(buffer,"T_System",T_System,readvar(25))
+       CALL assignD(buffer,"T_Bath",T_Bath,readvar(26))
+       CALL assignD(buffer,"kappaBound",KappaBound,readvar(27))
+       CALL assignD(buffer,"kappaBoundNx",kappaBoundNx,readvar(28))
+       CALL assignD(buffer,"kappaBoundNy",kappaBoundNy,readvar(29))
+       CALL assignD(buffer,"kappaBoundNz",kappaBoundNz,readvar(30))
+       CALL assignI(buffer,"start_ix",start_ix,readvar(31))
+       CALL assignI(buffer,"end_ix",end_ix,readvar(32))
+       CALL assignI(buffer,"start_iy",start_iy,readvar(33))
+       CALL assignI(buffer,"end_iy",end_iy,readvar(34))
+       CALL assignI(buffer,"start_iz",start_iz,readvar(35))
+       CALL assignI(buffer,"end_iz",end_iz,readvar(36))
+       CALL assignI(buffer,"write_every",write_every,readvar(37))
+       CALL assignI(buffer,"TempDepProp",TempDepProp,readvar(38))
+       CALL assignS(buffer,"Periodic",Periodic,readvar(39))
+       CALL assignI(buffer,"heattime",heated_steps,readvar(40))
+       CALL assignD(buffer,"T_BathCG",T_BathCG,readvar(41))
+       CALL assignD(buffer,"BR",BR,readvar(42))
+       CALL assignS(buffer,"CG_dir",CG_dir,readvar(43))
+       CALL assignL(buffer,"_CompressedOutput",CompressedOutput,readvar(44))
        !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     end do
@@ -394,8 +388,8 @@ contains
        !------------------------------------------------------------------------------------
        ! Error about missing kappa bound 
        !------------------------------------------------------------------------------------
-       ErrKB:if (((any(readvar(9:11).eq.0)) .or. any(readvar(29:31).eq.0)) &
-            .and. (readvar(28) .eq. 0) )then
+       ErrKB:if (((any(readvar(8:10).eq.0)) .or. any(readvar(28:30).eq.0)) &
+            .and. (readvar(27) .eq. 0) )then
          if (is_root) then
            write(6,*)
            write(6,'(A43)') '###############################'
@@ -412,8 +406,8 @@ contains
        ! warning about missing kappa bound. reassine to Kappabound
        !------------------------------------------------------------------------------------
 
-        WarKBO:if (((all(readvar(9:11).eq.1)) .or. all(readvar(29:31).eq.1)) &
-            .and. (readvar(28) .eq. 0) )then
+        WarKBO:if (((all(readvar(8:10).eq.1)) .or. all(readvar(28:30).eq.1)) &
+            .and. (readvar(27) .eq. 0) )then
           if (is_root) then
              write(6,*)
              write(6,'(A43)') '###############################'
@@ -423,15 +417,15 @@ contains
              write(6,'(A)')   ' ---            Warning in subroutine "check_param"            ---'
              write(6,'(A)')   ' --- Warning:  KappaBound is not set       ---'
           end if
-          readvar(28) = 1
+          readvar(27) = 1
           
        end if WarKBO
        !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
        !------------------------------------------------------------------------------------
        ! warning about missing kappa bound. reassine to Kappabound
        !------------------------------------------------------------------------------------
-       WarKB:if (((any(readvar(9:11).eq.0)) .or. any(readvar(29:31).eq.0)) &
-            .and. (readvar(28) .eq. 1) )then
+       WarKB:if (((any(readvar(8:10).eq.0)) .or. any(readvar(28:30).eq.0)) &
+            .and. (readvar(27) .eq. 1) )then
          if (is_root) then
            write(6,*)
            write(6,'(A43)') '###############################'
@@ -449,8 +443,8 @@ contains
           kappaBoundNz = KappaBound
        end if WarKB
        !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    elseif (((any(readvar(9:11).eq.0)) .or. any(readvar(29:31).eq.0)) &
-         .or. (readvar(28) .gt. 0) ) then
+    elseif (((any(readvar(8:10).eq.0)) .or. any(readvar(28:30).eq.0)) &
+         .or. (readvar(27) .gt. 0) ) then
        if (is_root) then
          write(6,*)
          write(6,'(A43)') '###############################'
@@ -465,7 +459,7 @@ contains
     !------------------------------------------------------------------------------------
     ! warning about missing bath temps. reassine to T_Bath
     !------------------------------------------------------------------------------------
-    if ((readvar(42) .eq. 1) .and. (T_BathCG .gt. 0)) then
+    if ((readvar(41) .eq. 1) .and. (T_BathCG .gt. 0)) then
       if (is_root) then
          write(6,*)
          write(6,'(A43)') '###############################'
@@ -476,11 +470,11 @@ contains
          write(6,'(A)')   ' --- WARNING: T_BathCG set T_Bath/ T_Bath x,y,z will not be used          ---'
       end if
       !set all T_Bath value checks to 1
-      readvar(20:25) = 1 
-      readvar(27) = 1
+      readvar(19:24) = 1 
+      readvar(26) = 1
 
     end if
-    WarBath:if ( any(readvar(20:25).eq.0) ) then
+    WarBath:if ( any(readvar(19:24).eq.0) ) then
        if (is_root) then
          write(6,*)
          write(6,'(A43)') '###############################'
@@ -499,7 +493,7 @@ contains
     end if WarBath
     
     !Check if T_BathCG less than 0
-    if ((readvar(42) .eq. 1) .and. (T_BathCG .lt. 0.0_real12)) then
+    if ((readvar(41) .eq. 1) .and. (T_BathCG .lt. 0.0_real12)) then
       if (is_root) then
          write(6,*)
          write(6,'(A43)') '###############################'
@@ -510,9 +504,9 @@ contains
          write(6,'(A)')   ' --- WARNING: T_BathCG is negative, are you sure you?          ---'
       end if
     end if
-    if (readvar(42) .eq. 0) then
+    if (readvar(41) .eq. 0) then
       T_BathCG = 0
-      readvar(42) = 1
+      readvar(41) = 1
     end if
   
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -520,7 +514,7 @@ contains
     !------------------------------------------------------------------------------------
     ! Further warnings
     !------------------------------------------------------------------------------------
-    if (any(readvar(32:37).eq.0)) then
+    if (any(readvar(31:36).eq.0)) then
        if (is_root) then
          write(6,*)
          write(6,'(A43)') '###############################'
@@ -534,7 +528,7 @@ contains
        end if
     end if
 
-    if (readvar(39) .eq. 0) then
+    if (readvar(38) .eq. 0) then
        if (is_root) then
          write(6,*)
          write(6,'(A43)') '###############################'
@@ -544,11 +538,11 @@ contains
          write(6,'(A)') ' ---       WARNING in subroutine "check_param"       ---'
          write(6,'(A)') ' --- WARNING: TempDepProp not set, no action needed ---'
        end if
-       readvar(39) = 1
+       readvar(38) = 1
     end if
 
-    if (readvar(46) .eq. 0) then
-       readvar(46) = 1
+    if (readvar(44) .eq. 0) then
+       readvar(44) = 1
     end if
 
     if (any(readvar.eq.0)) then
@@ -592,7 +586,6 @@ contains
        write(6,'(A35,I12)')     '   write_every = ', write_every
        write(6,'(A35,F20.15)')  '   Time_step   = ', time_step
        write(6,'(A35,F12.5)')   '   frequency   = ', freq
-       write(6,'(A35,I6)')      '   iboundary   = ', iboundary
        write(6,'(A35,I6)')      '   icattaneo   = ', icattaneo
        write(6,'(A35,I6)')      '   isteady     = ', isteady
        write(6,'(A35,F12.5)')   '   T_System    = ', T_System
@@ -614,7 +607,6 @@ contains
        write(6,'(A35,I6)')      '   TempDepProp   = ', TempDepProp
        write(6,'(A35,A12)')     '   Periodic      = ', Periodic
        write(6,'(A35,F12.5)')   '   T_BathCG      = ', T_BathCG
-       write(6,'(A35,L1)')      '   T_BathCC      = ', T_BathCC
        write(6,'(A35,F12.5)')   '   BR            = ', BR
        write(6,'(A35,I6)')      '   start_ix      = ', start_ix
        write(6,'(A35,I6)')      '   end_ix        = ', end_ix
