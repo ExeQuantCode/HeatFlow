@@ -172,6 +172,12 @@ contains
                   ! Functional heating from power_<iheater>.in
                   !------------------------------
                   Q(IA) = power_lookup(grid(ix,iy,iz)%iheater, time)
+                  if (icattaneo .eq. 1) then
+                     ! Add tau*dP/dt at the start of the current time step
+                     ! At itime=1 this is the initial gradient at t=0
+                     Q(IA) = Q(IA) + tau * ( power_lookup(grid(ix,iy,iz)%iheater, time - time_step) &
+                                           - power_lookup(grid(ix,iy,iz)%iheater, time - 2.0_real12*time_step) )
+                  end if
              end select
              !------------------------------
              ! If emissitivity is not zero, then calculate the radiative heating

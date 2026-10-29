@@ -433,7 +433,8 @@ contains
 !!!#################################################################################################
 !!! power_lookup returns the power of a functional heater case at a given ...
 !!! ... time, linearly interpolated between the tabulated points. ...
-!!! ... Before the first point the first value is used; after the last point 0.
+!!! ... Before the first point the first segment is extrapolated (so negative ...
+!!! ... time points define the initial slope at t=0); after the last point 0.
 !!!#################################################################################################
   function power_lookup(case_number, time) result(power)
     integer(int12), intent(in) :: case_number
@@ -449,9 +450,16 @@ contains
     n = power_profiles(i)%n
     if (n .eq. 0) return
 
-    ! before the first point -> first value; after the last point -> 0
+    ! before the first point -> extrapolate from first segment's slope
     if (time .le. power_profiles(i)%t(1)) then
-       power = power_profiles(i)%p(1)
+       if (n .eq. 1) then
+          power = power_profiles(i)%p(1)
+       else
+          frac = (time - power_profiles(i)%t(1)) / &
+               (power_profiles(i)%t(2) - power_profiles(i)%t(1))
+          power = power_profiles(i)%p(1) + &
+               frac*(power_profiles(i)%p(2) - power_profiles(i)%p(1))
+       end if
        return
     end if
     if (time .gt. power_profiles(i)%t(n)) return

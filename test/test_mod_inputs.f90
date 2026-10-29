@@ -305,17 +305,32 @@ contains
         input_dir = './test/data'
         call read_power_files()
 
-        ! Before the first point -> first value
+        ! On the first tabulated point (now at t=-1)
         p = power_lookup(icase, -1.0_real12)
-        if (abs(p - 10.0_real12) .gt. tol) then
-            write(0,*) 'Error: power_lookup(t=-1) = ', p, ', expected 10.0'
+        if (abs(p - 0.0_real12) .gt. tol) then
+            write(0,*) 'Error: power_lookup(t=-1) = ', p, ', expected 0.0'
             stop 1
         end if
 
-        ! On first point
+        ! Extrapolate before the first segment: slope = 10, so t=-2 -> -10
+        p = power_lookup(icase, -2.0_real12)
+        if (abs(p + 10.0_real12) .gt. tol) then
+            write(0,*) 'Error: power_lookup(t=-2) = ', p, ', expected -10.0'
+            stop 1
+        end if
+
+        ! On the second tabulated point (t=0)
         p = power_lookup(icase, 0.0_real12)
         if (abs(p - 10.0_real12) .gt. tol) then
             write(0,*) 'Error: power_lookup(t=0) = ', p, ', expected 10.0'
+            stop 1
+        end if
+
+        ! Initial gradient at t=0: (P(0)-P(-1)) / (0 - (-1)) = 10.0
+        p = (power_lookup(icase, 0.0_real12) - power_lookup(icase, -1.0_real12)) / &
+            (0.0_real12 - (-1.0_real12))
+        if (abs(p - 10.0_real12) .gt. tol) then
+            write(0,*) 'Error: initial gradient dP/dt at t=0 = ', p, ', expected 10.0'
             stop 1
         end if
 

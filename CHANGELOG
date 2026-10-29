@@ -14,7 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ##[2.2.0] - 2026-10-29
 ## Added
-- Functional heating cases: a heater ID of 100 or more in `system.in` reads its power as a function of time from `power_<ID>.in` in the input directory (time/power pairs, linearly interpolated; heater off after the last time point)
+- Functional heating cases: a heater ID of 100 or more in `system.in` reads its power as a function of time from `power_<ID>.in` in the input directory
+- Linear extrapolation of `power_<ID>.in` before the first tabulated point, so negative time points can define the initial slope at `t=0`
+- Cattaneo correction `τ·dP/dt` for functional heating cases when `icattaneo = 1`; the derivative is evaluated at the start of each time step
 
 ##[2.1.0] - 2026-10-28
 ## Added

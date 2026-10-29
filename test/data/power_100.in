@@ -1,5 +1,6 @@
 ! Functional heater power profile: time  power
 ! comment lines are ignored
+-1.0   0.0
 0.0   10.0
 1.0   20.0
 3.0   0.0

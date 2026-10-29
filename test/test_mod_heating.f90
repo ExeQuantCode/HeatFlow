@@ -25,7 +25,7 @@ end subroutine run_tests_mod_heating
 subroutine test_heater_functional_power()
     use globe_data, only: Q_P, Temp_p
     use inputs, only: nx, ny, nz, NA, power_in, time_step, heated_steps, freq, T_Bath, grid
-    use inputs, only: input_dir, read_power_files
+    use inputs, only: input_dir, read_power_files, icattaneo
     implicit none
 
     integer(int12) :: itime
@@ -48,6 +48,7 @@ subroutine test_heater_functional_power()
     freq = 1.0_real12
     T_Bath = 300.0_real12
     Temp_p = 300.0_real12
+    icattaneo = 0
 
     ! All cells use the functional heater case 100 (power_100.in in test/data)
     do concurrent( i = 1:nx, j = 1:ny, k = 1:nz )
@@ -89,6 +90,19 @@ subroutine test_heater_functional_power()
     call heater(itime, Q_test, Qdens_test)
     if (any(abs(Q_test) .gt. tol)) then
        write(0,*) "FAIL: functional power at t=4 (after end), expected 0, got ", Q_test(1)
+       stop 1
+    end if
+
+    ! Test Cattaneo derivative term: tau=5, dt=1, dP/dt at t=0 = (10-0)/1 = 10
+    ! Q = P(t=1) + tau*dP/dt = 20 + 5*10 = 70
+    icattaneo = 1
+    do concurrent( i = 1:nx, j = 1:ny, k = 1:nz )
+         grid(i,j,k)%tau = 5.0_real12
+    end do
+    itime = 1
+    call heater(itime, Q_test, Qdens_test)
+    if (any(abs(Q_test - 70.0_real12) .gt. tol)) then
+       write(0,*) "FAIL: functional power Cattaneo term, expected 70, got ", Q_test(1)
        stop 1
     end if
 
