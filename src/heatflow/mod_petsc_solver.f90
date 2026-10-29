@@ -2,6 +2,21 @@ module petsc_solver
 #ifdef HAVE_PETSC
 #include "petsc/finclude/petscsys.h"
 #include "petsc/finclude/petscksp.h"
+
+! PETSc 3.23 made Fortran objects automatically null-initialised and added
+! PetscObjectIsNull().  Older versions still use explicit PETSC_NULL_* values.
+#if (PETSC_VERSION_MAJOR > 3) || ((PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 23))
+#define HF_PETSC_HAS_OBJECT_IS_NULL 1
+#define HF_MAT_IS_NULL(a) PetscObjectIsNull(a)
+#define HF_VEC_IS_NULL(a) PetscObjectIsNull(a)
+#define HF_KSP_IS_NULL(a) PetscObjectIsNull(a)
+#else
+#define HF_PETSC_HAS_OBJECT_IS_NULL 0
+#define HF_MAT_IS_NULL(a) ((a) /= PETSC_NULL_MAT)
+#define HF_VEC_IS_NULL(a) ((a) /= PETSC_NULL_VEC)
+#define HF_KSP_IS_NULL(a) ((a) /= PETSC_NULL_KSP)
+#endif
+
   use petscksp
 #endif
   use mpi
@@ -22,10 +37,9 @@ module petsc_solver
   ! ... so the rest of the code needs no changes. Only solver = legacy works.
 
 #ifdef HAVE_PETSC
-  ! Persistent PETSc objects (reused across timesteps for memory efficiency)
-  ! Note: PETSC_NULL_* are not valid initialization expressions on newer PETSc ...
-  ! ... versions (e.g. macOS Homebrew), so the objects are nulled at runtime ...
-  ! ... in petsc_init instead (see below).
+  ! Persistent PETSc objects (reused across timesteps for memory efficiency).
+  ! PETSc >= 3.23 initialises these to its internal null sentinel when they are
+  ! declared; do NOT assign PETSC_NULL_* to them (MatCreate rejects that).
   Mat, save :: A_saved
   Vec, save :: bb_saved
   Vec, save :: xx_saved
@@ -64,12 +78,14 @@ contains
   subroutine petsc_init()
     integer :: ierr
     call PetscInitialize(PETSC_NULL_CHARACTER, ierr)
-    ! Null the persistent objects at runtime (declaration-time ...
-    ! ... initialisation with PETSC_NULL_* is not portable to newer PETSc)
+#if !HF_PETSC_HAS_OBJECT_IS_NULL
+    ! Older PETSc releases need explicit null initialisation.  Newer releases
+    ! auto-initialise objects and reject a manually assigned PETSC_NULL_MAT.
     A_saved = PETSC_NULL_MAT
     bb_saved = PETSC_NULL_VEC
     xx_saved = PETSC_NULL_VEC
     ksp_saved = PETSC_NULL_KSP
+#endif
     call MPI_Comm_rank(PETSC_COMM_WORLD, comm_rank_saved, ierr)
     call MPI_Comm_size(PETSC_COMM_WORLD, comm_size_saved, ierr)
   end subroutine petsc_init
@@ -91,10 +107,10 @@ contains
   subroutine petsc_cleanup()
     integer :: ierr
 
-    if (A_saved /= PETSC_NULL_MAT) call MatDestroy(A_saved, ierr)
-    if (bb_saved /= PETSC_NULL_VEC) call VecDestroy(bb_saved, ierr)
-    if (xx_saved /= PETSC_NULL_VEC) call VecDestroy(xx_saved, ierr)
-    if (ksp_saved /= PETSC_NULL_KSP) call KSPDestroy(ksp_saved, ierr)
+    if (.not. HF_MAT_IS_NULL(A_saved)) call MatDestroy(A_saved, ierr)
+    if (.not. HF_VEC_IS_NULL(bb_saved)) call VecDestroy(bb_saved, ierr)
+    if (.not. HF_VEC_IS_NULL(xx_saved)) call VecDestroy(xx_saved, ierr)
+    if (.not. HF_KSP_IS_NULL(ksp_saved)) call KSPDestroy(ksp_saved, ierr)
     if (allocated(ia_saved)) deallocate(ia_saved)
     if (allocated(ja_saved)) deallocate(ja_saved)
     if (allocated(local_indices_saved)) deallocate(local_indices_saved)
@@ -106,10 +122,12 @@ contains
     if (allocated(b_local_saved)) deallocate(b_local_saved)
     if (allocated(x_local_saved)) deallocate(x_local_saved)
 
+#if !HF_PETSC_HAS_OBJECT_IS_NULL
     A_saved = PETSC_NULL_MAT
     bb_saved = PETSC_NULL_VEC
     xx_saved = PETSC_NULL_VEC
     ksp_saved = PETSC_NULL_KSP
+#endif
     initialized = .false.
     n_saved = 0
     row_start_saved = 1
