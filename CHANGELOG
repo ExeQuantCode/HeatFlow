@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Makefile builds no longer fail with `cannot find -lblas` when no system BLAS/LAPACK is installed; BLAS/LAPACK are optional for the current sources
 - fpm.toml is compatible with fpm 0.10+ again by removing the unsupported `[features]`/`[profiles]` sections; optional external modules are declared explicitly
 - PETSc 3.23+ Fortran null-object handling now uses `PetscObjectIsNull()` and avoids assigning `PETSC_NULL_*` to `Mat`/`Vec`/`KSP` objects, fixing `Cannot create PETSC_NULL_XXX object` with PETSc 3.26
+- Makefile BLAS/LAPACK rpath flags no longer collapse to a bare `-Wl` when libraries are found by path (e.g. conda OpenBLAS)
 ### Security
 
 ##[2.1.0] - 2026-10-28

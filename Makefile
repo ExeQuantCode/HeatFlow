@@ -200,8 +200,12 @@ BLAS_LIB_DIRS := \
   /usr/lib/x86_64-linux-gnu /usr/lib/aarch64-linux-gnu /usr/lib64 /usr/lib
 
 find_lib = $(firstword $(wildcard $(foreach d,$(BLAS_LIB_DIRS),$(addprefix $(d)/,$(1)))))
-rpath_flags = $(sort $(foreach d,$(patsubst -L%,%,$(filter -L%,$(1))),-Wl,-rpath,$(d)))
-lib_rpath = $(if $(filter /%,$(1)),-Wl,-rpath,$(patsubst %/,%,$(dir $(1))))
+# Keep the commas in a variable: inside $(if ...) a literal comma would split
+# the then-branch and reduce the flag to just "-Wl".
+comma      := ,
+RPATH_FLAG := -Wl$(comma)-rpath$(comma)
+rpath_flags = $(sort $(foreach d,$(patsubst -L%,%,$(filter -L%,$(1))),$(RPATH_FLAG)$(d)))
+lib_rpath = $(if $(filter /%,$(1)),$(RPATH_FLAG)$(patsubst %/,%,$(dir $(1))))
 
 BUNDLED_OPENBLAS := $(firstword $(wildcard \
   $(OPENBLAS_PREFIX)/lib/libopenblas.so $(OPENBLAS_PREFIX)/lib/libopenblas.so.0 \

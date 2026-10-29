@@ -151,6 +151,10 @@ PETSC_DIR=/path/to/petsc PETSC_ARCH=arch-your-build ./build_fpm_with_petsc.sh
 
 `PETSC_ARCH` is optional for an installed PETSc. The wrapper scripts reuse the Makefile's BLAS/LAPACK detection and support `BLAS_LIBS`, `BLAS_BACKEND`, `FPM_PROFILE`, `FPM_FFLAGS` and `FPM_LDFLAGS`. The `mpi` dependency is resolved by fpm; the manifest is compatible with fpm 0.10 and later. HDF5 can be enabled by passing its flags explicitly through `FPM_FFLAGS`/`FPM_LDFLAGS`.
 
+### Troubleshooting
+
+- PETSc 3.23+ on macOS: `Cannot create PETSC_NULL_XXX object` — see [docs/PETSC_NULL_OBJECT_FIX.md](docs/PETSC_NULL_OBJECT_FIX.md).
+
 ## Running
 
 The simulation is controlled by input files (`param.in`, `mat.in`, `system.in`), read by default from `./inputs`, with output written to `./outputs` (restart files in `./restart`). The directories can be selected on the command line — `-i`/`--input-directory`, `-o`/`--output-directory`, or the `--directory` alias which maps to `<dir>/inputs`, `<dir>/outputs` and `<dir>/restart` (the output directory is created if it does not exist).
