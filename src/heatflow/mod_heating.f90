@@ -14,7 +14,7 @@ module Heating
   use constants, only: real12, int12, pi, StefBoltz
   use globe_data, only: Temp_p, Temp_pp, Heat, heated_volume, Q_P, heated_temp
   use inputs, only: nx,ny,nz, grid, NA, power_in, time_step, heated_steps, T_System, freq, ntime, &
-       T_Bath, icattaneo
+       T_Bath, icattaneo, power_lookup
   use materials, only: material
   implicit none
 contains
@@ -166,6 +166,12 @@ contains
                   
                case(12)
                   Q(IA) = POWER + (tau*(POWER))
+
+               case(100:)
+                  !------------------------------
+                  ! Functional heating from power_<iheater>.in
+                  !------------------------------
+                  Q(IA) = power_lookup(grid(ix,iy,iz)%iheater, time)
              end select
              !------------------------------
              ! If emissitivity is not zero, then calculate the radiative heating

@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 ### Security
 
+##[2.2.0] - 2026-10-29
+## Added
+- Functional heating cases: a heater ID of 100 or more in `system.in` reads its power as a function of time from `power_<ID>.in` in the input directory (time/power pairs, linearly interpolated; heater off after the last time point)
+
 ##[2.1.0] - 2026-10-28
 ## Added
 - Runtime solver selection via the `solver` input flag: `legacy` (original conjugate gradient solver) or the PETSc preconditioners `ilu`, `lu` and `gamg`. Default: `ilu`

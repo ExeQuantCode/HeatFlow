@@ -16,7 +16,86 @@ subroutine run_tests_mod_heating()
         call test_heater_constant_heating(hcase)
     end do
     call test_heater_no_heating()
+    call test_heater_functional_power()
 end subroutine run_tests_mod_heating
+
+!--------------------------------------------------------------------
+! Test subroutine for functional heating (iheater=100, power_100.in)
+!--------------------------------------------------------------------
+subroutine test_heater_functional_power()
+    use globe_data, only: Q_P, Temp_p
+    use inputs, only: nx, ny, nz, NA, power_in, time_step, heated_steps, freq, T_Bath, grid
+    use inputs, only: input_dir, read_power_files
+    implicit none
+
+    integer(int12) :: itime
+    real(real12), allocatable :: Q_test(:), Qdens_test(:)
+    integer :: i, j, k
+    real(real12) :: tol
+
+    tol = 1.0e-10_real12
+
+    ! Set mock sizes
+    nx = 2; ny = 2; nz = 1
+    NA = nx*ny*nz
+    allocate(grid(nx,ny,nz))
+    allocate(Temp_p(NA))
+
+    ! Mock input data
+    power_in = 0.0_real12
+    time_step = 1.0_real12
+    heated_steps = 10
+    freq = 1.0_real12
+    T_Bath = 300.0_real12
+    Temp_p = 300.0_real12
+
+    ! All cells use the functional heater case 100 (power_100.in in test/data)
+    do concurrent( i = 1:nx, j = 1:ny, k = 1:nz )
+         grid(i,j,k)%rho           = 1000.0_real12
+         grid(i,j,k)%volume        = 1.0_real12
+         grid(i,j,k)%heat_capacity = 1.0_real12
+         grid(i,j,k)%Length(1)     = 1.0_real12
+         grid(i,j,k)%Length(2)     = 1.0_real12
+         grid(i,j,k)%tau           = 0.0_real12
+         grid(i,j,k)%em            = 0.0_real12
+         grid(i,j,k)%iheater       = 100
+    end do
+    allocate(Q_test(NA), Qdens_test(NA))
+    allocate(Q_P(NA))
+    Q_P = 0.0_real12
+
+    ! Load power_100.in from the test data directory
+    input_dir = './test/data'
+    call read_power_files()
+
+    ! t=1: exactly on the second point -> 20.0
+    itime = 1
+    call heater(itime, Q_test, Qdens_test)
+    if (any(abs(Q_test - 20.0_real12) .gt. tol)) then
+       write(0,*) "FAIL: functional power at t=1, expected 20, got ", Q_test(1)
+       stop 1
+    end if
+
+    ! t=2: halfway between (1,20) and (3,0) -> 10.0
+    itime = 2
+    call heater(itime, Q_test, Qdens_test)
+    if (any(abs(Q_test - 10.0_real12) .gt. tol)) then
+       write(0,*) "FAIL: functional power at t=2 (interpolation), expected 10, got ", Q_test(1)
+       stop 1
+    end if
+
+    ! t=4: after the last point -> heater off (0.0)
+    itime = 4
+    call heater(itime, Q_test, Qdens_test)
+    if (any(abs(Q_test) .gt. tol)) then
+       write(0,*) "FAIL: functional power at t=4 (after end), expected 0, got ", Q_test(1)
+       stop 1
+    end if
+
+    write(*,*) "PASS: functional power (power_100.in) test"
+
+    deallocate(Q_test, Qdens_test, Q_P, grid, Temp_p)
+end subroutine test_heater_functional_power
 
 !--------------------------------------------------------------------
 ! Test subroutine for the case of constant heating (iheater=1)

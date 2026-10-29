@@ -111,6 +111,14 @@ module inputs
   ! Boundary directions
   character(64) :: CG_dir
   character(16) :: solver_type
+
+  ! Functional heater case power profiles, read from power_<case>.in files ...
+  ! ... (used for heating cases with iheater >= 100)
+  type power_profile
+     integer :: n = 0
+     real(real12), allocatable :: t(:), p(:)
+  end type power_profile
+  type(power_profile), allocatable :: power_profiles(:)
   logical :: CG_x_p, CG_x_m, CG_y_p, CG_y_m, CG_z_p, CG_z_m
 
 
@@ -323,8 +331,142 @@ contains
     close(unit)
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+    !-----------------------------------------------
+    ! get power profiles for functional heater cases (iheater >= 100)
+    !-----------------------------------------------
+    CALL read_power_files()
+    !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 
   end subroutine read_all_files
+!!!#################################################################################################
+
+
+!!!#################################################################################################
+!!! read_power_files reads the power_<case>.in files for functional heating ...
+!!! ... cases (iheater >= 100). Each file contains time/power pairs, one per line, ...
+!!! ... with ! comments allowed. Times must be strictly increasing.
+!!!#################################################################################################
+  subroutine read_power_files()
+    implicit none
+    integer :: i, j, unit, reason, max_case, case_index, npts
+    integer, dimension(:), allocatable :: used_cases
+    character(1024) :: buffer, power_file
+    logical :: file_exists
+
+    !-----------------------------------------------
+    ! find the highest functional case number used in the grid
+    !-----------------------------------------------
+    max_case = 0
+    if (any(grid%iheater .ge. 100)) max_case = maxval(grid%iheater)
+    if (max_case .eq. 0) return ! no functional cases, nothing to do
+
+    allocate(power_profiles(max_case - 99))
+
+    !-----------------------------------------------
+    ! mark which functional case numbers are actually used
+    !-----------------------------------------------
+    allocate(used_cases(max_case - 99))
+    used_cases = 0
+    do i = 1, max_case - 99
+       if (any(grid%iheater .eq. i + 99)) used_cases(i) = 1
+    end do
+
+    !-----------------------------------------------
+    ! read each used power_<case>.in file
+    !-----------------------------------------------
+    do i = 1, max_case - 99
+       if (used_cases(i) .eq. 0) cycle
+       case_index = i + 99
+
+       write(power_file, '(A,I0,A)') 'power_', case_index, '.in'
+       power_file = join_path(input_dir, trim(power_file))
+       inquire(file=trim(power_file), exist=file_exists)
+       if (.not. file_exists) then
+          write(6,*) 'Error: heater case ', case_index, ' requires file: ', trim(power_file)
+          stop
+       end if
+
+       ! count the data lines
+       open(newunit=unit, file=trim(power_file), iostat=reason)
+       npts = 0
+       do
+          read(unit,'(A)',iostat=reason) buffer
+          if (reason .ne. 0) exit
+          if (scan(buffer,'!').ne.0) buffer=buffer(:(scan(buffer,'!')-1))
+          if (trim(buffer).eq.'') cycle
+          npts = npts + 1
+       end do
+       if (npts .lt. 2) then
+          write(6,*) 'Error: ', trim(power_file), ' must contain at least 2 time/power points'
+          stop
+       end if
+
+       power_profiles(i)%n = npts
+       allocate(power_profiles(i)%t(npts), power_profiles(i)%p(npts))
+
+       ! read the time/power pairs
+       rewind(unit)
+       j = 0
+       do
+          read(unit,'(A)',iostat=reason) buffer
+          if (reason .ne. 0) exit
+          if (scan(buffer,'!').ne.0) buffer=buffer(:(scan(buffer,'!')-1))
+          if (trim(buffer).eq.'') cycle
+          j = j + 1
+          read(buffer,*) power_profiles(i)%t(j), power_profiles(i)%p(j)
+       end do
+       close(unit)
+
+       ! check times are strictly increasing
+       do j = 2, npts
+          if (power_profiles(i)%t(j) .le. power_profiles(i)%t(j-1)) then
+             write(6,*) 'Error: times in ', trim(power_file), ' are not strictly increasing'
+             stop
+          end if
+       end do
+    end do
+    deallocate(used_cases)
+  end subroutine read_power_files
+!!!#################################################################################################
+
+!!!#################################################################################################
+!!! power_lookup returns the power of a functional heater case at a given ...
+!!! ... time, linearly interpolated between the tabulated points. ...
+!!! ... Before the first point the first value is used; after the last point 0.
+!!!#################################################################################################
+  function power_lookup(case_number, time) result(power)
+    integer(int12), intent(in) :: case_number
+    real(real12), intent(in) :: time
+    real(real12) :: power
+    integer :: i, k, n
+    real(real12) :: frac
+
+    power = 0.0_real12
+    if (.not. allocated(power_profiles)) return
+    i = case_number - 99
+    if (i .lt. 1 .or. i .gt. size(power_profiles)) return
+    n = power_profiles(i)%n
+    if (n .eq. 0) return
+
+    ! before the first point -> first value; after the last point -> 0
+    if (time .le. power_profiles(i)%t(1)) then
+       power = power_profiles(i)%p(1)
+       return
+    end if
+    if (time .gt. power_profiles(i)%t(n)) return
+
+    ! find the interval containing time and interpolate
+    do k = 2, n
+       if (time .le. power_profiles(i)%t(k)) then
+          frac = (time - power_profiles(i)%t(k-1)) / &
+               (power_profiles(i)%t(k) - power_profiles(i)%t(k-1))
+          power = power_profiles(i)%p(k-1) + &
+               frac*(power_profiles(i)%p(k) - power_profiles(i)%p(k-1))
+          return
+       end if
+    end do
+  end function power_lookup
 !!!#################################################################################################
 
 

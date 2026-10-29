@@ -143,6 +143,18 @@ Each line in the file (after header) corresponds to one row (X-direction).
 - `1:0` means Material ID 1, Heater ID 0 (no heater).
 - `1:1` means Material ID 1, Heater ID 1 (active heater).
 
+**Functional heating cases (Heater ID >= 100):**
+A heater ID of 100 or more defines the power as a function of time, read from a file `power_<HeaterID>.in` in the input directory. For example, `1:100` uses `power_100.in`. The file must exist for every functional case used, or the run stops with an error.
+
+Format — one `time power` pair per line, with times strictly increasing (`!` comments allowed):
+```
+! time(s)  power
+0.0        0.0
+1.0        5.0
+2.5        0.0
+```
+The power is linearly interpolated between tabulated times. Before the first point the first value is used; after the last point the heater is off (power 0).
+
 ## Execution
 
 Ensure the `inputs/` directory exists with the three required files. Run the executable from the directory containing `inputs/`.
