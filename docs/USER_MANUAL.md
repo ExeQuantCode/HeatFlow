@@ -4,7 +4,7 @@ This manual provides a concise guide to configuring and running simulations usin
 
 ## Building
 
-Build with `make` (MPI is required). PETSc is detected automatically; if it is not found, a legacy-solver-only version is built (only `solver = legacy` is available). To force a build without PETSc even when it is installed, use `make PETSC=0`.
+Build with `make` (MPI is required). The Makefile auto-detects an MPI Fortran wrapper on `PATH` and in common install prefixes; if your MPI is elsewhere, use `make FC=/path/to/mpifort`. BLAS/LAPACK are optional and auto-detected (Apple Accelerate on macOS; OpenBLAS, MKL or reference BLAS/LAPACK on Linux). If no backend is found, run `make deps-blas` to download and build OpenBLAS locally (opt-in; network required), or `make BLAS=0` to skip BLAS/LAPACK. PETSc is detected automatically; if it is not found, a legacy-solver-only version is built (only `solver = legacy` is available). To force a build without PETSc even when it is installed, use `make PETSC=0`.
 
 ## Command Line Options
 

@@ -36,6 +36,7 @@ Releases prior to `HeatFlow_CattaneoPaper` have had their history modified to re
 - MPI (e.g. OpenMPI) — required
 - PETSc — optional, enables the `ilu`, `lu` and `gamg` solvers (without it only the `legacy` solver is available)
 - HDF5 — optional, enables HDF5 output (`_HDF5Output` flag)
+- BLAS/LAPACK — optional (auto-detected; `make deps-blas` can build OpenBLAS locally)
 - GNU Make or CMake (fpm can also be used)
 
 On macOS, dependencies are available via Homebrew: `brew install open-mpi petsc hdf5-mpi`
@@ -72,6 +73,33 @@ To build with HDF5 output support:
 ```
 make USE_HDF5=1
 ```
+
+MPI is located by searching for an MPI Fortran wrapper (`mpifort`, `mpif90`, ...) on `PATH` and in common install prefixes (Homebrew, conda, distro packages, Intel oneAPI). If your MPI is in a non-standard location, point the build at its wrapper explicitly:
+
+```
+make FC=/path/to/mpifort
+```
+
+BLAS/LAPACK are auto-detected as well: Apple Accelerate on macOS, and OpenBLAS, MKL or reference BLAS/LAPACK on Linux (including conda, Homebrew and module prefixes). The current sources do not call BLAS/LAPACK directly, so a missing backend is not fatal and the build continues without one. To use an existing installation explicitly:
+
+```
+make BLAS_LIBS='-L/path/to/lib -lopenblas'
+```
+
+To download and build OpenBLAS locally (strictly opt-in; requires network access, `tar`, `cc`, `gfortran` and `curl` or `wget`):
+
+```
+make deps-blas
+make
+```
+
+or in one step:
+
+```
+make BLAS_BACKEND=download
+```
+
+OpenBLAS is installed under `external/` (gitignored); `make clean-deps` removes it. To build without linking BLAS/LAPACK at all, use `make BLAS=0`. The download is pinned to OpenBLAS 0.3.34 (BSD-3-Clause) and verified against a SHA-256 checksum; `OPENBLAS_VERSION`, `OPENBLAS_CC`, `OPENBLAS_FC`, `OPENBLAS_JOBS` and `OPENBLAS_FLAGS` can be overridden if needed (for example `OPENBLAS_FLAGS='TARGET=ARMV8 DYNAMIC_ARCH=1'`). If you change `OPENBLAS_VERSION`, also set `OPENBLAS_SHA256` to the matching checksum (or set it empty to skip verification).
 
 PETSc is detected via pkg-config or `PETSC_DIR`/`PETSC_ARCH` on Linux, and via Homebrew on macOS. The executable is written to `bin/HeatFlow`.
 

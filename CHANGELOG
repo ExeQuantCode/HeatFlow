@@ -6,10 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [version] - year-month-day
 ### Added
+- Makefile BLAS/LAPACK auto-detection across Accelerate, OpenBLAS, MKL, conda, Homebrew, system and reference libraries, with `BLAS_BACKEND`, `BLAS_LIBS` and `BLAS=0` overrides
+- Opt-in `make deps-blas` / `make BLAS_BACKEND=download` target that downloads, checksum-verifies and builds OpenBLAS locally under `external/`
 ### Changed
+- Makefile now auto-detects MPI Fortran wrappers from `PATH` and common install prefixes instead of only `/usr/bin`
 ### Deprecated
 ### Removed
 ### Fixed
+- Makefile builds no longer fail with `cannot find -lblas` when no system BLAS/LAPACK is installed; BLAS/LAPACK are optional for the current sources
 ### Security
 
 ##[2.1.0] - 2026-10-28
