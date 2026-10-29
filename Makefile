@@ -9,17 +9,59 @@ SRC_DIR      := ./src
 BUILD_DIR    := ./obj
 BIN_DIR      := ./bin
 
-# Compiler (prefer system MPI wrapper for PETSc builds, allow user override)
-SYSTEM_PATH := PATH=/usr/bin:/bin
-ifeq ($(origin FC), default)
-ifneq ($(wildcard /usr/bin/mpifort),)
-FC := env $(SYSTEM_PATH) /usr/bin/mpifort
-else ifneq ($(wildcard /usr/bin/gfortran),)
-FC := env $(SYSTEM_PATH) /usr/bin/gfortran
+# MPI (required: the sources contain "use mpi")
+#
+# Do not pin the compiler to /usr/bin or scrub PATH: MPI is commonly installed
+# under Homebrew (/opt/homebrew), conda ($CONDA_PREFIX), environment modules,
+# Intel oneAPI, MacPorts or Spack.  Search the active environment first, then
+# well-known prefixes, and skip wrappers that cannot run (a broken wrapper
+# produces a confusing "mpi.mod not found" error later on).
+MPI_WRAPPER_NAMES := mpifort mpif90 mpifc mpiifort mpiifx
+
+# Detect conda environment (used for MPI and BLAS/LAPACK)
+CONDA_PREFIX ?= $(shell conda info --base 2>/dev/null)
+
+MPI_PREFIX_BIN   := $(addsuffix /bin,$(MPI_HOME) $(MPI_DIR) $(I_MPI_ROOT) $(OPAL_PREFIX) $(CONDA_PREFIX))
+MPI_FALLBACK_BIN := \
+  /opt/homebrew/bin /usr/local/bin /opt/local/bin \
+  /usr/lib64/openmpi/bin /usr/lib/x86_64-linux-gnu/openmpi/bin \
+  /usr/lib64/mpich/bin /usr/lib/x86_64-linux-gnu/mpich/bin \
+  /opt/intel/oneapi/mpi/latest/bin /usr/bin
+
+# Remember whether the user chose FC before assigning a default
+FC_ORIGIN := $(origin FC)
+
+ifneq ($(filter default undefined,$(FC_ORIGIN)),)
+MPI_FC := $(shell for name in $(MPI_WRAPPER_NAMES); do \
+    for dir in $(MPI_PREFIX_BIN) $$PATH $(MPI_FALLBACK_BIN); do \
+      candidate="$$dir/$$name"; \
+      if [ -x "$$candidate" ] && { "$$candidate" --version >/dev/null 2>&1 || "$$candidate" -v >/dev/null 2>&1; }; then \
+        echo "$$candidate"; exit 0; \
+      fi; \
+    done; \
+  done)
+FC := $(if $(strip $(MPI_FC)),$(MPI_FC),mpifort)
 else
-FC := gfortran
+MPI_FC :=
+endif
+
+# Fail at build time (not for clean/help) when no usable MPI was found
+ifeq ($(strip $(FC)),)
+MPI_MISSING := 1
+endif
+ifneq ($(filter default undefined,$(FC_ORIGIN)),)
+ifeq ($(strip $(MPI_FC)),)
+MPI_MISSING := 1
 endif
 endif
+
+# MPI launcher: prefer one next to the compiler wrapper, then PATH/prefixes
+FC_DIR  := $(dir $(FC))
+MPIEXEC ?= $(firstword \
+  $(wildcard $(FC_DIR)mpiexec) $(wildcard $(FC_DIR)mpirun) \
+  $(shell command -v mpiexec 2>/dev/null) \
+  $(shell command -v mpirun 2>/dev/null) \
+  $(foreach d,$(MPI_PREFIX_BIN) $(MPI_FALLBACK_BIN),$(wildcard $(d)/mpiexec) $(wildcard $(d)/mpirun)))
 
 # Core count (nproc on Linux, sysctl on macOS)
 NCORES       := $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)
@@ -27,15 +69,8 @@ NCORES       := $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || ec
 # Platform detection
 UNAME_S      := $(shell uname -s)
 
-# Detect conda environment for BLAS/LAPACK (fallback if no system libs)
-CONDA_PREFIX ?= $(shell conda info --base 2>/dev/null || echo /home/hm556/miniforge3)
-
 # pkg-config (used for PETSc and BLAS detection)
-ifneq ($(wildcard /usr/bin/pkg-config),)
-PKG_CONFIG := env $(SYSTEM_PATH) /usr/bin/pkg-config
-else
-PKG_CONFIG := pkg-config
-endif
+PKG_CONFIG ?= pkg-config
 
 # PETSc (discover dynamically when possible; disable with: make PETSC=0)
 ifneq ($(PETSC),0)
@@ -185,33 +220,59 @@ OBJS := $(addprefix $(BUILD_DIR)/,$(notdir $(SRCS:.f90=.o)))
 
 .NOTPARALLEL:
 
-.PHONY: all debug clean distclean run help show
+.PHONY: all debug clean distclean run help show check-mpi
 
-all: show $(TARGET)
+all: check-mpi show $(TARGET)
 
 show:
 	@printf 'Building %s %s %s %s\n' '$(NAME)' '$(PETSC_NOTE)' '$(HDF5_NOTE)' '$(BLAS_NOTE)'
+	@printf '  Fortran compiler : %s\n' '$(FC)'
+	@printf '  MPI launcher     : %s\n' '$(if $(strip $(MPIEXEC)),$(MPIEXEC),not found)'
+
+check-mpi:
+	@if [ -n "$(strip $(MPI_MISSING))" ]; then \
+	  echo "ERROR: no working MPI Fortran compiler found." >&2; \
+	  echo "HeatFlow requires MPI; the sources contain 'use mpi'." >&2; \
+	  echo "Install an MPI implementation and ensure its Fortran wrapper is on PATH:" >&2; \
+	  echo "  Debian/Ubuntu : sudo apt install gfortran openmpi-bin libopenmpi-dev" >&2; \
+	  echo "  Fedora/RHEL   : sudo dnf install gcc-gfortran openmpi-devel" >&2; \
+	  echo "  macOS         : brew install gcc open-mpi" >&2; \
+	  echo "  conda         : conda install -c conda-forge openmpi-mpifort" >&2; \
+	  echo "Or pass a wrapper explicitly: make FC=/path/to/mpifort" >&2; \
+	  exit 1; \
+	fi
+	@case "$(notdir $(FC))" in \
+	  mpi*) ;; \
+	  *) echo "WARNING: FC=$(FC) is not an MPI compiler wrapper." >&2; \
+	     echo "         HeatFlow uses 'use mpi'; if the build fails with 'mpi.mod' not found," >&2; \
+	     echo "         rerun with FC=mpifort (or set PATH to include your MPI bin directory)." >&2 ;; \
+	esac
 
 $(BIN_DIR) $(BUILD_DIR):
 	mkdir -p $@
 
 # Compile module sources
-$(BUILD_DIR)/%.o: $(SRC_DIR)/heatflow/%.f90 | $(BUILD_DIR)
+$(BUILD_DIR)/%.o: $(SRC_DIR)/heatflow/%.f90 | $(BUILD_DIR) check-mpi
 	$(FC) $(FFLAGS) -c $< -o $@
 
 # Main program
-$(BUILD_DIR)/heatflow.o: $(SRC_DIR)/heatflow.f90 | $(BUILD_DIR)
+$(BUILD_DIR)/heatflow.o: $(SRC_DIR)/heatflow.f90 | $(BUILD_DIR) check-mpi
 	$(FC) $(FFLAGS) -c $< -o $@
 
 # Link (single definition)
-$(TARGET): $(BIN_DIR) $(OBJS)
+$(TARGET): $(BIN_DIR) $(OBJS) | check-mpi
 	$(FC) $(OPTFLAGS) $(OMPFLAGS) $(OBJS) -o $@ $(BLAS_FLAGS) $(PETSC_LIB) $(HDF5_LIB)
 
 debug: FFLAGS = $(DEBUGFLAGS)
-debug: clean show $(TARGET)
+debug: check-mpi clean show $(TARGET)
 
 run: $(TARGET)
-	$(RUN_ENV) mpiexec -n $(NCORES) $< $(RUN_ARGS)
+	@if [ -z "$(strip $(MPIEXEC))" ]; then \
+	  echo "ERROR: no MPI launcher (mpiexec/mpirun) found." >&2; \
+	  echo "Set MPIEXEC=/path/to/mpiexec or add it to PATH." >&2; \
+	  exit 1; \
+	fi
+	$(RUN_ENV) "$(MPIEXEC)" -n $(NCORES) $< $(RUN_ARGS)
 
 clean:
 	@echo "[CLEAN] objects and modules"
@@ -229,6 +290,8 @@ help:
 	@echo "  make clean         - remove objects/modules"
 	@echo "  make distclean     - remove executable"
 	@echo "Variables:"
+	@echo "  FC=<path>          - MPI Fortran wrapper (default: auto-detected)"
+	@echo "  MPIEXEC=<path>     - MPI launcher used by 'make run' (default: auto-detected)"
 	@echo "  PETSC=0            - build without PETSc (legacy solver only)"
 	@echo "  USE_HDF5=1         - build with HDF5 output support"
 	@echo "  RUN_ARGS='-ksp_type cg -pc_type gamg -ksp_rtol 1e-8 -ksp_monitor'"
