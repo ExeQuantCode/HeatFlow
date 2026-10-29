@@ -11,30 +11,85 @@ set(CMAKE_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}
 set(MODULE_DIR ${CMAKE_BUILD_DIR}/mod)
 
 
-# set compiler (auto-detected, MPI wrapper preferred; override with -DCMAKE_Fortran_COMPILER=...)
-if(NOT DEFINED CMAKE_Fortran_COMPILER)
-  find_program(HF_Fortran_COMPILER NAMES mpifort mpif90 gfortran ifx ifort nagfor)
-  if(HF_Fortran_COMPILER)
-    set(CMAKE_Fortran_COMPILER "${HF_Fortran_COMPILER}"
-      CACHE STRING "Select Fortran compiler." )
-  endif()
+# Set compiler (auto-detected, MPI wrapper preferred; override with
+# -DCMAKE_Fortran_COMPILER=...).  Walk PATH in order and smoke-test every
+# candidate so a broken wrapper (e.g. an incomplete conda MPI install) is
+# skipped in favour of a later working wrapper or plain compiler.
+file(TO_CMAKE_PATH "$ENV{PATH}" _hf_search_path)
+if(WIN32)
+  set(_hf_path_sep ";")
+else()
+  set(_hf_path_sep ":")
 endif()
+string(REPLACE "${_hf_path_sep}" ";" _hf_path_dirs "${_hf_search_path}")
+list(APPEND _hf_path_dirs /opt/homebrew/bin /usr/local/bin /opt/local/bin /usr/bin)
+
+if(NOT DEFINED CMAKE_Fortran_COMPILER)
+  foreach(_hf_fc_candidate mpifort mpif90 mpiifort mpiifx mpifc gfortran ifx ifort nagfor)
+    foreach(_hf_dir IN LISTS _hf_path_dirs)
+      if(_hf_dir STREQUAL "")
+        continue()
+      endif()
+      if(EXISTS "${_hf_dir}/${_hf_fc_candidate}"
+         AND NOT IS_DIRECTORY "${_hf_dir}/${_hf_fc_candidate}")
+        execute_process(COMMAND "${_hf_dir}/${_hf_fc_candidate}" --version
+          RESULT_VARIABLE _hf_fc_result OUTPUT_QUIET ERROR_QUIET)
+        if(NOT "${_hf_fc_result}" STREQUAL "0")
+          execute_process(COMMAND "${_hf_dir}/${_hf_fc_candidate}" -v
+            RESULT_VARIABLE _hf_fc_result OUTPUT_QUIET ERROR_QUIET)
+        endif()
+        if("${_hf_fc_result}" STREQUAL "0")
+          set(CMAKE_Fortran_COMPILER "${_hf_dir}/${_hf_fc_candidate}"
+            CACHE STRING "Select Fortran compiler." )
+          break()
+        endif()
+      endif()
+    endforeach()
+    if(CMAKE_Fortran_COMPILER)
+      break()
+    endif()
+  endforeach()
+endif()
+
 if(NOT DEFINED CMAKE_C_COMPILER)
-  find_program(HF_C_COMPILER NAMES mpicc gcc clang icx icc)
-  if(HF_C_COMPILER)
-    set(CMAKE_C_COMPILER "${HF_C_COMPILER}"
-      CACHE STRING "Select C compiler." )
-  endif()
+  foreach(_hf_cc_candidate mpicc mpiicc mpiicx gcc clang icx icc)
+    foreach(_hf_dir IN LISTS _hf_path_dirs)
+      if(_hf_dir STREQUAL "")
+        continue()
+      endif()
+      if(EXISTS "${_hf_dir}/${_hf_cc_candidate}"
+         AND NOT IS_DIRECTORY "${_hf_dir}/${_hf_cc_candidate}")
+        execute_process(COMMAND "${_hf_dir}/${_hf_cc_candidate}" --version
+          RESULT_VARIABLE _hf_cc_result OUTPUT_QUIET ERROR_QUIET)
+        if("${_hf_cc_result}" STREQUAL "0")
+          set(CMAKE_C_COMPILER "${_hf_dir}/${_hf_cc_candidate}"
+            CACHE STRING "Select C compiler." )
+          break()
+        endif()
+      endif()
+    endforeach()
+    if(CMAKE_C_COMPILER)
+      break()
+    endif()
+  endforeach()
 endif()
 set(CMAKE_Fortran_STANDARD 2018)
 
 # set the project name
 project(HeatFlow LANGUAGES C Fortran)
 
+# Make installed binaries find non-system libraries (MKL/OpenBLAS/PETSc/HDF5).
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 # set options for building tests and examples
 option(BUILD_TESTS "Build the unit tests" On)
 option(HEATFLOW_PETSC "Build with PETSc solver support (auto-detected; legacy-solver-only build if not found)" On)
 option(HEATFLOW_HDF5 "Build with HDF5 output support" Off)
+option(HEATFLOW_BLAS "Link BLAS/LAPACK when available (optional; the current sources do not call them directly)" On)
+set(HEATFLOW_BLAS_BACKEND "auto" CACHE STRING "BLAS/LAPACK backend: auto, accelerate, openblas, mkl, reference, download or none")
+set_property(CACHE HEATFLOW_BLAS_BACKEND PROPERTY STRINGS auto accelerate openblas mkl reference download none)
+set(HEATFLOW_BLAS_LIBRARIES "" CACHE STRING "Explicit BLAS/LAPACK linker flags/libraries (overrides detection)")
+option(HEATFLOW_BLAS_DOWNLOAD "Download and build OpenBLAS locally (opt-in; requires make and network)" Off)
 
 if (HEATFLOW_HDF5)
     # Prefer pkg-config (Debian/Ubuntu hdf5-openmpi), fall back to CMake's FindHDF5
@@ -85,6 +140,57 @@ if (HEATFLOW_PETSC)
             endif()
         endif()
     endif()
+endif()
+
+# BLAS/LAPACK (optional; needed for static PETSc and future BLAS calls)
+if (HEATFLOW_BLAS_BACKEND STREQUAL "download")
+    set(HEATFLOW_BLAS_DOWNLOAD ON)
+    set(HEATFLOW_BLAS_BACKEND "openblas")
+endif()
+
+if (HEATFLOW_BLAS AND HEATFLOW_BLAS_DOWNLOAD AND NOT HEATFLOW_BLAS_LIBRARIES)
+    if (NOT (HEATFLOW_BLAS_BACKEND STREQUAL "auto" OR HEATFLOW_BLAS_BACKEND STREQUAL "openblas"))
+        message(FATAL_ERROR
+            "HEATFLOW_BLAS_DOWNLOAD=ON requires HEATFLOW_BLAS_BACKEND=auto or openblas")
+    endif()
+
+    find_program(HF_MAKE_EXECUTABLE NAMES gmake make)
+    if (NOT HF_MAKE_EXECUTABLE)
+        message(FATAL_ERROR
+            "HEATFLOW_BLAS_DOWNLOAD=ON requires GNU make; install make or set "
+            "HEATFLOW_BLAS_LIBRARIES explicitly.")
+    endif()
+
+    message(STATUS "BLAS/LAPACK: building OpenBLAS via 'make deps-blas' (opt-in)")
+    execute_process(
+        COMMAND ${HF_MAKE_EXECUTABLE} -C ${CMAKE_SOURCE_DIR} deps-blas
+        RESULT_VARIABLE HF_OPENBLAS_RESULT
+        OUTPUT_VARIABLE HF_OPENBLAS_OUTPUT
+        ERROR_VARIABLE HF_OPENBLAS_ERROR
+    )
+    if (NOT HF_OPENBLAS_RESULT EQUAL 0)
+        message(FATAL_ERROR "OpenBLAS build failed:\n${HF_OPENBLAS_OUTPUT}\n${HF_OPENBLAS_ERROR}")
+    endif()
+
+    execute_process(
+        COMMAND ${HF_MAKE_EXECUTABLE} -s -C ${CMAKE_SOURCE_DIR} print-openblas-prefix
+        RESULT_VARIABLE HF_OPENBLAS_PREFIX_RESULT
+        OUTPUT_VARIABLE HF_OPENBLAS_PREFIX
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if (NOT HF_OPENBLAS_PREFIX_RESULT EQUAL 0 OR NOT HF_OPENBLAS_PREFIX)
+        message(FATAL_ERROR "Could not determine the local OpenBLAS installation prefix")
+    endif()
+    set(HEATFLOW_BLAS_BACKEND "openblas")
+endif()
+
+if (HEATFLOW_BLAS)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/HeatFlowBLAS.cmake)
+    message(STATUS "BLAS/LAPACK: ${HEATFLOW_BLAS_NOTE}")
+else()
+    set(HEATFLOW_BLAS_FOUND FALSE)
+    set(HEATFLOW_BLAS_NOTE "disabled")
+    message(STATUS "BLAS/LAPACK: disabled")
 endif()
 
 # set coverage compiler flags
@@ -218,6 +324,10 @@ if (PETSC_FOUND)
     target_link_libraries(${PROJECT_LIBRARY_NAME} PUBLIC ${PETSC_LIBRARIES})
 else()
     message(STATUS "PETSc not found: building legacy-solver-only version")
+endif()
+if (HEATFLOW_BLAS AND HEATFLOW_BLAS_FOUND)
+    message(STATUS "Linking BLAS/LAPACK: ${HEATFLOW_BLAS_NOTE}")
+    target_link_libraries(${PROJECT_LIBRARY_NAME} PUBLIC ${HEATFLOW_BLAS_LIBRARIES})
 endif()
 if (HEATFLOW_HDF5)
     message(STATUS "Building with HDF5 output support")

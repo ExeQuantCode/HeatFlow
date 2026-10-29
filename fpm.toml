@@ -12,14 +12,11 @@ suffixes = ["F90", "f90"]
 [dependencies]
 mpi = "*"
 
-[features]
-petsc.build.external-modules = ["petscksp"]
-petsc.build.link = ["petsc"]
-# PETSc include/library paths are provided at build time (see build_fpm_with_petsc.sh)
-petsc.flags = "-DHAVE_PETSC"
-
-[profiles]
-default = ["petsc"]
+# PETSc, HDF5 and BLAS/LAPACK are optional external dependencies.  fpm cannot
+# auto-detect them from the manifest, so use the build_fpm*.sh wrapper scripts
+# in the repository root to enable them.
+[build]
+external-modules = ["hdf5", "petscksp"]
 
 [library]
 source-dir="src"

@@ -394,7 +394,8 @@ OBJS := $(addprefix $(BUILD_DIR)/,$(notdir $(SRCS:.f90=.o)))
 .NOTPARALLEL:
 
 .PHONY: all debug clean distclean run help show check-mpi check-blas \
-        deps deps-blas clean-deps
+        deps deps-blas clean-deps \
+        print-blas-flags print-blas-backend print-openblas-prefix
 
 all: check-mpi check-blas $(BLAS_DEPS) show $(TARGET)
 
@@ -435,6 +436,16 @@ check-blas:
 	  echo "         Run 'make deps-blas' to build OpenBLAS locally," >&2; \
 	  echo "         or set BLAS_LIBS='...' to use an existing installation." >&2; \
 	fi
+
+# Machine-readable helpers for the CMake/fpm wrapper scripts
+print-blas-flags:
+	@printf '%s\n' '$(BLAS_FLAGS)'
+
+print-blas-backend:
+	@printf '%s\n' '$(BLAS_NOTE)'
+
+print-openblas-prefix:
+	@printf '%s\n' '$(OPENBLAS_PREFIX)'
 
 $(BIN_DIR) $(BUILD_DIR):
 	mkdir -p $@

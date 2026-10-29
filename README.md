@@ -110,9 +110,14 @@ For cmake installation, start within the repository root directory, run the foll
 ```
 mkdir build
 cd build
-cmake [-DCMAKE_BUILD_TYPE=Release] [-DHEATFLOW_PETSC=ON] [-DHEATFLOW_HDF5=ON] ..
+cmake [-DCMAKE_BUILD_TYPE=Release] [-DHEATFLOW_PETSC=ON] [-DHEATFLOW_HDF5=ON] \
+      [-DHEATFLOW_BLAS=ON|OFF] \
+      [-DHEATFLOW_BLAS_BACKEND=auto|accelerate|openblas|mkl|reference|download|none] \
+      [-DHEATFLOW_BLAS_LIBRARIES='-L/path/to/lib;-lopenblas'] ..
 make install
 ```
+
+BLAS/LAPACK are auto-detected (Accelerate on macOS; OpenBLAS, MKL or reference BLAS/LAPACK on Linux). Use `-DHEATFLOW_BLAS=OFF` to disable linking, or `-DHEATFLOW_BLAS_LIBRARIES=...` to select a specific installation. To build OpenBLAS locally first (strictly opt-in; requires `make` and network access), configure with `-DHEATFLOW_BLAS_DOWNLOAD=ON` or `-DHEATFLOW_BLAS_BACKEND=download`; this runs `make deps-blas` and links the result from `external/`.
 
 This will build and install the executable in the following directory:
 ```
@@ -129,11 +134,22 @@ export PATH="${PATH}:${HOME}/.local/HeatFlow/bin"
 
 ### fpm
 
-To install using fpm, run the following command in the repository root directory:
+To build using fpm, run one of the following commands in the repository root directory:
 
 ```
-fpm build --profile=release
+fpm build --profile release          # legacy-only build (no PETSc/HDF5)
+./build_fpm.sh                       # auto-detect and link BLAS/LAPACK
+BLAS=0 ./build_fpm.sh                # build without BLAS/LAPACK
+BLAS_BACKEND=download ./build_fpm.sh # opt-in local OpenBLAS build
 ```
+
+For PETSc support:
+
+```
+PETSC_DIR=/path/to/petsc PETSC_ARCH=arch-your-build ./build_fpm_with_petsc.sh
+```
+
+`PETSC_ARCH` is optional for an installed PETSc. The wrapper scripts reuse the Makefile's BLAS/LAPACK detection and support `BLAS_LIBS`, `BLAS_BACKEND`, `FPM_PROFILE`, `FPM_FFLAGS` and `FPM_LDFLAGS`. The `mpi` dependency is resolved by fpm; the manifest is compatible with fpm 0.10 and later. HDF5 can be enabled by passing its flags explicitly through `FPM_FFLAGS`/`FPM_LDFLAGS`.
 
 ## Running
 
