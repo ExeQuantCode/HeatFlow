@@ -1,7 +1,9 @@
 module test_mod_inputs
     use constants, only: real12, int12
     use inputs, only: read_param, read_mat, read_system
-    use inputs, only: solver_type, T_decimals
+    use inputs, only: solver_type, T_decimals, input_dir, read_power_files, power_lookup
+    use inputs, only: power_profiles
+    use inputs, only: nx, ny, nz, grid
     use initial, only: read_temp_file
     ! use TempDep, only: ReadTempDepTable    
     implicit none
@@ -283,6 +285,70 @@ contains
     
     end subroutine test_read_temp_file
 
+    subroutine test_power_lookup(success)
+        implicit none
+        logical :: success
+        real(real12) :: tol, p
+        integer(int12) :: icase
+
+        tol = 1.0e-12_real12
+        icase = 100_int12
+
+        ! Set up a minimal grid that uses functional case 100
+        nx = 1; ny = 1; nz = 1
+        if (allocated(grid)) deallocate(grid)
+        allocate(grid(nx,ny,nz))
+        grid%iheater = 100
+
+        ! Load power_100.in from the test data directory
+        if (allocated(power_profiles)) deallocate(power_profiles)
+        input_dir = './test/data'
+        call read_power_files()
+
+        ! Before the first point -> first value
+        p = power_lookup(icase, -1.0_real12)
+        if (abs(p - 10.0_real12) .gt. tol) then
+            write(0,*) 'Error: power_lookup(t=-1) = ', p, ', expected 10.0'
+            stop 1
+        end if
+
+        ! On first point
+        p = power_lookup(icase, 0.0_real12)
+        if (abs(p - 10.0_real12) .gt. tol) then
+            write(0,*) 'Error: power_lookup(t=0) = ', p, ', expected 10.0'
+            stop 1
+        end if
+
+        ! Mid-interval interpolation
+        p = power_lookup(icase, 0.5_real12)
+        if (abs(p - 15.0_real12) .gt. tol) then
+            write(0,*) 'Error: power_lookup(t=0.5) = ', p, ', expected 15.0'
+            stop 1
+        end if
+
+        p = power_lookup(icase, 2.0_real12)
+        if (abs(p - 10.0_real12) .gt. tol) then
+            write(0,*) 'Error: power_lookup(t=2) = ', p, ', expected 10.0'
+            stop 1
+        end if
+
+        ! On last point
+        p = power_lookup(icase, 3.0_real12)
+        if (abs(p - 0.0_real12) .gt. tol) then
+            write(0,*) 'Error: power_lookup(t=3) = ', p, ', expected 0.0'
+            stop 1
+        end if
+
+        ! After the last point -> heater off
+        p = power_lookup(icase, 5.0_real12)
+        if (abs(p - 0.0_real12) .gt. tol) then
+            write(0,*) 'Error: power_lookup(t=5) = ', p, ', expected 0.0'
+            stop 1
+        end if
+
+        write(*,*) "test_power_lookup: PASSED"
+    end subroutine test_power_lookup
+
     subroutine run_all_tests(success)
         implicit none
         logical :: success
@@ -294,6 +360,7 @@ contains
         call test_read_mat(success)
         call test_read_mesh(success)
         call test_read_temp_file(success)
+        call test_power_lookup(success)
         ! call test_read_tempdep_table(success)
         
     end subroutine run_all_tests
