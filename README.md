@@ -34,7 +34,8 @@ Releases prior to `HeatFlow_CattaneoPaper` have had their history modified to re
 
 - Fortran compiler supporting Fortran 2003 standard or later
 - MPI (e.g. OpenMPI) — required
-- PETSc — optional, enables the `ilu`, `lu` and `gamg` solvers (without it only the `legacy` solver is available)
+- PETSc — optional, enables the `ilu`, `lu`, `gamg` and `jacobi` solvers (without it only the `legacy` solver is available)
+- CUDA GPU — optional, requires PETSc built with CUDA/cuSPARSE; enables `ilu_gpu` and `jacobi_gpu`
 - HDF5 — optional, enables HDF5 output (`_HDF5Output` flag)
 - BLAS/LAPACK — optional (auto-detected; `make deps-blas` can build OpenBLAS locally)
 - GNU Make or CMake (fpm can also be used)
@@ -103,6 +104,31 @@ OpenBLAS is installed under `external/` (gitignored); `make clean-deps` removes 
 
 PETSc is detected via pkg-config or `PETSC_DIR`/`PETSC_ARCH` on Linux, and via Homebrew on macOS. The executable is written to `bin/HeatFlow`.
 
+#### CUDA GPU build
+
+To build with CUDA GPU support, use a PETSc installation built with CUDA and cuSPARSE, then compile with `make gpu` (or, equivalently, `make GPU=1`). CPU and GPU objects are kept separate (`obj/cpu` and `obj/gpu`), so both configurations can coexist. The GPU build writes `bin/HeatFlow-gpu`; `bin/HeatFlow` remains the CPU binary.
+
+A conda-forge environment is the quickest route on Linux (the example below uses CUDA 13 and can be adapted for CUDA 12):
+
+```
+CONDA_OVERRIDE_CUDA=13.0 conda create -n heatflow-gpu -c conda-forge \
+  'petsc=3.26.1=*cuda13_real*' gfortran openmpi
+conda activate heatflow-gpu
+export PETSC_DIR="$CONDA_PREFIX"
+unset PETSC_ARCH
+make gpu BLAS=0
+```
+
+`BLAS=0` is recommended for conda PETSc because that package already carries its own BLAS/LAPACK dependencies. An explicit `PETSC_DIR` takes precedence over pkg-config. A GPU-enabled binary still supports all CPU solver selections; a CPU-only binary rejects `*_gpu` selections with an explanatory error.
+
+Run the GPU binary with a single rank for `ilu_gpu`:
+
+```
+mpiexec -n 1 ./bin/HeatFlow-gpu -i ./inputs -o ./outputs -use_gpu_aware_mpi 0
+```
+
+On multi-rank runs, `ilu_gpu` falls back to GPU Jacobi with a warning because PETSc has no parallel cuSPARSE ILU factorisation; `jacobi_gpu` works on any number of ranks.
+
 ### cmake
 
 For cmake installation, start within the repository root directory, run the following commands:
@@ -110,14 +136,14 @@ For cmake installation, start within the repository root directory, run the foll
 ```
 mkdir build
 cd build
-cmake [-DCMAKE_BUILD_TYPE=Release] [-DHEATFLOW_PETSC=ON] [-DHEATFLOW_HDF5=ON] \
+cmake [-DCMAKE_BUILD_TYPE=Release] [-DHEATFLOW_PETSC=ON] [-DHEATFLOW_GPU=ON] [-DHEATFLOW_HDF5=ON] \
       [-DHEATFLOW_BLAS=ON|OFF] \
       [-DHEATFLOW_BLAS_BACKEND=auto|accelerate|openblas|mkl|reference|download|none] \
       [-DHEATFLOW_BLAS_LIBRARIES='-L/path/to/lib;-lopenblas'] ..
 make install
 ```
 
-BLAS/LAPACK are auto-detected (Accelerate on macOS; OpenBLAS, MKL or reference BLAS/LAPACK on Linux). Use `-DHEATFLOW_BLAS=OFF` to disable linking, or `-DHEATFLOW_BLAS_LIBRARIES=...` to select a specific installation. To build OpenBLAS locally first (strictly opt-in; requires `make` and network access), configure with `-DHEATFLOW_BLAS_DOWNLOAD=ON` or `-DHEATFLOW_BLAS_BACKEND=download`; this runs `make deps-blas` and links the result from `external/`.
+BLAS/LAPACK are auto-detected (Accelerate on macOS; OpenBLAS, MKL or reference BLAS/LAPACK on Linux). Use `-DHEATFLOW_BLAS=OFF` to disable linking, or `-DHEATFLOW_BLAS_LIBRARIES=...` to select a specific installation. To build OpenBLAS locally first (strictly opt-in; requires `make` and network access), configure with `-DHEATFLOW_BLAS_DOWNLOAD=ON` or `-DHEATFLOW_BLAS_BACKEND=download`; this runs `make deps-blas` and links the result from `external/`. `-DHEATFLOW_GPU=ON` enables the CUDA build and requires PETSc built with CUDA support.
 
 This will build and install the executable in the following directory:
 ```
@@ -149,11 +175,20 @@ For PETSc support:
 PETSC_DIR=/path/to/petsc PETSC_ARCH=arch-your-build ./build_fpm_with_petsc.sh
 ```
 
+For a CUDA GPU build, add `HEATFLOW_GPU=1`:
+
+```
+HEATFLOW_GPU=1 PETSC_DIR=/path/to/cuda-petsc ./build_fpm_with_petsc.sh
+```
+
 `PETSC_ARCH` is optional for an installed PETSc. The wrapper scripts reuse the Makefile's BLAS/LAPACK detection and support `BLAS_LIBS`, `BLAS_BACKEND`, `FPM_PROFILE`, `FPM_FFLAGS` and `FPM_LDFLAGS`. The `mpi` dependency is resolved by fpm; the manifest is compatible with fpm 0.10 and later. HDF5 can be enabled by passing its flags explicitly through `FPM_FFLAGS`/`FPM_LDFLAGS`.
 
 ### Troubleshooting
 
 - PETSc 3.23+ on macOS: `Cannot create PETSC_NULL_XXX object` — see [docs/PETSC_NULL_OBJECT_FIX.md](docs/PETSC_NULL_OBJECT_FIX.md).
+- MPI launches several independent copies (`No PMIx server was reachable ... singletons will be started`): the `mpiexec` on `PATH` does not match the MPI that built the binary. Use the launcher from the same environment, e.g. `"$CONDA_PREFIX/bin/mpiexec"`.
+- GPU build links but fails at runtime creating `MATAIJCUSPARSE`/`VECCUDA`: the PETSc being linked was not built with CUDA support. Check `PETSC_HAVE_CUDA` in `$PETSC_DIR/include/petscconf.h`.
+- `ilu_gpu` warns and falls back on multiple ranks: this is expected; cuSPARSE ILU is single-rank only. Use one rank, or use `jacobi_gpu`.
 
 ## Running
 
@@ -171,10 +206,16 @@ or equivalently, with a single run directory:
 mpiexec -n 2 ./bin/HeatFlow --directory .
 ```
 
-The linear solver is chosen at runtime with the `solver` keyword in `param.in` (`legacy`, `ilu`, `lu` or `gamg`; default `ilu`). PETSc runtime options (e.g. `-ksp_monitor`) can be passed on the command line alongside the directory options:
+The linear solver is chosen at runtime with the `solver` keyword in `param.in`. CPU selections are `legacy`, `ilu`, `lu`, `gamg` and `jacobi`; GPU selections are `ilu_gpu` and `jacobi_gpu` and require a GPU build (`make gpu`). The default is `ilu`. PETSc runtime options (e.g. `-ksp_monitor`) can be passed on the command line alongside the directory options:
 
 ```
 mpiexec -n 2 ./bin/HeatFlow -i ./inputs -o ./outputs -ksp_monitor
+```
+
+To run the GPU binary:
+
+```
+mpiexec -n 1 ./bin/HeatFlow-gpu -i ./inputs -o ./outputs -use_gpu_aware_mpi 0
 ```
 
 Setting `_HDF5Output = T` in `param.in` writes the temperature field to `outputs/output_<RunName>.h5` (requires a build with HDF5 support).

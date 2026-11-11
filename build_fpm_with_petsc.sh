@@ -5,6 +5,9 @@
 #   export PETSC_DIR=/path/to/petsc
 #   export PETSC_ARCH=arch-your-build   # optional for an installed PETSc
 #
+# GPU builds (requires PETSc built with CUDA/cuSPARSE):
+#   HEATFLOW_GPU=1 ./build_fpm_with_petsc.sh
+#
 # BLAS/LAPACK handling is shared with the Makefile:
 #   BLAS=0                  disable BLAS/LAPACK
 #   BLAS_LIBS='...'         explicit linker flags
@@ -59,6 +62,9 @@ else
 fi
 
 fflags="-DHAVE_PETSC -I${petsc_dir}/include"
+if [ "${HEATFLOW_GPU:-0}" = "1" ]; then
+  fflags="$fflags -DHEATFLOW_GPU"
+fi
 petsc_libdir="${petsc_dir}/lib"
 if [ -n "$petsc_arch" ]; then
   fflags="$fflags -I${petsc_dir}/${petsc_arch}/include"
