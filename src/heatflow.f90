@@ -29,6 +29,7 @@ program HEATFLOW_V0_3
   use setup, only: set_global_variables
   use INITIAL, only: initial_evolve
    use petsc_solver, only: petsc_init, petsc_finalize, petsc_is_root, petsc_available
+   use petsc_solver, only: petsc_gpu_available
 
   implicit none
    real(real12) :: cpustart, cpuend, cpustart2, progress
@@ -63,6 +64,18 @@ program HEATFLOW_V0_3
    !-------------------------------------------------------------!
    ! Check the selected solver is available in this build        !
    !-------------------------------------------------------------!
+   if (len_trim(solver_type) > 4) then
+      if ((solver_type(len_trim(solver_type)-3:len_trim(solver_type)) == '_gpu') &
+          .and. (.not. petsc_gpu_available())) then
+         if (petsc_is_root()) then
+            write(6,*) 'Error: solver = "', trim(solver_type), '" requires a GPU-enabled build.'
+            write(6,*) '       Rebuild with: make gpu   (or: make GPU=1)'
+            write(6,*) '       and run bin/HeatFlow-gpu, or select a CPU solver.'
+         end if
+         stop 1
+      end if
+   end if
+
    if ((solver_type .ne. 'legacy') .and. (.not. petsc_available())) then
       if (petsc_is_root()) then
          write(6,*) 'Error: solver = "', trim(solver_type), '" requires PETSc,'

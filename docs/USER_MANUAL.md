@@ -6,6 +6,19 @@ This manual provides a concise guide to configuring and running simulations usin
 
 Build with `make` (MPI is required). The Makefile auto-detects an MPI Fortran wrapper on `PATH` and in common install prefixes; if your MPI is elsewhere, use `make FC=/path/to/mpifort`. BLAS/LAPACK are optional and auto-detected (Apple Accelerate on macOS; OpenBLAS, MKL or reference BLAS/LAPACK on Linux). If no backend is found, run `make deps-blas` to download and build OpenBLAS locally (opt-in; network required), or `make BLAS=0` to skip BLAS/LAPACK. PETSc is detected automatically; if it is not found, a legacy-solver-only version is built (only `solver = legacy` is available). To force a build without PETSc even when it is installed, use `make PETSC=0`. CMake and fpm builds are also supported; see the README for the CMake BLAS options and the `build_fpm*.sh` wrapper scripts.
 
+For CUDA GPU support, use a PETSc built with CUDA/cuSPARSE and run `make gpu` (or `make GPU=1`). This produces `bin/HeatFlow-gpu` and keeps GPU objects separate from the CPU build in `obj/gpu`. For example, with conda-forge:
+
+```
+CONDA_OVERRIDE_CUDA=13.0 conda create -n heatflow-gpu -c conda-forge \
+  'petsc=3.26.1=*cuda13_real*' gfortran openmpi
+conda activate heatflow-gpu
+export PETSC_DIR="$CONDA_PREFIX"
+unset PETSC_ARCH
+make gpu BLAS=0
+```
+
+The GPU binary still supports CPU solver selections, while CPU-only binaries reject `*_gpu` selections with an error. CMake builds can enable GPU support with `-DHEATFLOW_GPU=ON`; the fpm wrapper accepts `HEATFLOW_GPU=1`.
+
 ## Command Line Options
 
 The input and output directories can be selected on the command line (defaults: `./inputs`, `./outputs`, restart files in `./restart`):
@@ -16,7 +29,7 @@ The input and output directories can be selected on the command line (defaults: 
 | `-o <dir>` / `--output-directory <dir>` / `--output-directory=<dir>` | Directory for all output files (created if it does not exist). |
 | `--directory <dir>` / `--directory=<dir>` | Legacy alias: uses `<dir>/inputs`, `<dir>/outputs` and `<dir>/restart`. |
 
-PETSc runtime options (e.g. `-ksp_monitor`) can be passed alongside these options.
+PETSc runtime options (e.g. `-ksp_monitor`) can be passed alongside these options. GPU builds additionally accept `-use_gpu_aware_mpi 0`, which is recommended with conda OpenMPI.
 
 ## Input Files
 
@@ -41,7 +54,7 @@ This file uses a `KEYWORD = VALUE` format. Comments can be added using `!`.
 | `isteady` | Integer | `0` | Steady state switch (`1` = Steady state, `0` = Transient). |
 | `heattime` | Integer | `0` | Number of steps for which heating is applied (case 2). |
 | `TempDepProp`| Integer | `0` | Flag for temperature dependent properties. |
-| `solver` | String | `ilu` | Linear solver: `legacy` (original CG solver) or PETSc preconditioners `ilu`, `lu`, `gamg`. |
+| `solver` | String | `ilu` | Linear solver. CPU: `legacy` (original CG solver), `ilu`, `lu`, `gamg`, `jacobi`. GPU build only: `ilu_gpu` (single-rank cuSPARSE ILU; multi-rank falls back to GPU Jacobi) and `jacobi_gpu`. |
 
 #### Boundary & Conditions
 | Keyword | Type | Default | Description |
@@ -154,3 +167,11 @@ or via `fpm`:
 ```bash
 fpm run --profile release
 ```
+
+For a GPU build, select a GPU solver in `param.in` and run the GPU binary:
+
+```bash
+mpiexec -n 1 ./bin/HeatFlow-gpu -i ./inputs -o ./outputs -use_gpu_aware_mpi 0
+```
+
+`ilu_gpu` requires a single MPI rank; on multiple ranks it prints a warning and falls back to GPU Jacobi. `jacobi_gpu` supports any number of ranks.

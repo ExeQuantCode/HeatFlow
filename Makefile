@@ -6,8 +6,21 @@ SHELL        = /bin/sh
 
 # Directories
 SRC_DIR      := ./src
-BUILD_DIR    := ./obj
 BIN_DIR      := ./bin
+
+# Optional CUDA GPU build: make gpu  (or: make GPU=1)
+# CPU and GPU objects are kept separate so both configurations can coexist.
+GPU          ?= 0
+ifeq ($(GPU),1)
+GPU_SUFFIX   := gpu
+GPU_DEF      := -DHEATFLOW_GPU
+NAME         := HeatFlow-gpu
+else
+GPU_SUFFIX   := cpu
+GPU_DEF      :=
+NAME         := HeatFlow
+endif
+BUILD_DIR    := ./obj/$(GPU_SUFFIX)
 
 # MPI (required: the sources contain "use mpi")
 #
@@ -92,15 +105,22 @@ PETSC_DIR_INC := -I$(PETSC_DIR)/include
 ifdef PETSC_ARCH
 PETSC_DIR_INC += -I$(PETSC_DIR)/$(PETSC_ARCH)/include
 PETSC_DIR_LIB := -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -Wl,-rpath,$(PETSC_DIR)/$(PETSC_ARCH)/lib
+else
+# Installed PETSc (for example conda-forge): headers and library live directly
+# under $PETSC_DIR, with no $PETSC_ARCH subdirectory.
+PETSC_DIR_LIB := -L$(PETSC_DIR)/lib -Wl,-rpath,$(PETSC_DIR)/lib
 endif
 endif
 
-ifeq ($(strip $(PETSC_PKG_CFLAGS)),)
+ifneq ($(strip $(PETSC_DIR)),)
+# An explicit PETSC_DIR wins over pkg-config, so that activating a conda PETSc
+# environment cannot accidentally link against a system PETSc.
 PETSC_INC  := $(PETSC_DIR_INC)
-ifneq ($(strip $(PETSC_INC)),)
 PETSC_LIB  := $(PETSC_DIR_LIB) -lpetsc
-PETSC_NOTE := (PETSc from PETSC_DIR/PETSC_ARCH)
-endif
+PETSC_NOTE := (PETSc from PETSC_DIR)
+else ifeq ($(strip $(PETSC_PKG_CFLAGS)),)
+PETSC_INC  :=
+PETSC_LIB  :=
 else
 PETSC_INC  := $(PETSC_PKG_CFLAGS)
 PETSC_LIB  := $(PETSC_PKG_LIBS)
@@ -364,11 +384,10 @@ OMPFLAGS    := -fopenmp
 WARNFLAGS   := -Wall
 MODDIR_FLAG := -J$(BUILD_DIR)
 
-FFLAGS      := -cpp $(PETSC_DEF) $(OPTFLAGS) $(OMPFLAGS) $(WARNFLAGS) $(PETSC_INC) $(HDF5_FLAGS) $(MODDIR_FLAG)
-DEBUGFLAGS  := -cpp $(PETSC_DEF) -O0 -g -fcheck=all -fbacktrace -ffpe-trap=invalid,zero,overflow,underflow -fbounds-check $(PETSC_INC) $(HDF5_FLAGS) $(MODDIR_FLAG)
+FFLAGS      := -cpp $(GPU_DEF) $(PETSC_DEF) $(OPTFLAGS) $(OMPFLAGS) $(WARNFLAGS) $(PETSC_INC) $(HDF5_FLAGS) $(MODDIR_FLAG)
+DEBUGFLAGS  := -cpp $(GPU_DEF) $(PETSC_DEF) -O0 -g -fcheck=all -fbacktrace -ffpe-trap=invalid,zero,overflow,underflow -fbounds-check $(PETSC_INC) $(HDF5_FLAGS) $(MODDIR_FLAG)
 
 # Program
-NAME    := HeatFlow
 TARGET  := $(BIN_DIR)/$(NAME)
 
 # Sources (module order)
@@ -397,17 +416,44 @@ OBJS := $(addprefix $(BUILD_DIR)/,$(notdir $(SRCS:.f90=.o)))
 
 .NOTPARALLEL:
 
-.PHONY: all debug clean distclean run help show check-mpi check-blas \
+.PHONY: all debug clean distclean run help show check-mpi check-blas check-gpu \
+        gpu gpuclean run-gpu \
         deps deps-blas clean-deps \
         print-blas-flags print-blas-backend print-openblas-prefix
 
-all: check-mpi check-blas $(BLAS_DEPS) show $(TARGET)
+all: check-mpi check-blas check-gpu $(BLAS_DEPS) show $(TARGET)
 
 show:
 	@printf 'Building %s %s %s\n' '$(NAME)' '$(PETSC_NOTE)' '$(HDF5_NOTE)'
 	@printf '  Fortran compiler : %s\n' '$(FC)'
 	@printf '  MPI launcher     : %s\n' '$(if $(strip $(MPIEXEC)),$(MPIEXEC),not found)'
 	@printf '  BLAS/LAPACK      : %s\n' '$(BLAS_NOTE)'
+	@printf '  GPU support      : %s\n' '$(if $(filter 1,$(GPU)),CUDA enabled (-DHEATFLOW_GPU),disabled (CPU only))'
+
+check-gpu:
+	@if [ "$(GPU)" = "1" ] && [ "$(PETSC)" = "0" ]; then \
+	  echo "ERROR: a GPU build requires PETSc (do not use PETSC=0)." >&2; exit 1; \
+	fi
+	@if [ "$(GPU)" = "1" ] && [ -z "$(strip $(PETSC_INC))" ]; then \
+	  echo "ERROR: a GPU build requires PETSc built with CUDA support." >&2; \
+	  echo "       Activate a CUDA-enabled PETSc environment and set PETSC_DIR, e.g.:" >&2; \
+	  echo "         conda activate heatflow-gpu" >&2; \
+	  echo "         export PETSC_DIR=\$$CONDA_PREFIX" >&2; \
+	  echo "         unset PETSC_ARCH" >&2; \
+	  exit 1; \
+	fi
+	@if [ "$(GPU)" = "1" ]; then \
+	  petscconf=""; \
+	  for f in "$(PETSC_DIR)/include/petscconf.h" "$(PETSC_DIR)/$(PETSC_ARCH)/include/petscconf.h"; do \
+	    if [ -f "$$f" ]; then petscconf="$$f"; break; fi; \
+	  done; \
+	  if [ -n "$$petscconf" ] && ! grep -q '^#define PETSC_HAVE_CUDA 1' "$$petscconf"; then \
+	    echo "ERROR: PETSc at '$(PETSC_DIR)' was built without CUDA support." >&2; \
+	    echo "       Found $$petscconf without PETSC_HAVE_CUDA." >&2; \
+	    echo "       Install a CUDA-enabled PETSc, e.g. a conda-forge package matching '*cuda*_real*'." >&2; \
+	    exit 1; \
+	  fi; \
+	fi
 
 check-mpi:
 	@if [ -n "$(strip $(MPI_MISSING))" ]; then \
@@ -463,11 +509,15 @@ $(BUILD_DIR)/heatflow.o: $(SRC_DIR)/heatflow.f90 | $(BUILD_DIR) check-mpi check-
 	$(FC) $(FFLAGS) -c $< -o $@
 
 # Link (single definition)
-$(TARGET): $(BIN_DIR) $(OBJS) | check-mpi check-blas $(BLAS_DEPS)
+$(TARGET): $(BIN_DIR) $(OBJS) | check-mpi check-blas check-gpu $(BLAS_DEPS)
 	$(FC) $(OPTFLAGS) $(OMPFLAGS) $(OBJS) -o $@ $(PETSC_LIB) $(BLAS_FLAGS) $(HDF5_LIB)
 
 debug: FFLAGS = $(DEBUGFLAGS)
-debug: check-mpi check-blas $(BLAS_DEPS) clean show $(TARGET)
+debug: check-mpi check-blas check-gpu $(BLAS_DEPS) clean show $(TARGET)
+
+# Convenience target: make gpu  ==  make GPU=1 all
+gpu:
+	@$(MAKE) GPU=1 all
 
 run: $(TARGET)
 	@if [ -z "$(strip $(MPIEXEC))" ]; then \
@@ -477,13 +527,21 @@ run: $(TARGET)
 	fi
 	$(RUN_ENV) "$(MPIEXEC)" -n $(NCORES) $< $(RUN_ARGS)
 
+run-gpu:
+	@$(MAKE) GPU=1 run
+
 clean:
-	@echo "[CLEAN] objects and modules"
+	@echo "[CLEAN] objects and modules ($(BUILD_DIR))"
 	@rm -f $(BUILD_DIR)/*.o $(BUILD_DIR)/*.mod
 
+gpuclean:
+	@$(MAKE) GPU=1 clean
+	@echo "[CLEAN] GPU executable"
+	@rm -f $(BIN_DIR)/HeatFlow-gpu
+
 distclean: clean
-	@echo "[CLEAN] executable"
-	@rm -f $(TARGET)
+	@echo "[CLEAN] executables"
+	@rm -f $(BIN_DIR)/HeatFlow $(BIN_DIR)/HeatFlow-gpu
 
 # ---------------------------------------------------------------------------
 # Optional bundled OpenBLAS (strictly opt-in: make deps-blas)
@@ -560,15 +618,21 @@ help:
 	@echo "  make / make all    - build optimized"
 	@echo "  make debug         - debug build"
 	@echo "  make run           - run distributed across all cores via MPI"
+	@echo "  make gpu           - build the CUDA GPU-enabled binary (bin/HeatFlow-gpu)"
+	@echo "  make run-gpu       - run the GPU-enabled binary across all cores via MPI"
+	@echo "  make gpuclean      - remove GPU objects and executable"
 	@echo "  make clean         - remove objects/modules"
-	@echo "  make distclean     - remove executable"
+	@echo "  make distclean     - remove executables (CPU and GPU)"
 	@echo "  make deps          - download and build OpenBLAS (BLAS/LAPACK)"
 	@echo "  make deps-blas     - same as 'make deps'"
 	@echo "  make clean-deps    - remove downloaded dependencies"
 	@echo "Variables:"
 	@echo "  FC=<path>          - MPI Fortran wrapper (default: auto-detected)"
 	@echo "  MPIEXEC=<path>     - MPI launcher used by 'make run' (default: auto-detected)"
+	@echo "  GPU=1              - build with CUDA GPU support (same as 'make gpu')"
 	@echo "  PETSC=0            - build without PETSc (legacy solver only)"
+	@echo "  PETSC_DIR=<path>   - PETSc installation (required for GPU builds)"
+	@echo "  PETSC_ARCH=<arch>  - PETSc arch subdirectory (omit for installed PETSc)"
 	@echo "  USE_HDF5=1         - build with HDF5 output support"
 	@echo "  BLAS=0             - build without linking BLAS/LAPACK"
 	@echo "  BLAS_BACKEND=...   - auto|accelerate|openblas|mkl|reference|download|none"

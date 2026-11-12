@@ -43,7 +43,7 @@
 !!!     - T_Bath, the bath temperature
 !!!     - T_BathCG, the constant gradient of the bath temperature
 !!!     - CG_dir, a string with the directions for constant gradient (format: any combination of +x, -x, +y, -y, +z, -z)
-!!!     - solver, the linear solver to use (legacy, ilu, lu, gamg)
+!!!     - solver, the linear solver to use (legacy, ilu, lu, gamg, jacobi, ilu_gpu, jacobi_gpu)
 !!!     - T_decimals, the number of decimal places for the temperature output file
 !!!     - IVERB, the verbose
 !!!     - ntime, the number of time steps
@@ -521,7 +521,7 @@ contains
      ! Error on invalid solver selection
      !--------------------------------------------------
      select case (trim(solver_type))
-     case ('legacy', 'ilu', 'lu', 'gamg')
+     case ('legacy', 'ilu', 'lu', 'gamg', 'jacobi', 'ilu_gpu', 'jacobi_gpu')
         ! valid selection
      case default
         if (is_root) then
@@ -532,7 +532,8 @@ contains
            write(6,*)
            write(6,'(A)')    ' ---       Error in subroutine "check_param"      ---'
            write(6,'(A,A,A)')' --- ERROR: unknown solver "', trim(solver_type), '"'
-           write(6,'(A)')    ' --- Valid options: legacy, ilu, lu, gamg'
+           write(6,'(A)')    ' --- Valid options: legacy, ilu, lu, gamg, jacobi, ilu_gpu, jacobi_gpu'
+           write(6,'(A)')    ' --- *_gpu options require a GPU build: make gpu'
         end if
         stop
      end select

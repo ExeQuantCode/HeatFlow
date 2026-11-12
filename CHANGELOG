@@ -4,12 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-## [version] - year-month-day
+## [2.2.0] - 2026-11-12
 ### Added
 - Makefile BLAS/LAPACK auto-detection across Accelerate, OpenBLAS, MKL, conda, Homebrew, system and reference libraries, with `BLAS_BACKEND`, `BLAS_LIBS` and `BLAS=0` overrides
 - Opt-in `make deps-blas` / `make BLAS_BACKEND=download` target that downloads, checksum-verifies and builds OpenBLAS locally under `external/`
 - CMake BLAS/LAPACK detection with `HEATFLOW_BLAS`, `HEATFLOW_BLAS_BACKEND`, `HEATFLOW_BLAS_LIBRARIES` and opt-in `HEATFLOW_BLAS_DOWNLOAD` options
 - fpm wrapper scripts `build_fpm.sh` and `build_fpm_with_petsc.sh`, sharing the Makefile BLAS/LAPACK detection and opt-in OpenBLAS download
+- gpu (cuda) compatability
 ### Changed
 - Makefile now auto-detects MPI Fortran wrappers from `PATH` and common install prefixes instead of only `/usr/bin`
 - CMake now smoke-tests compiler candidates and skips broken wrappers such as incomplete conda MPI installations
